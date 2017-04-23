@@ -17,17 +17,7 @@ const config = {
 firebase.initializeApp(config);
 window.firebase = firebase;
 
-GithubAuth.initialize().then(() => {
-  fetch('https://api.github.com/repos/dittos/animeta/pulls', {
-      headers: {
-        'Authorization': `token ${GithubAuth.getAccessToken()}`
-      }
-      })
-  .then(r => r.json())
-    .then(data => console.log(data));
-
-  ReactDOM.render(
-    <App />,
-    document.getElementById('root')
-  );
-});
+ReactDOM.render(
+  <App />,
+  document.getElementById('root')
+);
