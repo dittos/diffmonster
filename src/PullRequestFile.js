@@ -95,5 +95,4 @@ export default function PullRequestFile({ file }) {
       ))}
     </DiffTable>
   );
-  return <pre>{JSON.stringify(parsePatch(file.patch), null, 2)}</pre>;
 }

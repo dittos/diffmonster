@@ -1,4 +1,5 @@
 import React from 'react';
+import { findDOMNode } from 'react-dom';
 import { withRouter } from 'react-router';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
@@ -122,6 +123,14 @@ class PullRequestFiles extends React.Component {
     this.setState({ data });
   }
 
+  componentDidUpdate(prevProps) {
+    if (prevProps.location.search !== this.props.location.search) {
+      if (this._scrollEl)
+        findDOMNode(this._scrollEl).scrollTop = 0;
+    }
+  }
+
+
   render() {
     const { pullRequest } = this.props;
     const { data } = this.state;
@@ -143,7 +152,7 @@ class PullRequestFiles extends React.Component {
         </FileList>
         <Diff>
           {activeFile && <Header>{activeFile.filename}</Header>}
-          <Scrollable>
+          <Scrollable ref={scrollEl => this._scrollEl = scrollEl}>
             {activeFile ?
               <PullRequestFile file={activeFile} /> :
               <PullRequestBody dangerouslySetInnerHTML={{__html: marked(pullRequest.body, { gfm: true })}} />
