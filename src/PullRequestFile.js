@@ -4,6 +4,7 @@ import oc from 'open-color';
 import { highlight } from "highlight.js";
 import "highlight.js/styles/default.css";
 import { parsePatch, LineType } from './PatchParser';
+import { highlightDiff } from './DiffHighlight';
 
 const DiffTable = styled.table`
   line-height: 20px;
@@ -56,6 +57,9 @@ const LineTypeComponents = {
     ContentCell: styled(BaseContentCell)`
       background: ${oc.red[1]};
     `,
+    Highlight: styled.span`
+      background: ${oc.red[3]};
+    `,
   },
   [LineType.ADDITION]: {
     LineNumberCell: styled(BaseLineNumberCell)`
@@ -64,6 +68,9 @@ const LineTypeComponents = {
     `,
     ContentCell: styled(BaseContentCell)`
       background: ${oc.green[1]};
+    `,
+    Highlight: styled.span`
+      background: ${oc.green[3]};
     `,
   },
 };
@@ -79,15 +86,21 @@ export default function PullRequestFile({ file }) {
             <td colSpan={2} />
             <HunkHeaderCell>{hunk.header}</HunkHeaderCell>
           </HunkHeaderRow>
-          {hunk.lines.map(line => {
-            const highlightResult = highlight('java', line.content, false, highlightStack);
-            highlightStack = highlightResult.top;
+          {highlightDiff(hunk).map(line => {
             const C = LineTypeComponents[line.type];
             return (
               <tr key={line.position}>
                 <C.LineNumberCell>{line.fromLine || ''}</C.LineNumberCell>
                 <C.LineNumberCell>{line.toLine || ''}</C.LineNumberCell>
-                <C.ContentCell dangerouslySetInnerHTML={{__html: highlightResult.value}} />
+                <C.ContentCell>
+                {line.content.map(span => {
+                  const highlightResult = highlight('java', span.content, false, highlightStack);
+                  highlightStack = highlightResult.top;
+                  return span.highlight ?
+                    <C.Highlight dangerouslySetInnerHTML={{__html: highlightResult.value}} />
+                    : <span dangerouslySetInnerHTML={{__html: highlightResult.value}} />;
+                })}
+                </C.ContentCell>
               </tr>
             );
           })}

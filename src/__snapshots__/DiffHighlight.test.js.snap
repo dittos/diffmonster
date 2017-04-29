@@ -1,0 +1,243 @@
+exports[`DiffHighlight does not highlight whole line 1`] = `
+Array [
+  Object {
+    "content": Array [
+      Object {
+        "content": "aaa",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 1,
+    "position": 0,
+    "toLine": 1,
+    "type": " ",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "bbb",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 2,
+    "position": 1,
+    "toLine": 0,
+    "type": "-",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "000",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 0,
+    "position": 2,
+    "toLine": 2,
+    "type": "+",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "ccc",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 3,
+    "position": 3,
+    "toLine": 3,
+    "type": " ",
+  },
+]
+`;
+
+exports[`DiffHighlight highlights the beginning of a line 1`] = `
+Array [
+  Object {
+    "content": Array [
+      Object {
+        "content": "aaa",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 1,
+    "position": 0,
+    "toLine": 1,
+    "type": " ",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "b",
+        "highlight": true,
+      },
+      Object {
+        "content": "bb",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 2,
+    "position": 1,
+    "toLine": 0,
+    "type": "-",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "0",
+        "highlight": true,
+      },
+      Object {
+        "content": "bb",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 0,
+    "position": 2,
+    "toLine": 2,
+    "type": "+",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "ccc",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 3,
+    "position": 3,
+    "toLine": 3,
+    "type": " ",
+  },
+]
+`;
+
+exports[`DiffHighlight highlights the end of a line 1`] = `
+Array [
+  Object {
+    "content": Array [
+      Object {
+        "content": "aaa",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 1,
+    "position": 0,
+    "toLine": 1,
+    "type": " ",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "bb",
+        "highlight": false,
+      },
+      Object {
+        "content": "b",
+        "highlight": true,
+      },
+    ],
+    "fromLine": 2,
+    "position": 1,
+    "toLine": 0,
+    "type": "-",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "bb",
+        "highlight": false,
+      },
+      Object {
+        "content": "0",
+        "highlight": true,
+      },
+    ],
+    "fromLine": 0,
+    "position": 2,
+    "toLine": 2,
+    "type": "+",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "ccc",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 3,
+    "position": 3,
+    "toLine": 3,
+    "type": " ",
+  },
+]
+`;
+
+exports[`DiffHighlight highlights the middle of a line 1`] = `
+Array [
+  Object {
+    "content": Array [
+      Object {
+        "content": "aaa",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 1,
+    "position": 0,
+    "toLine": 1,
+    "type": " ",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "b",
+        "highlight": false,
+      },
+      Object {
+        "content": "b",
+        "highlight": true,
+      },
+      Object {
+        "content": "b",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 2,
+    "position": 1,
+    "toLine": 0,
+    "type": "-",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "b",
+        "highlight": false,
+      },
+      Object {
+        "content": "0",
+        "highlight": true,
+      },
+      Object {
+        "content": "b",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 0,
+    "position": 2,
+    "toLine": 2,
+    "type": "+",
+  },
+  Object {
+    "content": Array [
+      Object {
+        "content": "ccc",
+        "highlight": false,
+      },
+    ],
+    "fromLine": 3,
+    "position": 3,
+    "toLine": 3,
+    "type": " ",
+  },
+]
+`;
