@@ -1,0 +1,370 @@
+[
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112802412",
+    "pull_request_review_id": 34150058,
+    "id": 112802412,
+    "diff_hunk": "@@ -36,6 +39,35 @@ static HttpResponse of(Publisher<? extends HttpObject> publisher) {\n         return new PublisherBasedHttpResponse(publisher);\n     }\n \n+    /**\n+     * Creates a new failed instance.\n+     */\n+    static HttpResponse ofFailed(Throwable cause) {\n+        final DefaultHttpResponse res = new DefaultHttpResponse();\n+        res.close(cause);\n+        return res;\n+    }\n+\n+    /**\n+     * Creates a new instance that delegates to the {@link HttpResponse} produced by the specified\n+     * {@link CompletionStage}. If the specified {@link CompletionStage} fails, the returned response will be\n+     * closed with the same cause as well.\n+     */\n+    static HttpResponse from(CompletionStage<? extends HttpResponse> stage) {\n+        requireNonNull(stage, \"stage\");\n+        final DeferredHttpResponse res = new DeferredHttpResponse();\n+        stage.whenComplete((delegate, cause) -> {\n+            if (cause != null) {\n+                res.close(cause);\n+            } else if (delegate == null) {\n+                res.close(new NullPointerException(\"stage produced a null delegate: \" + stage));",
+    "path": "core/src/main/java/com/linecorp/armeria/common/http/HttpResponse.java",
+    "position": null,
+    "original_position": 36,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "anuraaga",
+      "id": 198344,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/198344?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/anuraaga",
+      "html_url": "https://github.com/anuraaga",
+      "followers_url": "https://api.github.com/users/anuraaga/followers",
+      "following_url": "https://api.github.com/users/anuraaga/following{/other_user}",
+      "gists_url": "https://api.github.com/users/anuraaga/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/anuraaga/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/anuraaga/subscriptions",
+      "organizations_url": "https://api.github.com/users/anuraaga/orgs",
+      "repos_url": "https://api.github.com/users/anuraaga/repos",
+      "events_url": "https://api.github.com/users/anuraaga/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/anuraaga/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "```delegate stage produced a null response``` might be clearer. Alternatively, since this seems so rare, just leaving it to the ```requireNonNull``` in ```DeferredHttpResponse#delegate``` is probably enough too.",
+    "created_at": "2017-04-22T04:23:47Z",
+    "updated_at": "2017-04-24T08:19:58Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112802412",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112802412"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112802412"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112802495",
+    "pull_request_review_id": 34150058,
+    "id": 112802495,
+    "diff_hunk": "@@ -170,6 +173,35 @@ public static boolean isExpected(Throwable cause) {\n     }\n \n     /**\n+     * Throws the specified exception violating the {@code throws} clause of the enclosing method.\n+     * This method is useful when you need to rethrow a checked exception in {@link Function}, {@link Consumer},\n+     * {@link Supplier} and {@link Runnable}, only if you are sure that the rethrown exception will be handled\n+     * as a {@link Throwable} or an {@link Exception}. For example:\n+     * <pre>{@code\n+     * CompletableFuture.supplyAsync(() -> {\n+     *     try (FileInputStream fin = new FileInputStream(...)) {\n+     *         ....\n+     *         return someValue;\n+     *     } catch (IOException e) {\n+     *         // 'throw e;' won't work because Runnable.run() does not allow any checked exceptions.\n+     *         return Exceptions.unsafeThrow(e);",
+    "path": "core/src/main/java/com/linecorp/armeria/common/util/Exceptions.java",
+    "position": null,
+    "original_position": 25,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "anuraaga",
+      "id": 198344,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/198344?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/anuraaga",
+      "html_url": "https://github.com/anuraaga",
+      "followers_url": "https://api.github.com/users/anuraaga/followers",
+      "following_url": "https://api.github.com/users/anuraaga/following{/other_user}",
+      "gists_url": "https://api.github.com/users/anuraaga/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/anuraaga/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/anuraaga/subscriptions",
+      "organizations_url": "https://api.github.com/users/anuraaga/orgs",
+      "repos_url": "https://api.github.com/users/anuraaga/repos",
+      "events_url": "https://api.github.com/users/anuraaga/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/anuraaga/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "throwUnsafely",
+    "created_at": "2017-04-22T04:34:13Z",
+    "updated_at": "2017-04-24T08:19:58Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112802495",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112802495"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112802495"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112802522",
+    "pull_request_review_id": 34150058,
+    "id": 112802522,
+    "diff_hunk": "@@ -170,6 +173,35 @@ public static boolean isExpected(Throwable cause) {\n     }\n \n     /**\n+     * Throws the specified exception violating the {@code throws} clause of the enclosing method.",
+    "path": "core/src/main/java/com/linecorp/armeria/common/util/Exceptions.java",
+    "position": 14,
+    "original_position": 14,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "anuraaga",
+      "id": 198344,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/198344?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/anuraaga",
+      "html_url": "https://github.com/anuraaga",
+      "followers_url": "https://api.github.com/users/anuraaga/followers",
+      "following_url": "https://api.github.com/users/anuraaga/following{/other_user}",
+      "gists_url": "https://api.github.com/users/anuraaga/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/anuraaga/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/anuraaga/subscriptions",
+      "organizations_url": "https://api.github.com/users/anuraaga/orgs",
+      "repos_url": "https://api.github.com/users/anuraaga/repos",
+      "events_url": "https://api.github.com/users/anuraaga/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/anuraaga/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "```, with an arbitrary return clause allowing this method call to terminate any non-void function. At runtime, it will never return, however, since it always throws an exception.```\r\n\r\nmight be useful - it took me a while to figure out what this method is returning.",
+    "created_at": "2017-04-22T04:36:26Z",
+    "updated_at": "2017-04-24T08:19:58Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112802522",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112802522"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112802522"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112802558",
+    "pull_request_review_id": 34150058,
+    "id": 112802558,
+    "diff_hunk": "@@ -170,6 +173,35 @@ public static boolean isExpected(Throwable cause) {\n     }\n \n     /**\n+     * Throws the specified exception violating the {@code throws} clause of the enclosing method.\n+     * This method is useful when you need to rethrow a checked exception in {@link Function}, {@link Consumer},\n+     * {@link Supplier} and {@link Runnable}, only if you are sure that the rethrown exception will be handled\n+     * as a {@link Throwable} or an {@link Exception}. For example:\n+     * <pre>{@code\n+     * CompletableFuture.supplyAsync(() -> {\n+     *     try (FileInputStream fin = new FileInputStream(...)) {\n+     *         ....\n+     *         return someValue;\n+     *     } catch (IOException e) {\n+     *         // 'throw e;' won't work because Runnable.run() does not allow any checked exceptions.\n+     *         return Exceptions.unsafeThrow(e);\n+     *     }\n+     * }).exceptionally(CompletionActions::log);\n+     * }</pre>\n+     */\n+    public static <T> T throwUnsafely(Throwable cause) {\n+        doThrowUnsafely(requireNonNull(cause, \"cause\"));\n+        return null;\n+    }\n+\n+\n+    @SuppressWarnings(\"unchecked\")",
+    "path": "core/src/main/java/com/linecorp/armeria/common/util/Exceptions.java",
+    "position": null,
+    "original_position": 36,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "anuraaga",
+      "id": 198344,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/198344?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/anuraaga",
+      "html_url": "https://github.com/anuraaga",
+      "followers_url": "https://api.github.com/users/anuraaga/followers",
+      "following_url": "https://api.github.com/users/anuraaga/following{/other_user}",
+      "gists_url": "https://api.github.com/users/anuraaga/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/anuraaga/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/anuraaga/subscriptions",
+      "organizations_url": "https://api.github.com/users/anuraaga/orgs",
+      "repos_url": "https://api.github.com/users/anuraaga/repos",
+      "events_url": "https://api.github.com/users/anuraaga/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/anuraaga/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "```// This black magic causes the java compiler to believe E is an unchecked exception type.```",
+    "created_at": "2017-04-22T04:39:01Z",
+    "updated_at": "2017-04-24T08:19:58Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112802558",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112802558"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112802558"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112887991",
+    "pull_request_review_id": 34234521,
+    "id": 112887991,
+    "diff_hunk": "@@ -170,6 +173,35 @@ public static boolean isExpected(Throwable cause) {\n     }\n \n     /**\n+     * Throws the specified exception violating the {@code throws} clause of the enclosing method.\n+     * This method is useful when you need to rethrow a checked exception in {@link Function}, {@link Consumer},\n+     * {@link Supplier} and {@link Runnable}, only if you are sure that the rethrown exception will be handled\n+     * as a {@link Throwable} or an {@link Exception}. For example:\n+     * <pre>{@code\n+     * CompletableFuture.supplyAsync(() -> {\n+     *     try (FileInputStream fin = new FileInputStream(...)) {\n+     *         ....\n+     *         return someValue;\n+     *     } catch (IOException e) {\n+     *         // 'throw e;' won't work because Runnable.run() does not allow any checked exceptions.\n+     *         return Exceptions.unsafeThrow(e);",
+    "path": "core/src/main/java/com/linecorp/armeria/common/util/Exceptions.java",
+    "position": null,
+    "original_position": 25,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "trustin",
+      "id": 173918,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/173918?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/trustin",
+      "html_url": "https://github.com/trustin",
+      "followers_url": "https://api.github.com/users/trustin/followers",
+      "following_url": "https://api.github.com/users/trustin/following{/other_user}",
+      "gists_url": "https://api.github.com/users/trustin/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/trustin/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/trustin/subscriptions",
+      "organizations_url": "https://api.github.com/users/trustin/orgs",
+      "repos_url": "https://api.github.com/users/trustin/repos",
+      "events_url": "https://api.github.com/users/trustin/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/trustin/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "Oops. Fixed!",
+    "created_at": "2017-04-24T08:19:59Z",
+    "updated_at": "2017-04-24T08:19:59Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112887991",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112887991"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112887991"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112888007",
+    "pull_request_review_id": 34234541,
+    "id": 112888007,
+    "diff_hunk": "@@ -170,6 +173,35 @@ public static boolean isExpected(Throwable cause) {\n     }\n \n     /**\n+     * Throws the specified exception violating the {@code throws} clause of the enclosing method.\n+     * This method is useful when you need to rethrow a checked exception in {@link Function}, {@link Consumer},\n+     * {@link Supplier} and {@link Runnable}, only if you are sure that the rethrown exception will be handled\n+     * as a {@link Throwable} or an {@link Exception}. For example:\n+     * <pre>{@code\n+     * CompletableFuture.supplyAsync(() -> {\n+     *     try (FileInputStream fin = new FileInputStream(...)) {\n+     *         ....\n+     *         return someValue;\n+     *     } catch (IOException e) {\n+     *         // 'throw e;' won't work because Runnable.run() does not allow any checked exceptions.\n+     *         return Exceptions.unsafeThrow(e);\n+     *     }\n+     * }).exceptionally(CompletionActions::log);\n+     * }</pre>\n+     */\n+    public static <T> T throwUnsafely(Throwable cause) {\n+        doThrowUnsafely(requireNonNull(cause, \"cause\"));\n+        return null;\n+    }\n+\n+\n+    @SuppressWarnings(\"unchecked\")",
+    "path": "core/src/main/java/com/linecorp/armeria/common/util/Exceptions.java",
+    "position": null,
+    "original_position": 36,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "trustin",
+      "id": 173918,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/173918?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/trustin",
+      "html_url": "https://github.com/trustin",
+      "followers_url": "https://api.github.com/users/trustin/followers",
+      "following_url": "https://api.github.com/users/trustin/following{/other_user}",
+      "gists_url": "https://api.github.com/users/trustin/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/trustin/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/trustin/subscriptions",
+      "organizations_url": "https://api.github.com/users/trustin/orgs",
+      "repos_url": "https://api.github.com/users/trustin/repos",
+      "events_url": "https://api.github.com/users/trustin/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/trustin/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "Added",
+    "created_at": "2017-04-24T08:20:06Z",
+    "updated_at": "2017-04-24T08:20:06Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112888007",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112888007"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112888007"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112888052",
+    "pull_request_review_id": 34234584,
+    "id": 112888052,
+    "diff_hunk": "@@ -170,6 +173,35 @@ public static boolean isExpected(Throwable cause) {\n     }\n \n     /**\n+     * Throws the specified exception violating the {@code throws} clause of the enclosing method.",
+    "path": "core/src/main/java/com/linecorp/armeria/common/util/Exceptions.java",
+    "position": 14,
+    "original_position": 14,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "trustin",
+      "id": 173918,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/173918?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/trustin",
+      "html_url": "https://github.com/trustin",
+      "followers_url": "https://api.github.com/users/trustin/followers",
+      "following_url": "https://api.github.com/users/trustin/following{/other_user}",
+      "gists_url": "https://api.github.com/users/trustin/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/trustin/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/trustin/subscriptions",
+      "organizations_url": "https://api.github.com/users/trustin/orgs",
+      "repos_url": "https://api.github.com/users/trustin/repos",
+      "events_url": "https://api.github.com/users/trustin/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/trustin/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "Added a `@return` tag and put the explanation there.",
+    "created_at": "2017-04-24T08:20:24Z",
+    "updated_at": "2017-04-24T08:20:24Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112888052",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112888052"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112888052"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  },
+  {
+    "url": "https://api.github.com/repos/line/armeria/pulls/comments/112888104",
+    "pull_request_review_id": 34234645,
+    "id": 112888104,
+    "diff_hunk": "@@ -36,6 +39,35 @@ static HttpResponse of(Publisher<? extends HttpObject> publisher) {\n         return new PublisherBasedHttpResponse(publisher);\n     }\n \n+    /**\n+     * Creates a new failed instance.\n+     */\n+    static HttpResponse ofFailed(Throwable cause) {\n+        final DefaultHttpResponse res = new DefaultHttpResponse();\n+        res.close(cause);\n+        return res;\n+    }\n+\n+    /**\n+     * Creates a new instance that delegates to the {@link HttpResponse} produced by the specified\n+     * {@link CompletionStage}. If the specified {@link CompletionStage} fails, the returned response will be\n+     * closed with the same cause as well.\n+     */\n+    static HttpResponse from(CompletionStage<? extends HttpResponse> stage) {\n+        requireNonNull(stage, \"stage\");\n+        final DeferredHttpResponse res = new DeferredHttpResponse();\n+        stage.whenComplete((delegate, cause) -> {\n+            if (cause != null) {\n+                res.close(cause);\n+            } else if (delegate == null) {\n+                res.close(new NullPointerException(\"stage produced a null delegate: \" + stage));",
+    "path": "core/src/main/java/com/linecorp/armeria/common/http/HttpResponse.java",
+    "position": null,
+    "original_position": 36,
+    "commit_id": "df52efbe5e6f42935998175f97e822626ccfbb37",
+    "original_commit_id": "d98685978be10493e89ce96e4ef7eda843e5a98e",
+    "user": {
+      "login": "trustin",
+      "id": 173918,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/173918?v=3",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/trustin",
+      "html_url": "https://github.com/trustin",
+      "followers_url": "https://api.github.com/users/trustin/followers",
+      "following_url": "https://api.github.com/users/trustin/following{/other_user}",
+      "gists_url": "https://api.github.com/users/trustin/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/trustin/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/trustin/subscriptions",
+      "organizations_url": "https://api.github.com/users/trustin/orgs",
+      "repos_url": "https://api.github.com/users/trustin/repos",
+      "events_url": "https://api.github.com/users/trustin/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/trustin/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "Updated the exception message as advised.",
+    "created_at": "2017-04-24T08:20:41Z",
+    "updated_at": "2017-04-24T08:20:41Z",
+    "html_url": "https://github.com/line/armeria/pull/507#discussion_r112888104",
+    "pull_request_url": "https://api.github.com/repos/line/armeria/pulls/507",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/comments/112888104"
+      },
+      "html": {
+        "href": "https://github.com/line/armeria/pull/507#discussion_r112888104"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/line/armeria/pulls/507"
+      }
+    }
+  }
+]

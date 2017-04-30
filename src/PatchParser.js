@@ -49,7 +49,7 @@ function parseLines(hunk) {
   var toLine = hunk.range.to.start;
   hunk.lines = hunk.lines.map((line, i) => {
     const type = line.charAt(0);
-    const position = hunk.position + i;
+    const position = hunk.position + 1 + i;
     const content = line.substring(1);
     switch (type) {
       case LineType.CONTEXT:

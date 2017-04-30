@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import oc from 'open-color';
-import { highlight } from "highlight.js";
+import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
 import { parsePatch, LineType } from './PatchParser';
 import { highlightDiff } from './DiffHighlight';
@@ -75,37 +75,98 @@ const LineTypeComponents = {
   },
 };
 
-export default function PullRequestFile({ file }) {
+class Highlighter {
+  constructor(lang) {
+    this.lang = lang;
+    this.stack = null;
+  }
+
+  highlight(code) {
+    const result = highlight(this.lang, code, false, this.stack);
+    this.stack = result.top;
+    return result.value;
+  }
+}
+
+function Hunk({ hunk, commentsByPosition, language }) {
+  const lines = [];
+  const highlighter = language ? new Highlighter(language) : null;
+  highlightDiff(hunk).forEach(line => {
+    const C = LineTypeComponents[line.type];
+    lines.push(
+      <tr key={'L' + line.position}>
+        <C.LineNumberCell>{line.fromLine || ''}</C.LineNumberCell>
+        <C.LineNumberCell>{line.toLine || ''}</C.LineNumberCell>
+        <C.ContentCell>
+        {line.content.map((span, spanIndex) => {
+          const props = {
+            key: spanIndex,
+          };
+          if (highlighter)
+            props.dangerouslySetInnerHTML = {__html: highlighter.highlight(span.content)};
+          else
+            props.children = span.content;
+          return span.highlight ?
+            <C.Highlight {...props} />
+            : <span {...props} />;
+        })}
+        </C.ContentCell>
+      </tr>
+    );
+    const comments = commentsByPosition[line.position];
+    if (comments) {
+      for (let comment of comments) {
+        lines.push(
+          <tr key={'C' + comment.id}>
+            <td colSpan={3}>
+              {JSON.stringify(comment, null, 2)}
+            </td>
+          </tr>
+        );
+      }
+    }
+  });
+  return (
+    <tbody>
+      <HunkHeaderRow>
+        <td colSpan={2} />
+        <HunkHeaderCell>{hunk.header}</HunkHeaderCell>
+      </HunkHeaderRow>
+      {lines}
+    </tbody>
+  );
+}
+
+export default function PullRequestFile({ file, comments }) {
   const patch = parsePatch(file.patch);
-  let highlightStack;
+  
+  const commentsByPosition = {};
+  comments.forEach(comment => {
+    if (comment.position) {
+      if (!commentsByPosition[comment.position])
+        commentsByPosition[comment.position] = [];
+      commentsByPosition[comment.position].push(comment);
+    }
+  });
+
+  let language;
+  const parts = file.filename.split('.');
+  if (parts.length > 1) {
+    const ext = parts[parts.length - 1];
+    if (getLanguage(ext))
+      language = ext;
+  }
+
   return (
     <DiffTable>
-      {patch.map((hunk, hunkIndex) => (
-        <tbody key={hunkIndex}>
-          <HunkHeaderRow>
-            <td colSpan={2} />
-            <HunkHeaderCell>{hunk.header}</HunkHeaderCell>
-          </HunkHeaderRow>
-          {highlightDiff(hunk).map(line => {
-            const C = LineTypeComponents[line.type];
-            return (
-              <tr key={line.position}>
-                <C.LineNumberCell>{line.fromLine || ''}</C.LineNumberCell>
-                <C.LineNumberCell>{line.toLine || ''}</C.LineNumberCell>
-                <C.ContentCell>
-                {line.content.map(span => {
-                  const highlightResult = highlight('java', span.content, false, highlightStack);
-                  highlightStack = highlightResult.top;
-                  return span.highlight ?
-                    <C.Highlight dangerouslySetInnerHTML={{__html: highlightResult.value}} />
-                    : <span dangerouslySetInnerHTML={{__html: highlightResult.value}} />;
-                })}
-                </C.ContentCell>
-              </tr>
-            );
-          })}
-        </tbody>
-      ))}
+      {patch.map(hunk =>
+        <Hunk
+          key={hunk.position}
+          hunk={hunk}
+          commentsByPosition={commentsByPosition}
+          language={language}
+        />
+      )}
     </DiffTable>
   );
 }

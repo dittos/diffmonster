@@ -114,13 +114,16 @@ function mergeTreePaths(tree) {
 
 class PullRequestFiles extends React.Component {
   state = {
-    data: null
+    data: null,
+    comments: null,
   };
 
   async componentDidMount() {
     //const data = await fetch(`${this.props.pullRequest.url}/files`).then(r => r.json());
     const data = require('./fixtures/pull-request-files.json');
     this.setState({ data });
+    const comments = require('./fixtures/pull-request-comments.json');
+    this.setState({ comments });
   }
 
   componentDidUpdate(prevProps) {
@@ -133,7 +136,7 @@ class PullRequestFiles extends React.Component {
 
   render() {
     const { pullRequest } = this.props;
-    const { data } = this.state;
+    const { data, comments } = this.state;
 
     if (!data)
       return <div>Loading</div>;
@@ -154,7 +157,7 @@ class PullRequestFiles extends React.Component {
           {activeFile && <Header>{activeFile.filename}</Header>}
           <Scrollable ref={scrollEl => this._scrollEl = scrollEl}>
             {activeFile ?
-              <PullRequestFile file={activeFile} /> :
+              <PullRequestFile file={activeFile} comments={comments ? comments.filter(c => c.path === activePath) : []} /> :
               <PullRequestBody dangerouslySetInnerHTML={{__html: marked(pullRequest.body, { gfm: true })}} />
             }
           </Scrollable>
