@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
+import marked from 'marked';
 import { parsePatch, LineType } from './PatchParser';
 import { highlightDiff } from './DiffHighlight';
 
@@ -75,6 +76,19 @@ const LineTypeComponents = {
   },
 };
 
+const Comment = styled.div`
+  padding: 8px;
+  margin: 8px;
+  border: 1px solid ${oc.gray[4]};
+  border-radius: 2px;
+  font-family: sans-serif;
+  color: ${oc.gray[8]};
+`;
+
+const CommentUser = styled.a`
+  font-weight: bold;
+`;
+
 class Highlighter {
   constructor(lang) {
     this.lang = lang;
@@ -86,6 +100,21 @@ class Highlighter {
     this.stack = result.top;
     return result.value;
   }
+}
+
+function CommentThread({ comments }) {
+  return (
+    <div>
+      {comments.map((comment, i) =>
+        <Comment first={i === 0}>
+          <div>
+            <CommentUser>{comment.user.login}</CommentUser>
+          </div>
+          <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
+        </Comment>
+      )}
+    </div>
+  );
 }
 
 function Hunk({ hunk, commentsByPosition, language }) {
@@ -115,15 +144,13 @@ function Hunk({ hunk, commentsByPosition, language }) {
     );
     const comments = commentsByPosition[line.position];
     if (comments) {
-      for (let comment of comments) {
-        lines.push(
-          <tr key={'C' + comment.id}>
-            <td colSpan={3}>
-              {JSON.stringify(comment, null, 2)}
-            </td>
-          </tr>
-        );
-      }
+      lines.push(
+        <tr key={'C' + comments[0].id}>
+          <td colSpan={3}>
+            <CommentThread comments={comments} />
+          </td>
+        </tr>
+      );
     }
   });
   return (
