@@ -118,12 +118,15 @@ class PullRequestFiles extends React.Component {
     comments: null,
   };
 
-  async componentDidMount() {
-    //const data = await fetch(`${this.props.pullRequest.url}/files`).then(r => r.json());
-    const data = require('./fixtures/pull-request-files.json');
-    this.setState({ data });
-    const comments = require('./fixtures/pull-request-comments.json');
-    this.setState({ comments });
+  componentDidMount() {
+    fetch(`${this.props.pullRequest.url}/files`).then(r => r.json()).then(data => this.setState({ data }));
+
+    // TODO: read multiple paged comments
+    fetch(`${this.props.pullRequest.url}/comments`, {
+      headers: {
+        'Accept': 'application/vnd.github.black-cat-preview+json'
+      }
+    }).then(r => r.json()).then(comments => this.setState({ comments }));
   }
 
   componentDidUpdate(prevProps) {
@@ -132,7 +135,6 @@ class PullRequestFiles extends React.Component {
         findDOMNode(this._scrollEl).scrollTop = 0;
     }
   }
-
 
   render() {
     const { pullRequest } = this.props;
@@ -176,8 +178,8 @@ class PullRequestFiles extends React.Component {
     if (tree.files) {
       for (let file of tree.files) {
         const path = file.filename;
-        // TODO: display by file.status
         els.push(<FileItem
+          key={path}
           depth={depth}
           status={file.status}
           active={activePath === path}

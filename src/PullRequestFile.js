@@ -106,7 +106,7 @@ function CommentThread({ comments }) {
   return (
     <div>
       {comments.map((comment, i) =>
-        <Comment first={i === 0}>
+        <Comment first={i === 0} key={comment.id}>
           <div>
             <CommentUser>{comment.user.login}</CommentUser>
           </div>

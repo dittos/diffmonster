@@ -19,9 +19,8 @@ export default class PullRequest extends Component {
   };
 
   async componentDidMount() {
-    //const params = this.props.match.params;
-    //const data = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/pulls/${params.id}`).then(r => r.json());
-    const data = require('./fixtures/pull-request.json');
+    const params = this.props.match.params;
+    const data = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/pulls/${params.id}`).then(r => r.json());
     this.setState({ data });
   }
 
