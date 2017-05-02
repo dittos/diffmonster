@@ -7,6 +7,10 @@ import marked from 'marked';
 import { parsePatch, LineType } from './PatchParser';
 import { highlightDiff } from './DiffHighlight';
 
+const NoPreview = styled.div`
+  padding: 16px;
+`;
+
 const DiffTable = styled.table`
   line-height: 20px;
   font-size: 12px;
@@ -165,6 +169,9 @@ function Hunk({ hunk, commentsByPosition, language }) {
 }
 
 export default function PullRequestFile({ file, comments }) {
+  if (!file.patch)
+    return <NoPreview>Binary file</NoPreview>;
+
   const patch = parsePatch(file.patch);
   
   const commentsByPosition = {};

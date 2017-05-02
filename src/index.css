@@ -8,3 +8,12 @@ body {
 a {
   color: inherit;
 }
+
+.react-spinner {
+  width: 64px;
+  height: 64px;
+}
+
+.react-spinner_bar {
+  background: #000;
+}

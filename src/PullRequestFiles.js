@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import oc from 'open-color';
 import marked from 'marked';
+import Loading from './Loading';
 import PullRequestFile from './PullRequestFile';
 
 const Horizontal = styled.div`
@@ -141,7 +142,7 @@ class PullRequestFiles extends React.Component {
     const { data, comments } = this.state;
 
     if (!data)
-      return <div>Loading</div>;
+      return <Loading />;
 
     const queryParams = new URLSearchParams(this.props.location.search.substring(1));
     const activePath = queryParams.get('path');

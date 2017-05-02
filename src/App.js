@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { HashRouter as Router, Route } from 'react-router-dom';
 import './App.css';
 import PullRequest from './PullRequest';
+import Index from './Index';
+import Loading from './Loading';
 
 class App extends Component {
   render() {
@@ -9,6 +11,7 @@ class App extends Component {
       <Router>
         <div className="App">
           <Route path="/:owner/:repo/pull/:id" component={PullRequest} />
+          <Route exact path="/" component={Index} />
         </div>
       </Router>
     );

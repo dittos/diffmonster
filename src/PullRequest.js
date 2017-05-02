@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
+import Loading from './Loading';
 import PullRequestHeader from './PullRequestHeader';
 import PullRequestFiles from './PullRequestFiles';
 
@@ -18,22 +19,35 @@ export default class PullRequest extends Component {
     data: null,
   };
 
-  async componentDidMount() {
-    const params = this.props.match.params;
-    const data = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/pulls/${params.id}`).then(r => r.json());
+  getUrl(props) {
+    const params = props.match.params;
+    return `https://api.github.com/repos/${params.owner}/${params.repo}/pulls/${params.id}`;
+  }
+
+  _load = async (props) => {
+    const data = await fetch(this.getUrl(props)).then(r => r.json());
     this.setState({ data });
+  };
+
+  componentDidMount() {
+    this._load(this.props);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (this.getUrl(this.props) !== this.getUrl(nextProps))
+      this._load(nextProps);
   }
 
   render() {
     const { data } = this.state;
 
     if (!data)
-      return <div>Loading</div>;
+      return <Loading />;
 
     return <Vertical>
-      <PullRequestHeader pullRequest={data} />
+      <PullRequestHeader key={data.url} pullRequest={data} />
       <ScrollPane>
-        <PullRequestFiles pullRequest={data} />
+        <PullRequestFiles key={data.url} pullRequest={data} />
       </ScrollPane>
     </Vertical>;
   }
