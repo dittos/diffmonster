@@ -4,8 +4,8 @@ import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
 import marked from 'marked';
-import { parsePatch, LineType } from './PatchParser';
-import { highlightDiff } from './DiffHighlight';
+import { parsePatch, LineType } from '../lib/PatchParser';
+import { highlightDiff } from '../lib/DiffHighlight';
 
 const NoPreview = styled.div`
   padding: 16px;

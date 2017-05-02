@@ -1,8 +1,9 @@
 import * as firebase from 'firebase';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
-import * as GithubAuth from './GithubAuth';
+import { HashRouter as Router } from 'react-router-dom';
+import App from './routes/App';
+import * as GithubAuth from './lib/GithubAuth';
 import './index.css';
 
 // Initialize Firebase
@@ -18,6 +19,8 @@ firebase.initializeApp(config);
 window.firebase = firebase;
 
 ReactDOM.render(
-  <App />,
+  <Router>
+    <App />
+  </Router>,
   document.getElementById('root')
 );

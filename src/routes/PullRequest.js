@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
-import Loading from './Loading';
-import PullRequestHeader from './PullRequestHeader';
-import PullRequestFiles from './PullRequestFiles';
+import Loading from '../ui/Loading';
+import PullRequestHeader from '../ui/PullRequestHeader';
+import PullRequestFiles from '../ui/PullRequestFiles';
 
 const Vertical = styled.div`
   height: 100%;
