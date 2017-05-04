@@ -7,6 +7,7 @@ import oc from 'open-color';
 import marked from 'marked';
 import Loading from './Loading';
 import PullRequestFile from './PullRequestFile';
+import { getPullRequestFiles, getPullRequestComments } from '../lib/Github';
 
 const Horizontal = styled.div`
   display: flex;
@@ -120,14 +121,12 @@ class PullRequestFiles extends React.Component {
   };
 
   componentDidMount() {
-    fetch(`${this.props.pullRequest.url}/files`).then(r => r.json()).then(data => this.setState({ data }));
+    getPullRequestFiles(this.props.pullRequest)
+      .subscribe(resp => this.setState({ data: resp.response }));
 
     // TODO: read multiple paged comments
-    fetch(`${this.props.pullRequest.url}/comments`, {
-      headers: {
-        'Accept': 'application/vnd.github.black-cat-preview+json'
-      }
-    }).then(r => r.json()).then(comments => this.setState({ comments }));
+    getPullRequestComments(this.props.pullRequest)
+      .subscribe(resp => this.setState({ comments: resp.response }));
   }
 
   componentDidUpdate(prevProps) {

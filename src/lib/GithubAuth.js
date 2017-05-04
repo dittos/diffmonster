@@ -1,4 +1,9 @@
 import * as firebase from 'firebase';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/observable/of';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/publish';
 
 let _accessToken;
 
@@ -7,14 +12,18 @@ function githubTokenRef(uid) {
 }
 
 function fetchGithubToken(uid) {
-  return githubTokenRef(uid).once('value').then(snapshot => snapshot.val());
+  return Observable.create(obs => {
+    const ref = githubTokenRef(uid);
+    const callback = ref.on('value', snapshot => obs.next(snapshot.val()), err => obs.error(err));
+    return () => ref.off('value', callback);
+  });
 }
 
 function setGithubToken(uid, token) {
   return githubTokenRef(uid).set(token);
 }
 
-async function startAuth() {
+export async function startAuth() {
   const provider = new firebase.auth.GithubAuthProvider();
   provider.addScope('repo');
   provider.setCustomParameters({
@@ -26,26 +35,32 @@ async function startAuth() {
   return setGithubToken(result.user.uid, result.credential.accessToken);
 }
 
-function waitForAuthStateChange() {
-  return new Promise((resolve, reject) => {
-    let dispose;
-    dispose = firebase.auth().onAuthStateChanged(user => {
-      resolve(user);
-      dispose();
-    });
+function authStateChanges() {
+  return Observable.create(obs => {
+    const unsubscribe = firebase.auth().onAuthStateChanged(
+      user => obs.next(user),
+      err => obs.error(err),
+      () => obs.complete()
+    );
+    return unsubscribe;
   });
 }
 
-export async function initialize() {
-  const user = await waitForAuthStateChange();
-  if (user) {
-    const token = await fetchGithubToken(user.uid);
-    if (token) {
-      _accessToken = token;
-      return;
-    }
-  }
-  return startAuth();
+export function initialize() {
+  const tokens = authStateChanges()
+    .switchMap(user => {
+      if (user)
+        return fetchGithubToken(user.uid);
+      else
+        return Observable.of(null);
+    })
+    .publish().refCount();
+
+  tokens.subscribe(accessToken => {
+    _accessToken = accessToken;
+  });
+
+  return tokens.first();
 }
 
 export function getAccessToken() {
