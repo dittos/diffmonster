@@ -12,6 +12,7 @@ a {
 .react-spinner {
   width: 64px;
   height: 64px;
+  position: absolute; /* Fix for WebKit (don't know why) */
 }
 
 .react-spinner_bar {

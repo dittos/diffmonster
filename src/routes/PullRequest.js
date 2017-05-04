@@ -14,6 +14,7 @@ const Vertical = styled.div`
 const ScrollPane = styled.div`
   flex: 1;
   overflow: auto;
+  display: flex;
 `;
 
 const Error = styled.div`

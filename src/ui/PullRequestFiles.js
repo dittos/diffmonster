@@ -12,7 +12,7 @@ import { getPullRequestFiles, getPullRequestComments } from '../lib/Github';
 const Horizontal = styled.div`
   display: flex;
   flex-direction: row;
-  height: 100%;
+  flex: 1;
 `;
 
 const Scrollable = styled.div`
