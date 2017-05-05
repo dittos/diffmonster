@@ -6,7 +6,6 @@ const Header = styled.div`
   padding: 16px;
   background: ${oc.gray[9]};
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
 `;
 
 const Meta = styled.div`
