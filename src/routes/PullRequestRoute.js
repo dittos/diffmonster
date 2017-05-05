@@ -3,10 +3,13 @@ import g from 'glamorous';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/observable/zip';
-import 'rxjs/add/operator/distinctUntilKeyChanged';
+import 'rxjs/add/observable/of';
+import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/publish';
+import 'rxjs/add/operator/startWith';
+import 'rxjs/add/operator/catch';
 import Loading from '../ui/Loading';
 import PullRequest from '../ui/PullRequest';
 import {
@@ -24,27 +27,36 @@ export default class PullRequestRoute extends Component {
 
   componentDidMount() {
     const pullRequest$ = this.match$
-      .distinctUntilKeyChanged('url')
+      .distinctUntilChanged((a, b) => a.url === b.url && !b.refresh)
       .map(match => match.params)
-      .switchMap(params => getPullRequest(params.owner, params.repo, params.id))
+      .switchMap(params =>
+        Observable.zip(
+          getPullRequest(params.owner, params.repo, params.id),
+          getPullRequestFiles(params.owner, params.repo, params.id),
+          (pullRequest, files) => ({ ...pullRequest, files })
+        )
+        .catch(err => {
+          if (err.status === 404) {
+            return Observable.of({ notFound: true });
+          } else {
+            console.error(err)
+            return Observable.of(null);
+          }
+        })
+        .startWith(null)
+      )
       .publish();
 
     pullRequest$
       .subscribe(data => {
-        this.setState({ data });
-      }, err => {
-        if (err.status === 404)
-          this.setState({ data: { notFound: true } });
+        this.setState({ data, comments: [] });
       });
 
     pullRequest$
-      .switchMap(pullRequest => Observable.zip(
-        // TODO: read multiple paged responses
-        getPullRequestFiles(pullRequest),
-        getPullRequestComments(pullRequest)
-      ))
-      .subscribe(([files, comments]) => {
-        this.setState({ files, comments });
+      .filter(data => data !== null && !data.notFound)
+      .switchMap(data => getPullRequestComments(data))
+      .subscribe(comments => {
+        this.setState({ comments });
       });
 
     this.subscription = pullRequest$.connect();
@@ -61,7 +73,7 @@ export default class PullRequestRoute extends Component {
   }
 
   render() {
-    const { data, files, comments } = this.state;
+    const { data, comments } = this.state;
 
     if (!data)
       return <Loading />;
@@ -72,13 +84,12 @@ export default class PullRequestRoute extends Component {
     const queryParams = new URLSearchParams(this.props.location.search.substring(1));
     const activePath = queryParams.get('path');
     let activeFile;
-    if (activePath && files) {
-      activeFile = files.filter(file => file.filename === activePath)[0];
+    if (activePath) {
+      activeFile = data.files.filter(file => file.filename === activePath)[0];
     }
 
     return <PullRequest
       data={data}
-      files={files}
       comments={comments}
       activeFile={activeFile}
       getFilePath={path => ({...this.props.location, search: `?path=${encodeURIComponent(path)}`})}
@@ -100,6 +111,6 @@ export default class PullRequestRoute extends Component {
   _login = event => {
     event.preventDefault();
     this.setState({ data: null }); // Loading
-    startAuth().then(() => this._load(this.props));
+    startAuth().then(() => this.match$.next({ ...this.props.match, refresh: true }));
   };
 }

@@ -30,7 +30,7 @@ export default class PullRequest extends Component {
   }
 
   render() {
-    const { data, files, comments, activeFile, getFilePath } = this.props;
+    const { data, comments, activeFile, getFilePath } = this.props;
 
     return <g.Div flex="1" display="flex" flexDirection="column">
       <g.Div flex="none" zIndex={1000 /* for shadow */}>
@@ -41,11 +41,11 @@ export default class PullRequest extends Component {
       </g.Div>
       <g.Div flex="1" overflow="auto" display="flex">
         <g.Div flex="0 0 320px" display="flex">
-          {files && <FileTree
-            files={files}
+          <FileTree
+            files={data.files}
             activePath={activeFile && activeFile.filename}
             getFilePath={getFilePath}
-          />}
+          />
         </g.Div>
         <g.Div flex="1" display="flex" flexDirection="column" overflow="hidden">
           {activeFile && <FileHeader>{activeFile.filename}</FileHeader>}

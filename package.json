@@ -7,6 +7,7 @@
     "glamor": "^2.20.25",
     "glamorous": "^3.13.3",
     "highlight.js": "^9.11.0",
+    "http-link-header": "^0.8.0",
     "marked": "^0.3.6",
     "open-color": "^1.5.1",
     "react": "^15.5.4",
