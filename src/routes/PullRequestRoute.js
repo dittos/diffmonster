@@ -10,6 +10,7 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/publish';
 import 'rxjs/add/operator/startWith';
 import 'rxjs/add/operator/catch';
+import querystring from 'querystring';
 import Loading from '../ui/Loading';
 import PullRequest from '../ui/PullRequest';
 import {
@@ -81,8 +82,8 @@ export default class PullRequestRoute extends Component {
     if (data.notFound)
       return this._renderNotFound();
 
-    const queryParams = new URLSearchParams(this.props.location.search.substring(1));
-    const activePath = queryParams.get('path');
+    const queryParams = querystring.parse(this.props.location.search.substring(1));
+    const activePath = queryParams.path;
     let activeFile;
     if (activePath) {
       activeFile = data.files.filter(file => file.filename === activePath)[0];
