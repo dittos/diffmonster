@@ -30,19 +30,16 @@ export default class PullRequest extends Component {
   }
 
   render() {
-    const { data, comments, activeFile, getFilePath } = this.props;
+    const { pullRequest, files, comments, activeFile, getFilePath } = this.props;
 
     return <g.Div flex="1" display="flex" flexDirection="column">
       <g.Div flex="none" zIndex={1000 /* for shadow */}>
-        <PullRequestHeader
-          key={data.url}
-          pullRequest={data}
-        />
+        <PullRequestHeader pullRequest={pullRequest} />
       </g.Div>
       <g.Div flex="1" overflow="auto" display="flex">
         <g.Div flex="0 0 320px" display="flex">
           <FileTree
-            files={data.files}
+            files={files}
             activePath={activeFile && activeFile.filename}
             getFilePath={getFilePath}
           />
@@ -52,7 +49,7 @@ export default class PullRequest extends Component {
           <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
             {activeFile ?
               <PullRequestFile file={activeFile} comments={comments ? comments.filter(c => c.path === activeFile.filename) : []} /> :
-              <PullRequestBody dangerouslySetInnerHTML={{__html: marked(data.body, { gfm: true })}} />
+              <PullRequestBody dangerouslySetInnerHTML={{__html: marked(pullRequest.body, { gfm: true })}} />
             }
           </g.Div>
         </g.Div>

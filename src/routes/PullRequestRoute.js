@@ -2,10 +2,13 @@ import React, { Component } from 'react';
 import g from 'glamorous';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/observable/zip';
 import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/exhaustMap';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/publish';
 import 'rxjs/add/operator/startWith';
@@ -22,50 +25,47 @@ import { startAuth } from '../lib/GithubAuth';
 
 export default class PullRequestRoute extends Component {
   state = {
-    data: null,
+    data: { isLoading: true }
   };
-  match$ = new Subject();
+  props$ = new Subject();
+  refresh$ = new BehaviorSubject(false);
 
   componentDidMount() {
-    const pullRequest$ = this.match$
-      .distinctUntilChanged((a, b) => a.url === b.url && !b.refresh)
-      .map(match => match.params)
+    const match$ = this.props$.map(props => props.match);
+
+    this.subscription = Observable.combineLatest(
+        match$.distinctUntilChanged((a, b) => a.url === b.url),
+        this.refresh$
+      )
+      .map(([match, ]) => match.params)
       .switchMap(params =>
         Observable.zip(
           getPullRequest(params.owner, params.repo, params.id),
           getPullRequestFiles(params.owner, params.repo, params.id),
-          (pullRequest, files) => ({ ...pullRequest, files })
+          (pullRequest, files) => ({ pullRequest, files })
+        )
+        .exhaustMap(data =>
+          getPullRequestComments(data.pullRequest)
+            .map(comments => ({ ...data, comments }))
+            .startWith(data)
         )
         .catch(err => {
           if (err.status === 404) {
             return Observable.of({ notFound: true });
           } else {
             console.error(err)
-            return Observable.of(null);
+            return Observable.of({ isLoading: true });
           }
         })
-        .startWith(null)
+        .startWith({ isLoading: true })
       )
-      .publish();
+      .subscribe(data => this.setState({ data }));
 
-    pullRequest$
-      .subscribe(data => {
-        this.setState({ data, comments: [] });
-      });
-
-    pullRequest$
-      .filter(data => data !== null && !data.notFound)
-      .switchMap(data => getPullRequestComments(data))
-      .subscribe(comments => {
-        this.setState({ comments });
-      });
-
-    this.subscription = pullRequest$.connect();
-    this.match$.next(this.props.match);
+    this.props$.next(this.props);
   }
 
   componentWillReceiveProps(nextProps) {
-    this.match$.next(nextProps.match);
+    this.props$.next(nextProps);
   }
 
   componentWillUnmount() {
@@ -74,23 +74,24 @@ export default class PullRequestRoute extends Component {
   }
 
   render() {
-    const { data, comments } = this.state;
-
-    if (!data)
+    if (this.state.data.isLoading)
       return <Loading />;
     
-    if (data.notFound)
+    if (this.state.data.notFound)
       return this._renderNotFound();
+
+    const { pullRequest, files, comments = [] } = this.state.data;
 
     const queryParams = querystring.parse(this.props.location.search.substring(1));
     const activePath = queryParams.path;
     let activeFile;
     if (activePath) {
-      activeFile = data.files.filter(file => file.filename === activePath)[0];
+      activeFile = files.filter(file => file.filename === activePath)[0];
     }
 
     return <PullRequest
-      data={data}
+      pullRequest={pullRequest}
+      files={files}
       comments={comments}
       activeFile={activeFile}
       getFilePath={path => ({...this.props.location, search: `?path=${encodeURIComponent(path)}`})}
@@ -111,7 +112,7 @@ export default class PullRequestRoute extends Component {
 
   _login = event => {
     event.preventDefault();
-    this.setState({ data: null }); // Loading
-    startAuth().then(() => this.match$.next({ ...this.props.match, refresh: true }));
+    this.setState({ data: { isLoading: true } }); // Loading
+    startAuth().then(() => this.refresh$.next(true));
   };
 }

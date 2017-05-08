@@ -20,7 +20,7 @@ describe('PullRequestRoute', () => {
     Github.getPullRequestComments.mockReset();
   });
 
-  it('should render not found view', () => {
+  it('should render not found view', async () => {
     const wrapper = shallow(<PullRequestRoute
       location={{
         search: ''
@@ -43,10 +43,17 @@ describe('PullRequestRoute', () => {
 
     // Workaround: https://github.com/facebook/jest/issues/3135
     GithubAuth.startAuth = jest.fn();
-    GithubAuth.startAuth.mockReturnValue(Promise.resolve());
+    let _resolve;
+    const startAuthPromise = new Promise(resolve => _resolve = resolve);
+    GithubAuth.startAuth.mockReturnValue(startAuthPromise);
+
     // Workaround: https://github.com/airbnb/enzyme/issues/323
     wrapper.find('a').simulate('click', { preventDefault() {} });
     expect(wrapper.contains(<Loading />)).toEqual(true);
+
+    Github.getPullRequest.mockClear();
+    _resolve(); await startAuthPromise; // Promise actually resolves after a tick
+    expect(Github.getPullRequest).toHaveBeenCalled();
   });
 
   it('should render without selected file', () => {
@@ -87,10 +94,8 @@ describe('PullRequestRoute', () => {
     expect(Github.getPullRequestComments.mock.calls.length).toEqual(1);
     expect(wrapper.contains(<Loading />)).toEqual(false);
     expect(wrapper.type()).toEqual(PullRequest);
-    expect(wrapper.prop('data')).toEqual({
-      ...pullRequestFixture,
-      files: pullRequestFilesFixture,
-    });
+    expect(wrapper.prop('pullRequest')).toEqual(pullRequestFixture);
+    expect(wrapper.prop('files')).toEqual(pullRequestFilesFixture);
     expect(wrapper.prop('comments')).toEqual([]);
     expect(wrapper.prop('activeFile')).toEqual(undefined);
 
@@ -119,10 +124,8 @@ describe('PullRequestRoute', () => {
 
     expect(wrapper.contains(<Loading />)).toEqual(false);
     expect(wrapper.type()).toEqual(PullRequest);
-    expect(wrapper.prop('data')).toEqual({
-      ...pullRequestFixture,
-      files: pullRequestFilesFixture,
-    });
+    expect(wrapper.prop('pullRequest')).toEqual(pullRequestFixture);
+    expect(wrapper.prop('files')).toEqual(pullRequestFilesFixture);
     expect(wrapper.prop('comments')).toEqual(pullRequestCommentsFixture);
     expect(wrapper.prop('activeFile').filename).toEqual(path);
   });
