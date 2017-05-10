@@ -2,28 +2,22 @@ import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import g from 'glamorous';
 import oc from 'open-color';
-import marked from 'marked';
-import PullRequestHeader from '../ui/PullRequestHeader';
 import FileTree from '../ui/FileTree';
 import { parsePatch } from '../lib/PatchParser';
 import PullRequestFile from './PullRequestFile';
+import Summary from './Summary';
 
 const FileHeader = g.div({
-  padding: '16px',
+  padding: '0 16px',
+  lineHeight: '48px',
 
-  background: oc.gray[9],
-  color: oc.gray[5],
+  color: oc.gray[7],
+  boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+  zIndex: 1000,
 });
 
 const NoPreview = g.div({
   padding: '16px',
-});
-
-const PullRequestBody = g.div({
-  maxWidth: '50em',
-  margin: '0 auto',
-  lineHeight: 1.8,
-  fontSize: '14px',
 });
 
 export default class PullRequest extends Component {
@@ -41,13 +35,11 @@ export default class PullRequest extends Component {
     if (activeFile && activeFile.patch)
       parsedPatch = parsePatch(activeFile.patch);
 
-    return <g.Div flex="1" display="flex" flexDirection="column">
-      <g.Div flex="none" zIndex={1000 /* for shadow */}>
-        <PullRequestHeader pullRequest={pullRequest} />
-      </g.Div>
+    return (
       <g.Div flex="1" overflow="auto" display="flex">
-        <g.Div flex="0 0 320px" display="flex">
+        <g.Div flex="0 0 320px" overflow="hidden" display="flex" flexDirection="column">
           <FileTree
+            pullRequest={pullRequest}
             files={files}
             activePath={activeFile && activeFile.filename}
             getFilePath={getFilePath}
@@ -70,12 +62,12 @@ export default class PullRequest extends Component {
                   comments={comments ? comments.filter(c => c.path === activeFile.filename) : []}
                 /> :
                 <NoPreview>Binary file</NoPreview> :
-              <PullRequestBody dangerouslySetInnerHTML={{__html: marked(pullRequest.body, { gfm: true })}} />
+              <Summary pullRequest={pullRequest} />
             }
           </g.Div>
         </g.Div>
       </g.Div>
-    </g.Div>;
+    );
   }
 }
 

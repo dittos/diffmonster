@@ -12,19 +12,17 @@ const DiffTable = styled.table`
   font-size: 12px;
   font-family: monospace;
   border-collapse: collapse;
-  border-bottom: 1px solid ${oc.gray[3]};
+  margin: 0 16px 16px;
+`;
+
+const HunkGroup = styled.tbody`
+  border: 1px solid ${oc.gray[3]};
+  margin-bottom: 16px;
 `;
 
 const HunkHeaderRow = styled.tr`
-  background: ${oc.blue[0]};
-  color: ${oc.blue[4]};
-  border-top: 1px solid ${oc.gray[3]};
-  border-bottom: 1px solid ${oc.gray[3]};
+  color: ${oc.gray[6]};
   line-height: 32px;
-`;
-
-const HunkHeaderCell = styled.td`
-  padding: 0 10px;
 `;
 
 const BaseLineNumberCell = styled.td`
@@ -154,13 +152,9 @@ function Hunk({ hunk, commentsByPosition, language }) {
     }
   });
   return (
-    <tbody>
-      <HunkHeaderRow>
-        <td colSpan={2} />
-        <HunkHeaderCell>{hunk.header}</HunkHeaderCell>
-      </HunkHeaderRow>
+    <HunkGroup>
       {lines}
-    </tbody>
+    </HunkGroup>
   );
 }
 
@@ -184,13 +178,18 @@ export default function PullRequestFile({ file, parsedPatch, comments }) {
 
   return (
     <DiffTable>
-      {parsedPatch.map(hunk =>
+      {parsedPatch.map((hunk, i) =>
+        [<thead>
+          <HunkHeaderRow>
+            <td style={{paddingTop: i > 0 ? '16px' : 0}} colSpan={3}>{hunk.header}</td>
+          </HunkHeaderRow>
+        </thead>,
         <Hunk
           key={hunk.position}
           hunk={hunk}
           commentsByPosition={commentsByPosition}
           language={language}
-        />
+        />]
       )}
     </DiffTable>
   );

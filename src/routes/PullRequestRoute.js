@@ -94,7 +94,7 @@ export default class PullRequestRoute extends Component {
       files={files}
       comments={comments}
       activeFile={activeFile}
-      getFilePath={path => ({...this.props.location, search: `?path=${encodeURIComponent(path)}`})}
+      getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
     />;
   }
 

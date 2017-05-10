@@ -8,17 +8,35 @@ const FileList = g.div({
   display: 'flex',
   flexDirection: 'column',
   overflowY: 'auto',
-  paddingTop: '8px',
 
-  background: oc.gray[8],
-  color: oc.gray[5],
+  color: oc.gray[7],
+  backgroundColor: oc.gray[0],
+  borderRight: `1px solid ${oc.gray[3]}`,
 });
+
+const TitleLink = g(Link, {
+  forwardProps: ['to'],
+  rootEl: 'a',
+})(props => ({
+  flex: '0 0 auto',
+  display: 'block',
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+  margin: '0 16px',
+  lineHeight: '48px',
+
+  fontSize: '16px',
+  fontWeight: 'bold',
+  textDecoration: 'none',
+  color: oc.gray[8],
+}));
 
 const FileDirItem = g.div(props => ({
   display: 'block',
   paddingTop: '8px',
   paddingBottom: '8px',
-  paddingRight: '8px',
+  paddingRight: '16px',
   paddingLeft: `${props.depth * 16}px`,
 
   fontWeight: 'bold',
@@ -35,11 +53,15 @@ const FileItem = g(Link, {
   paddingLeft: `${props.depth * 16}px`,
 
   textDecoration: 'none',
-  background: props.active ? oc.gray[7] : 'inherit',
-  color: props.status === 'removed' ? oc.red[7] : oc.gray[5],
+  background: props.active ? oc.gray[2] : 'inherit',
+  color: props.status === 'removed' ?
+    oc.red[7] :
+      props.status === 'added' ?
+        oc.green[7] :
+          oc.gray[7],
 
   ':hover': {
-    background: oc.gray[7],
+    background: oc.gray[2],
   },
 }));
 
@@ -81,9 +103,14 @@ function mergeTreePaths(tree) {
 
 class FileTree extends React.Component {
   render() {
+    const { pullRequest, files } = this.props;
+
     return (
       <FileList>
-        {this._renderTree(makeTree(this.props.files))}
+        <TitleLink active={!this.props.activePath} to={this.props.getFilePath()}>
+          {pullRequest.title}
+        </TitleLink>
+        {this._renderTree(makeTree(files))}
       </FileList>
     );
   }
