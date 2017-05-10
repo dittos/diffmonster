@@ -9,11 +9,10 @@ import Summary from './Summary';
 
 const FileHeader = g.div({
   padding: '0 16px',
-  lineHeight: '48px',
+  lineHeight: `${48 - 1}px`,
 
   color: oc.gray[7],
-  boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
-  zIndex: 1000,
+  borderBottom: `1px solid ${oc.gray[3]}`,
 });
 
 const NoPreview = g.div({

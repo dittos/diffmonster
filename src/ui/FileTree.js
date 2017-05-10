@@ -38,6 +38,7 @@ const FileDirItem = g.div(props => ({
   paddingBottom: '8px',
   paddingRight: '16px',
   paddingLeft: `${props.depth * 16}px`,
+  lineHeight: '16px',
 
   fontWeight: 'bold',
 }));
