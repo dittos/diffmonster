@@ -59,7 +59,7 @@ export default class PullRequestRoute extends Component {
         })
         .startWith({ isLoading: true })
       )
-      .subscribe(data => this.setState({ data }));
+      .subscribe(data => this.setState({ data }), err => console.error(err));
 
     this.props$.next(this.props);
   }

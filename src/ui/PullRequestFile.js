@@ -4,12 +4,8 @@ import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
 import marked from 'marked';
-import { parsePatch, LineType } from '../lib/PatchParser';
+import { LineType } from '../lib/PatchParser';
 import { highlightDiff } from '../lib/DiffHighlight';
-
-const NoPreview = styled.div`
-  padding: 16px;
-`;
 
 const DiffTable = styled.table`
   line-height: 20px;
@@ -168,12 +164,7 @@ function Hunk({ hunk, commentsByPosition, language }) {
   );
 }
 
-export default function PullRequestFile({ file, comments }) {
-  if (!file.patch)
-    return <NoPreview>Binary file</NoPreview>;
-
-  const patch = parsePatch(file.patch);
-  
+export default function PullRequestFile({ file, parsedPatch, comments }) {
   const commentsByPosition = {};
   comments.forEach(comment => {
     if (comment.position) {
@@ -193,7 +184,7 @@ export default function PullRequestFile({ file, comments }) {
 
   return (
     <DiffTable>
-      {patch.map(hunk =>
+      {parsedPatch.map(hunk =>
         <Hunk
           key={hunk.position}
           hunk={hunk}
