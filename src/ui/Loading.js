@@ -1,5 +1,4 @@
 import React from 'react';
-import Spinner from 'react-spinner';
-import 'react-spinner/react-spinner.css';
+import { Spinner } from '@blueprintjs/core';
 
 export default Spinner;

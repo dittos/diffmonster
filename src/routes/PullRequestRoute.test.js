@@ -47,8 +47,7 @@ describe('PullRequestRoute', () => {
     const startAuthPromise = new Promise(resolve => _resolve = resolve);
     GithubAuth.startAuth.mockReturnValue(startAuthPromise);
 
-    // Workaround: https://github.com/airbnb/enzyme/issues/323
-    wrapper.find('a').simulate('click', { preventDefault() {} });
+    wrapper.instance()._login({ preventDefault() {} });
     expect(wrapper.contains(<Loading />)).toEqual(true);
 
     Github.getPullRequest.mockClear();

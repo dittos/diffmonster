@@ -1,22 +1,47 @@
 import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import g from 'glamorous';
-import oc from 'open-color';
+import { Colors, Classes } from '@blueprintjs/core';
 import FileTree from '../ui/FileTree';
 import { parsePatch } from '../lib/PatchParser';
 import PullRequestFile from './PullRequestFile';
-import Summary from './Summary';
-
-const FileHeader = g.div({
-  padding: '0 16px',
-  lineHeight: `${48 - 1}px`,
-
-  color: oc.gray[7],
-  borderBottom: `1px solid ${oc.gray[3]}`,
-});
+import Summary, { Header as SummaryHeader } from './Summary';
 
 const NoPreview = g.div({
   padding: '16px',
+});
+
+const Panel = g.div({
+  background: Colors.WHITE,
+  borderRadius: '3px',
+  boxShadow: '0 0 1px rgba(0, 0, 0, 0.2)',
+});
+
+const PanelHeader = g.div({
+  flex: '0',
+  padding: '0 16px',
+  lineHeight: '32px',
+  height: '32px',
+
+  color: Colors.GRAY1,
+  background: Colors.LIGHT_GRAY5,
+  borderBottom: `1px solid ${Colors.GRAY5}`,
+});
+
+const FileTreePanel = g(Panel)({
+  flex: '0 0 30%',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  margin: '0 6px 6px 6px',
+});
+
+const ContentPanel = g(Panel)({
+  flex: '1',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  margin: '0 6px 6px 0',
 });
 
 export default class PullRequest extends Component {
@@ -35,35 +60,44 @@ export default class PullRequest extends Component {
       parsedPatch = parsePatch(activeFile.patch);
 
     return (
-      <g.Div flex="1" overflow="auto" display="flex">
-        <g.Div flex="0 0 320px" overflow="hidden" display="flex" flexDirection="column">
-          <FileTree
-            pullRequest={pullRequest}
-            files={files}
-            activePath={activeFile && activeFile.filename}
-            getFilePath={getFilePath}
-          />
+      <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
+        <g.Div flex="0" className={Classes.DARK}>
+          <SummaryHeader pullRequest={pullRequest} />
         </g.Div>
-        <g.Div flex="1" display="flex" flexDirection="column" overflow="hidden">
-          {activeFile &&
-            <FileHeader>
-              <g.Div float="right">
-                <a href={getBlobUrlWithLine(activeFile, parsedPatch)} target="_blank">View</a>
-              </g.Div>
-              {activeFile.filename}
-            </FileHeader>}
-          <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
-            {activeFile ?
-              parsedPatch ?
-                <PullRequestFile
-                  file={activeFile}
-                  parsedPatch={parsedPatch}
-                  comments={comments ? comments.filter(c => c.path === activeFile.filename) : []}
-                /> :
-                <NoPreview>Binary file</NoPreview> :
-              <Summary pullRequest={pullRequest} />
-            }
-          </g.Div>
+        <g.Div flex="1" display="flex" overflow="auto">
+          <FileTreePanel>
+            <PanelHeader>
+              Files
+            </PanelHeader>
+            <g.Div flex="1" overflowY="auto">
+              <FileTree
+                files={files}
+                activePath={activeFile && activeFile.filename}
+                getFilePath={getFilePath}
+              />
+            </g.Div>
+          </FileTreePanel>
+          <ContentPanel>
+            {activeFile &&
+              <PanelHeader>
+                <g.Div float="right">
+                  <a href={getBlobUrlWithLine(activeFile, parsedPatch)} target="_blank">View</a>
+                </g.Div>
+                {activeFile.filename}
+              </PanelHeader>}
+            <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
+              {activeFile ?
+                parsedPatch ?
+                  <PullRequestFile
+                    file={activeFile}
+                    parsedPatch={parsedPatch}
+                    comments={comments ? comments.filter(c => c.path === activeFile.filename) : []}
+                  /> :
+                  <NoPreview>Binary file</NoPreview> :
+                <Summary pullRequest={pullRequest} />
+              }
+            </g.Div>
+          </ContentPanel>
         </g.Div>
       </g.Div>
     );

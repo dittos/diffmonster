@@ -1,70 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import g from 'glamorous';
-import oc from 'open-color';
-
-const FileList = g.div({
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  overflowY: 'auto',
-
-  color: oc.gray[7],
-  backgroundColor: oc.gray[0],
-  borderRight: `1px solid ${oc.gray[3]}`,
-});
-
-const TitleLink = g(Link, {
-  forwardProps: ['to'],
-  rootEl: 'a',
-})(props => ({
-  flex: '0 0 auto',
-  display: 'block',
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-  margin: '0 16px',
-  lineHeight: '48px',
-
-  fontSize: '16px',
-  fontWeight: 'bold',
-  textDecoration: 'none',
-  color: oc.gray[8],
-}));
-
-const FileDirItem = g.div(props => ({
-  display: 'block',
-  paddingTop: '8px',
-  paddingBottom: '8px',
-  paddingRight: '16px',
-  paddingLeft: `${props.depth * 16}px`,
-  lineHeight: '16px',
-
-  fontWeight: 'bold',
-}));
-
-const FileItem = g(Link, {
-  forwardProps: ['to'],
-  rootEl: 'a',
-})(props => ({
-  display: 'block',
-  paddingTop: '8px',
-  paddingBottom: '8px',
-  paddingRight: '8px',
-  paddingLeft: `${props.depth * 16}px`,
-
-  textDecoration: 'none',
-  background: props.active ? oc.gray[2] : 'inherit',
-  color: props.status === 'removed' ?
-    oc.red[7] :
-      props.status === 'added' ?
-        oc.green[7] :
-          oc.gray[7],
-
-  ':hover': {
-    background: oc.gray[2],
-  },
-}));
+import { withRouter } from 'react-router';
+import { Tree } from '@blueprintjs/core';
 
 function makeTree(files) {
   const tree = {name: '', dirs: {}};
@@ -72,9 +8,11 @@ function makeTree(files) {
     const parts = file.filename.split('/');
     parts.pop();
     var curNode = tree;
+    var id = '';
     for (let dir of parts) {
+      id += '/' + id;
       if (!curNode.dirs[dir])
-        curNode.dirs[dir] = {name: dir, dirs: {}};
+        curNode.dirs[dir] = {id, name: dir, dirs: {}};
       curNode = curNode.dirs[dir];
     }
     if (!curNode.files)
@@ -102,43 +40,53 @@ function mergeTreePaths(tree) {
   return tree;
 }
 
+const ICON_NAME_BY_STATUS = {
+  added: 'add',
+  removed: 'delete',
+};
+
 class FileTree extends React.Component {
   render() {
-    const { pullRequest, files } = this.props;
+    const { files } = this.props;
 
     return (
-      <FileList>
-        <TitleLink active={!this.props.activePath} to={this.props.getFilePath()}>
-          {pullRequest.title}
-        </TitleLink>
-        {this._renderTree(makeTree(files))}
-      </FileList>
+      <Tree
+        contents={this._renderTree(makeTree(files))}
+        onNodeClick={this._onNodeClick.bind(this)}
+      />
     );
   }
 
-  _renderTree(tree, depth = 1) {
-    const els = [];
+  _renderTree(tree) {
+    const nodes = [];
     for (let dir of Object.keys(tree.dirs)) {
       const subtree = tree.dirs[dir];
-      els.push(<FileDirItem depth={depth} key={subtree.name}>{subtree.name}/</FileDirItem>);
-      els.push(this._renderTree(subtree, depth + 1));
+      nodes.push({
+        key: subtree.id,
+        label: subtree.name,
+        childNodes: this._renderTree(subtree),
+        isExpanded: true,
+      });
     }
     if (tree.files) {
       for (let file of tree.files) {
         const path = file.filename;
-        els.push(<FileItem
-          key={path}
-          depth={depth}
-          status={file.status}
-          active={this.props.activePath === path}
-          to={this.props.getFilePath(path)}
-        >
-          {path.split('/').pop()}
-        </FileItem>);
+        nodes.push({
+          id: path,
+          iconName: ICON_NAME_BY_STATUS[file.status],
+          label: path.split('/').pop(),
+          isSelected: this.props.activePath === path,
+        });
       }
     }
-    return els;
+    return nodes;
+  }
+
+  _onNodeClick(node) {
+    if (!node.isSelected && node.id) {
+      this.props.history.push(this.props.getFilePath(node.id));
+    }
   }
 }
 
-export default FileTree;
+export default withRouter(FileTree);

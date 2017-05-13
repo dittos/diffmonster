@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import g from 'glamorous';
+import { NonIdealState } from '@blueprintjs/core';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
@@ -100,13 +101,15 @@ export default class PullRequestRoute extends Component {
 
   _renderNotFound() {
     return (
-      <g.Div margin="auto" textAlign="center">
-        <h1>Not Found</h1>
-
-        <p>
-          <a href="#" onClick={this._login}>Login with GitHub</a> to view private repos.
-        </p>
-      </g.Div>
+      <NonIdealState
+        title="Not Found"
+        visual="warning-sign"
+        description={
+          <p>
+            <a href="#" onClick={this._login}>Login with GitHub</a> to view private repos.
+          </p>
+        }
+      />
     )
   }
 

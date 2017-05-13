@@ -1,20 +1,14 @@
+@import "~@blueprintjs/core/dist/blueprint.css";
+
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Roboto', sans-serif;
-  line-height: 1;
 }
 
-a {
-  color: inherit;
-}
-
-.react-spinner {
-  width: 64px;
-  height: 64px;
+.pt-spinner {
   position: absolute; /* Fix for WebKit (don't know why) */
-}
-
-.react-spinner_bar {
-  background: #000;
+  top: 50%;
+  left: 50%;
+  margin-left: -25px;
+  margin-top: -25px;
 }

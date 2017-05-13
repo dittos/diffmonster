@@ -1,5 +1,6 @@
 import React from 'react';
-import styled from 'styled-components';
+import g from 'glamorous';
+import { Colors } from '@blueprintjs/core';
 import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
@@ -7,85 +8,91 @@ import marked from 'marked';
 import { LineType } from '../lib/PatchParser';
 import { highlightDiff } from '../lib/DiffHighlight';
 
-const DiffTable = styled.table`
-  line-height: 20px;
-  font-size: 12px;
-  font-family: monospace;
-  border-collapse: collapse;
-  margin: 0 16px 16px;
-`;
+const DiffTable = g.table({
+  lineHeight: '20px',
+  fontSize: '12px',
+  fontFamily: 'monospace',
+  borderCollapse: 'collapse',
+  margin: '0 16px 16px',
+});
 
-const HunkGroup = styled.tbody`
-  border: 1px solid ${oc.gray[3]};
-  margin-bottom: 16px;
-`;
+const HunkGroup = g.tbody({
+  border: `1px solid ${Colors.LIGHT_GRAY1}`,
+  marginBottom: '16px',
+});
 
-const HunkHeaderRow = styled.tr`
-  color: ${oc.gray[6]};
-  line-height: 32px;
-`;
+const HunkHeaderRow = g.tr({
+  lineHeight: '32px',
+});
 
-const BaseLineNumberCell = styled.td`
-  width: 1%;
-  min-width: 50px;
-  padding: 0 10px;
-  box-sizing: border-box;
-  text-align: right;
-  vertical-align: top;
-  color: ${oc.gray[6]};
-  border-right: 1px solid ${oc.gray[3]};
-`;
+const BaseLineNumberCell = g.td({
+  width: '1%',
+  minWidth: '50px',
+  padding: '0 10px',
+  boxSizing: 'border-box',
+  textAlign: 'right',
+  verticalAlign: 'top',
+  borderRight: `1px solid ${Colors.LIGHT_GRAY2}`,
+});
 
-const BaseContentCell = styled.td`
-  white-space: pre-wrap;
-  padding: 0 10px;
-`;
+const BaseContentCell = g.td({
+  whiteSpace: 'pre-wrap',
+  padding: '0 10px',
+});
 
 const LineTypeComponents = {
   [LineType.CONTEXT]: {
-    LineNumberCell: styled(BaseLineNumberCell)`
-      background: ${oc.gray[0]};
-    `,
+    LineNumberCell: g(BaseLineNumberCell)({
+      background: Colors.LIGHT_GRAY5,
+    }),
     ContentCell: BaseContentCell,
   },
   [LineType.DELETION]: {
-    LineNumberCell: styled(BaseLineNumberCell)`
-      background: ${oc.red[2]};
-      border-color: ${oc.red[2]};
-    `,
-    ContentCell: styled(BaseContentCell)`
-      background: ${oc.red[1]};
-    `,
-    Highlight: styled.span`
-      background: ${oc.red[3]};
-    `,
+    LineNumberCell: g(BaseLineNumberCell)({
+      background: oc.red[2],
+      borderColor: oc.red[2],
+    }),
+    ContentCell: g(BaseContentCell)({
+      background: oc.red[1],
+    }),
+    Highlight: g.span({
+      background: oc.red[3],
+    }),
   },
   [LineType.ADDITION]: {
-    LineNumberCell: styled(BaseLineNumberCell)`
-      background: ${oc.green[2]};
-      border-color: ${oc.green[2]};
-    `,
-    ContentCell: styled(BaseContentCell)`
-      background: ${oc.green[1]};
-    `,
-    Highlight: styled.span`
-      background: ${oc.green[3]};
-    `,
+    LineNumberCell: g(BaseLineNumberCell)({
+      background: oc.green[2],
+      borderColor: oc.green[2],
+    }),
+    ContentCell: g(BaseContentCell)({
+      background: oc.green[1],
+    }),
+    Highlight: g.span({
+      background: oc.green[3],
+    }),
   },
 };
 
-const Comment = styled.div`
-  padding: 8px;
-  margin: 8px;
-  border: 1px solid ${oc.gray[4]};
-  border-radius: 2px;
-  font-family: sans-serif;
-  color: ${oc.gray[8]};
-`;
+const CommentContainer = g.div({
+  borderTop: `1px solid ${Colors.LIGHT_GRAY2}`,
+  borderBottom: `1px solid ${Colors.LIGHT_GRAY2}`,
+});
 
-const CommentUser = styled.a`
-  font-weight: bold;
-`;
+const Comment = g.div({
+  padding: '8px',
+  margin: '8px',
+  border: `1px solid ${Colors.GRAY5}`,
+  borderRadius: '3px',
+  fontFamily: 'sans-serif',
+});
+
+const CommentMeta = g.div({
+  paddingBottom: '8px',
+});
+
+const CommentUser = g.a({
+  fontWeight: 'bold',
+});
 
 class Highlighter {
   constructor(lang) {
@@ -102,16 +109,16 @@ class Highlighter {
 
 function CommentThread({ comments }) {
   return (
-    <div>
+    <CommentContainer>
       {comments.map((comment, i) =>
         <Comment first={i === 0} key={comment.id}>
-          <div>
+          <CommentMeta>
             <CommentUser>{comment.user.login}</CommentUser>
-          </div>
+          </CommentMeta>
           <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
         </Comment>
       )}
-    </div>
+    </CommentContainer>
   );
 }
 
@@ -144,7 +151,7 @@ function Hunk({ hunk, commentsByPosition, language }) {
     if (comments) {
       lines.push(
         <tr key={'C' + comments[0].id}>
-          <td colSpan={3}>
+          <td colSpan={3} style={{padding: 0}}>
             <CommentThread comments={comments} />
           </td>
         </tr>

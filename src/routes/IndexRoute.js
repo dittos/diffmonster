@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import g from 'glamorous';
-import oc from 'open-color';
+import { Colors } from '@blueprintjs/core';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/zip';
 import 'rxjs/add/operator/switchMap';
@@ -13,17 +13,13 @@ const Container = g.div({
   maxWidth: '50em',
   margin: '0 auto',
   padding: '16px',
-  color: oc.gray[7],
 });
 
-const PageTitle = g.div({
-  fontSize: '32px',
+const PageTitle = g.h2({
   marginBottom: '32px',
 });
 
-const SectionTitle = g.div({
-  fontSize: '16px',
-  fontWeight: 'bold',
+const SectionTitle = g.h3({
 });
 
 const ResultList = g.div({
@@ -45,10 +41,8 @@ const ResultItem = g(Link, {
 });
 
 const Repo = g.span({
-  borderRight: `1px solid ${oc.gray[3]}`,
-  paddingRight: '8px',
   marginRight: '8px',
-  color: oc.gray[6],
+  color: Colors.GRAY1,
 });
 
 const Title = g.span({
