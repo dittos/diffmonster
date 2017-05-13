@@ -1,11 +1,11 @@
 import React, { Component } from 'react';
 import { Route } from 'react-router-dom';
-import 'rxjs/add/operator/first';
 import g from 'glamorous';
 import PullRequestRoute from './PullRequestRoute';
 import IndexRoute from './IndexRoute';
 import * as GithubAuth from '../lib/GithubAuth';
 import Loading from '../ui/Loading';
+import Nav from '../ui/Nav';
 
 const Viewport = g.div({
   position: 'absolute',
@@ -14,6 +14,7 @@ const Viewport = g.div({
   left: 0,
   right: 0,
   display: 'flex',
+  flexDirection: 'column',
 
   fontSize: '13px',
 });
@@ -39,6 +40,7 @@ class App extends Component {
     } else {
       return (
         <Viewport>
+          <Nav />
           <Route path="/:owner/:repo/pull/:id" component={PullRequestRoute} />
           <Route exact path="/" component={IndexRoute} />
         </Viewport>
