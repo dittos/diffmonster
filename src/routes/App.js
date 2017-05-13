@@ -3,7 +3,7 @@ import { Route } from 'react-router-dom';
 import 'rxjs/add/operator/first';
 import g from 'glamorous';
 import PullRequestRoute from './PullRequestRoute';
-import Index from './Index';
+import IndexRoute from './IndexRoute';
 import * as GithubAuth from '../lib/GithubAuth';
 import Loading from '../ui/Loading';
 
@@ -40,7 +40,7 @@ class App extends Component {
       return (
         <Viewport>
           <Route path="/:owner/:repo/pull/:id" component={PullRequestRoute} />
-          <Route exact path="/" component={Index} />
+          <Route exact path="/" component={IndexRoute} />
         </Viewport>
       );
     }

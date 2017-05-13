@@ -5,6 +5,8 @@ import 'rxjs/add/operator/exhaustMap';
 import LinkHeader from 'http-link-header';
 import { getAccessToken } from './GithubAuth';
 
+const BASE_URL = 'https://api.github.com';
+
 function ajax(request) {
   if (!request.responseType)
     request.responseType = 'json'; 
@@ -55,4 +57,18 @@ export function getPullRequestComments(pullRequest) {
       'Accept': 'application/vnd.github.black-cat-preview+json'
     }
   }));
+}
+
+export function getAuthenticatedUser() {
+  return ajax({
+    url: `${BASE_URL}/user`,
+    method: 'get',
+  }).map(resp => resp.response);
+}
+
+export function searchIssues(q) {
+  return ajax({
+    url: `${BASE_URL}/search/issues?q=${encodeURIComponent(q)}`,
+    method: 'get',
+  }).map(resp => resp.response);
 }
