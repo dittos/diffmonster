@@ -30,17 +30,12 @@ const separator = <Separator />;
 
 const PullRequestBody = g.div({
   maxWidth: '50em',
-  margin: '0 auto',
+  margin: '16px auto',
 });
 
 const Title = g.div({
   display: 'flex',
   fontWeight: 'bold',
-});
-
-const TitleIcon = g.span({
-  marginRight: '8px',
-  textAlign: 'center',
 });
 
 export function Header({ pullRequest }) {

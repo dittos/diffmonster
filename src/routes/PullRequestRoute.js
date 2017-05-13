@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import g from 'glamorous';
 import { NonIdealState } from '@blueprintjs/core';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';

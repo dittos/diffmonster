@@ -26,12 +26,7 @@ const ResultList = g.div({
   }
 });
 
-const ResultItem = g(Link, {
-  forwardProps: ['to'],
-  rootEl: 'a',
-})({
-  display: 'block',
-  textDecoration: 'none',
+const ResultItem = g.div({
   color: 'inherit',
   padding: '8px 0',
   overflow: 'hidden',
@@ -44,8 +39,10 @@ const Repo = g.span({
   color: Colors.GRAY1,
 });
 
-const Title = g.span({
-  fontWeight: 'bold',
+const Title = g(Link, {
+  forwardProps: ['to'],
+  rootEl: 'a',
+})({
 });
 
 function parsePullRequestHtmlUrl(htmlUrl) {
@@ -102,13 +99,12 @@ export default class Inbox extends React.Component {
         {result.items.map(item => {
           const { owner, repo, pullRequestId } = parsePullRequestHtmlUrl(item.html_url);
           return (
-            <ResultItem
-              key={item.id}
-              to={`/${owner}/${repo}/pull/${pullRequestId}`}
-              onClick={this.props.onLinkClick}
-            >
+            <ResultItem key={item.id}>
               <Repo>{owner}/{repo}</Repo>
-              <Title>{item.title}</Title>
+              <Title
+                to={`/${owner}/${repo}/pull/${pullRequestId}`}
+                onClick={this.props.onLinkClick}
+              >{item.title}</Title>
             </ResultItem>
           );
         })}

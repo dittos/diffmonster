@@ -3,6 +3,7 @@ import { withRouter } from 'react-router';
 import { Tree } from '@blueprintjs/core';
 
 function makeTree(files) {
+  // TODO: extract function and add test
   const tree = {name: '', dirs: {}};
   for (let file of files) {
     const parts = file.filename.split('/');
@@ -10,7 +11,7 @@ function makeTree(files) {
     var curNode = tree;
     var id = '';
     for (let dir of parts) {
-      id += '/' + id;
+      id += '/' + dir;
       if (!curNode.dirs[dir])
         curNode.dirs[dir] = {id, name: dir, dirs: {}};
       curNode = curNode.dirs[dir];
@@ -23,11 +24,13 @@ function makeTree(files) {
 }
 
 function mergeTreePaths(tree) {
+  // TODO: extract function and add test
   const dirs = Object.keys(tree.dirs);
   const merged = tree;
   if (dirs.length === 1 && !tree.files) {
     const dir = tree.dirs[dirs[0]];
     tree = mergeTreePaths({
+      id: tree.id + '/' + dir.name,
       name: tree.name + '/' + dir.name,
       dirs: dir.dirs,
       files: dir.files
@@ -49,6 +52,7 @@ class FileTree extends React.Component {
   render() {
     const { files } = this.props;
 
+    // TODO: collapsible
     return (
       <Tree
         contents={this._renderTree(makeTree(files))}
@@ -62,7 +66,7 @@ class FileTree extends React.Component {
     for (let dir of Object.keys(tree.dirs)) {
       const subtree = tree.dirs[dir];
       nodes.push({
-        key: subtree.id,
+        id: subtree.id,
         label: subtree.name,
         childNodes: this._renderTree(subtree),
         isExpanded: true,
@@ -76,6 +80,7 @@ class FileTree extends React.Component {
           iconName: ICON_NAME_BY_STATUS[file.status],
           label: path.split('/').pop(),
           isSelected: this.props.activePath === path,
+          _path: path,
         });
       }
     }
@@ -83,8 +88,8 @@ class FileTree extends React.Component {
   }
 
   _onNodeClick(node) {
-    if (!node.isSelected && node.id) {
-      this.props.history.push(this.props.getFilePath(node.id));
+    if (!node.isSelected && node._path) {
+      this.props.history.push(this.props.getFilePath(node._path));
     }
   }
 }
