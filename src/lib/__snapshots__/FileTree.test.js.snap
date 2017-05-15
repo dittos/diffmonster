@@ -1,0 +1,97 @@
+exports[`makeTree should concatenate dirs with only a dir 1`] = `
+Object {
+  "dirs": Object {
+    "b/c": Object {
+      "dirs": Object {
+        "d": Object {
+          "dirs": Object {},
+          "files": Array [
+            "b/c/d/1",
+            "b/c/d/2",
+          ],
+          "name": "d",
+        },
+        "e": Object {
+          "dirs": Object {},
+          "files": Array [
+            "b/c/e/1",
+            "b/c/e/2",
+          ],
+          "name": "e",
+        },
+      },
+      "files": undefined,
+      "name": "b/c",
+    },
+  },
+}
+`;
+
+exports[`makeTree should concatenate dirs with only a dir 2`] = `
+Object {
+  "dirs": Object {
+    "a": Object {
+      "dirs": Object {},
+      "files": Array [
+        "a/1",
+        "a/2",
+      ],
+      "name": "a",
+    },
+    "b/c": Object {
+      "dirs": Object {
+        "d": Object {
+          "dirs": Object {},
+          "files": Array [
+            "b/c/d/1",
+            "b/c/d/2",
+          ],
+          "name": "d",
+        },
+        "e": Object {
+          "dirs": Object {},
+          "files": Array [
+            "b/c/e/1",
+            "b/c/e/2",
+          ],
+          "name": "e",
+        },
+      },
+      "files": undefined,
+      "name": "b/c",
+    },
+  },
+}
+`;
+
+exports[`makeTree should group files by dir 1`] = `
+Object {
+  "dirs": Object {
+    "a": Object {
+      "dirs": Object {},
+      "files": Array [
+        "a/1",
+        "a/2",
+      ],
+      "name": "a",
+    },
+    "b": Object {
+      "dirs": Object {
+        "c": Object {
+          "dirs": Object {},
+          "files": Array [
+            "b/c/1",
+            "b/c/2",
+          ],
+          "name": "c",
+        },
+      },
+      "files": Array [
+        "b/1",
+        "b/2",
+      ],
+      "name": "b",
+    },
+  },
+}
+`;

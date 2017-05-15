@@ -1,47 +1,7 @@
 import React from 'react';
 import { withRouter } from 'react-router';
 import { Tree } from '@blueprintjs/core';
-
-function makeTree(files) {
-  // TODO: extract function and add test
-  const tree = {name: '', dirs: {}};
-  for (let file of files) {
-    const parts = file.filename.split('/');
-    parts.pop();
-    var curNode = tree;
-    var id = '';
-    for (let dir of parts) {
-      id += '/' + dir;
-      if (!curNode.dirs[dir])
-        curNode.dirs[dir] = {id, name: dir, dirs: {}};
-      curNode = curNode.dirs[dir];
-    }
-    if (!curNode.files)
-      curNode.files = [];
-    curNode.files.push(file);
-  }
-  return mergeTreePaths(tree);
-}
-
-function mergeTreePaths(tree) {
-  // TODO: extract function and add test
-  const dirs = Object.keys(tree.dirs);
-  const merged = tree;
-  if (dirs.length === 1 && !tree.files) {
-    const dir = tree.dirs[dirs[0]];
-    tree = mergeTreePaths({
-      id: tree.id + '/' + dir.name,
-      name: tree.name + '/' + dir.name,
-      dirs: dir.dirs,
-      files: dir.files
-    });
-  } else {
-    for (let dir of dirs) {
-      merged.dirs[dir] = mergeTreePaths(tree.dirs[dir]);
-    }
-  }
-  return tree;
-}
+import { makeTree } from '../lib/FileTree';
 
 const ICON_NAME_BY_STATUS = {
   added: 'add',
@@ -61,14 +21,15 @@ class FileTree extends React.Component {
     );
   }
 
-  _renderTree(tree) {
+  _renderTree(tree, prefix = '') {
     const nodes = [];
     for (let dir of Object.keys(tree.dirs)) {
       const subtree = tree.dirs[dir];
+      const subPrefix = prefix + '/' + subtree.name;
       nodes.push({
-        id: subtree.id,
+        id: subPrefix,
         label: subtree.name,
-        childNodes: this._renderTree(subtree),
+        childNodes: this._renderTree(subtree, subPrefix),
         isExpanded: true,
       });
     }
