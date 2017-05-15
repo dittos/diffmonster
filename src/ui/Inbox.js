@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import g from 'glamorous';
-import { Colors } from '@blueprintjs/core';
+import { Colors, Tab2, Tabs2, NonIdealState } from '@blueprintjs/core';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/zip';
 import 'rxjs/add/operator/switchMap';
@@ -9,26 +9,19 @@ import Loading from '../ui/Loading';
 import { getAuthenticatedUser, searchIssues } from '../lib/Github';
 
 const Container = g.div({
-  padding: '16px',
+  padding: '8px 16px',
 });
 
-const SectionTitle = g.div({
-  fontWeight: 'bold',
+const Empty = g.div({
+  paddingTop: '32px',
 });
 
 const ResultList = g.div({
-  padding: '8px 0',
-  marginBottom: '16px',
-
-  '&:last-child': {
-    margin: 0,
-    paddingBottom: 0,
-  }
 });
 
 const ResultItem = g.div({
   color: 'inherit',
-  padding: '8px 0',
+  paddingBottom: '16px',
   overflow: 'hidden',
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
@@ -66,7 +59,9 @@ export default class Inbox extends React.Component {
       .switchMap(user => Observable.zip(
         searchIssues(`type:pr is:open reviewed-by:${user.login}`),
         searchIssues(`type:pr is:open review-requested:${user.login}`),
-        (reviewing, toReview) => ({ reviewing, toReview })
+        searchIssues(`type:pr is:open author:${user.login}`),
+        (reviewed, reviewRequested, created) =>
+          ({ reviewed, reviewRequested, created })
       ))
       .subscribe(data => this.setState({ data }), err => console.error(err));
   }
@@ -84,31 +79,55 @@ export default class Inbox extends React.Component {
 
     return (
       <Container>
-        <SectionTitle>To Review</SectionTitle>
-        {this._renderResult(data.toReview)}
-
-        <SectionTitle>Reviewing</SectionTitle>
-        {this._renderResult(data.reviewing)}
+        <Tabs2 id="inboxTabs">
+          {this._renderTab({
+            id: 'reviewRequested',
+            title: 'Review Requested',
+            result: data.reviewRequested,
+          })}
+          {this._renderTab({
+            id: 'reviewed',
+            title: 'Reviewed',
+            result: data.reviewed,
+          })}
+          {this._renderTab({
+            id: 'created',
+            title: 'Created',
+            result: data.created,
+          })}
+        </Tabs2>
       </Container>
     );
   }
 
-  _renderResult(result) {
-    return (
-      <ResultList>
-        {result.items.map(item => {
-          const { owner, repo, pullRequestId } = parsePullRequestHtmlUrl(item.html_url);
-          return (
-            <ResultItem key={item.id}>
-              <Repo>{owner}/{repo}</Repo>
-              <Title
-                to={`/${owner}/${repo}/pull/${pullRequestId}`}
-                onClick={this.props.onLinkClick}
-              >{item.title}</Title>
-            </ResultItem>
-          );
-        })}
-      </ResultList>
-    );
+  _renderTab({ id, title, result }) {
+    let panel;
+
+    if (result.items.length === 0) {
+      panel = <Empty><NonIdealState title="Hooray!" visual="tick" /></Empty>;
+    } else {
+      panel = (
+        <ResultList>
+          {result.items.map(item => {
+            const { owner, repo, pullRequestId } = parsePullRequestHtmlUrl(item.html_url);
+            return (
+              <ResultItem key={item.id}>
+                <Repo>{owner}/{repo}</Repo>
+                <Title
+                  to={`/${owner}/${repo}/pull/${pullRequestId}`}
+                  onClick={this.props.onLinkClick}
+                >{item.title}</Title>
+              </ResultItem>
+            );
+          })}
+        </ResultList>
+      );
+    }
+
+    return <Tab2
+      id={id}
+      title={`${title} (${result.items.length}${result.incomplete_results ? '+' : ''})`}
+      panel={panel}
+    />;
   }
 }

@@ -7,7 +7,7 @@ import Inbox from '../ui/Inbox';
 const inboxPopover = css({
   '& .pt-popover-content': {
     width: '40em',
-    minHeight: '10em',
+    minHeight: '20em',
     maxHeight: '30em',
     overflowY: 'auto',
   }
