@@ -92,15 +92,17 @@ describe('PullRequestRoute', () => {
     pullRequestFiles$.complete();
     expect(Github.getPullRequestComments.mock.calls.length).toEqual(1);
     expect(wrapper.contains(<Loading />)).toEqual(false);
-    expect(wrapper.type()).toEqual(PullRequest);
-    expect(wrapper.prop('pullRequest')).toEqual(pullRequestFixture);
-    expect(wrapper.prop('files')).toEqual(pullRequestFilesFixture);
-    expect(wrapper.prop('comments')).toEqual([]);
-    expect(wrapper.prop('activeFile')).toEqual(undefined);
+    const pr = wrapper.find(PullRequest);
+    expect(pr.length).toEqual(1);
+    expect(pr.prop('pullRequest')).toEqual(pullRequestFixture);
+    expect(pr.prop('files')).toEqual(pullRequestFilesFixture);
+    expect(pr.prop('comments')).toEqual([]);
+    expect(pr.prop('activeFile')).toEqual(undefined);
 
     pullRequestComments$.next(pullRequestCommentsFixture);
     pullRequestComments$.complete();
-    expect(wrapper.prop('comments')).toEqual(pullRequestCommentsFixture);
+    expect(wrapper.find(PullRequest).prop('comments'))
+      .toEqual(pullRequestCommentsFixture);
   });
 
   it('should render with selected file', () => {
@@ -122,10 +124,11 @@ describe('PullRequestRoute', () => {
     wrapper.instance().componentDidMount();
 
     expect(wrapper.contains(<Loading />)).toEqual(false);
-    expect(wrapper.type()).toEqual(PullRequest);
-    expect(wrapper.prop('pullRequest')).toEqual(pullRequestFixture);
-    expect(wrapper.prop('files')).toEqual(pullRequestFilesFixture);
-    expect(wrapper.prop('comments')).toEqual(pullRequestCommentsFixture);
-    expect(wrapper.prop('activeFile').filename).toEqual(path);
+    const pr = wrapper.find(PullRequest);
+    expect(pr.length).toEqual(1);
+    expect(pr.prop('pullRequest')).toEqual(pullRequestFixture);
+    expect(pr.prop('files')).toEqual(pullRequestFilesFixture);
+    expect(pr.prop('comments')).toEqual(pullRequestCommentsFixture);
+    expect(pr.prop('activeFile').filename).toEqual(path);
   });
 });

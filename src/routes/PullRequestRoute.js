@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { NonIdealState } from '@blueprintjs/core';
+import DocumentTitle from 'react-document-title';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
@@ -89,13 +90,17 @@ export default class PullRequestRoute extends Component {
       activeFile = files.filter(file => file.filename === activePath)[0];
     }
 
-    return <PullRequest
-      pullRequest={pullRequest}
-      files={files}
-      comments={comments}
-      activeFile={activeFile}
-      getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
-    />;
+    return (
+      <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
+        <PullRequest
+          pullRequest={pullRequest}
+          files={files}
+          comments={comments}
+          activeFile={activeFile}
+          getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
+        />
+      </DocumentTitle>
+    );
   }
 
   _renderNotFound() {
