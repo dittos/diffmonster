@@ -41,8 +41,6 @@ describe('PullRequestRoute', () => {
     expect(wrapper.contains(<Loading />)).toEqual(false);
     expect(wrapper.type()).not.toEqual(PullRequest);
 
-    // Workaround: https://github.com/facebook/jest/issues/3135
-    GithubAuth.startAuth = jest.fn();
     let _resolve;
     const startAuthPromise = new Promise(resolve => _resolve = resolve);
     GithubAuth.startAuth.mockReturnValue(startAuthPromise);
