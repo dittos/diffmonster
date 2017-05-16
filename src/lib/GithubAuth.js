@@ -5,24 +5,9 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/publish';
 import 'rxjs/add/operator/first';
+import { refValues, githubTokenRef } from './FirebaseRefs';
 
 let _accessToken;
-
-function githubTokenRef(uid) {
-  return firebase.database().ref(`githubTokens/${uid}`);
-}
-
-function fetchGithubToken(uid) {
-  return Observable.create(obs => {
-    const ref = githubTokenRef(uid);
-    const callback = ref.on('value', snapshot => obs.next(snapshot.val()), err => obs.error(err));
-    return () => ref.off('value', callback);
-  });
-}
-
-function setGithubToken(uid, token) {
-  return githubTokenRef(uid).set(token);
-}
 
 export async function startAuth() {
   const provider = new firebase.auth.GithubAuthProvider();
@@ -33,7 +18,7 @@ export async function startAuth() {
 
   const result = await firebase.auth().signInWithPopup(provider);
   _accessToken = result.credential.accessToken;
-  return setGithubToken(result.user.uid, result.credential.accessToken);
+  return githubTokenRef(result.user.uid).set(result.credential.accessToken);
 }
 
 function authStateChanges() {
@@ -51,7 +36,7 @@ export function initialize() {
   const tokens = authStateChanges()
     .switchMap(user => {
       if (user)
-        return fetchGithubToken(user.uid);
+        return refValues(githubTokenRef(user.uid));
       else
         return Observable.of(null);
     })
