@@ -1,7 +1,5 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
     "githubTokens": {
       "$uid": {
         ".read": "$uid === auth.uid",
