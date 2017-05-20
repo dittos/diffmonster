@@ -6,6 +6,7 @@ import { makeTree } from '../lib/FileTree';
 const ICON_NAME_BY_STATUS = {
   added: 'add',
   removed: 'delete',
+  renamed: 'circle-arrow-right',
 };
 
 class FileTree extends React.Component {

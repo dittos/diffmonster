@@ -84,6 +84,8 @@ export default class PullRequest extends Component {
                   <a href={getBlobUrlWithLine(activeFile, parsedPatch)} target="_blank">View</a>
                 </g.Div>
                 {activeFile.filename}
+                {activeFile.previous_filename &&
+                  ` (was: ${activeFile.previous_filename})`}
               </PanelHeader>}
             <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
               {activeFile ?
@@ -93,7 +95,7 @@ export default class PullRequest extends Component {
                     parsedPatch={parsedPatch}
                     comments={comments ? comments.filter(c => c.path === activeFile.filename) : []}
                   /> :
-                  <NoPreview>Binary file</NoPreview> :
+                  <NoPreview>{/* Nothing changed or binary file */}</NoPreview> :
                 <Summary pullRequest={pullRequest} />
               }
             </g.Div>
