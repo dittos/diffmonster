@@ -18,7 +18,7 @@ const Panel = g.div({
 });
 
 const PanelHeader = g.div({
-  flex: '0',
+  flex: '0 0',
   padding: '0 16px',
   lineHeight: '32px',
   height: '32px',
@@ -79,13 +79,15 @@ export default class PullRequest extends Component {
           </FileTreePanel>
           <ContentPanel>
             {activeFile &&
-              <PanelHeader>
-                <g.Div float="right">
+              <PanelHeader css={{display: 'flex'}}>
+                <g.Div flex="1">
+                  {activeFile.filename}
+                  {activeFile.previous_filename &&
+                    ` (was: ${activeFile.previous_filename})`}
+                </g.Div>
+                <g.Div flex="initial">
                   <a href={getBlobUrlWithLine(activeFile, parsedPatch)} target="_blank">View</a>
                 </g.Div>
-                {activeFile.filename}
-                {activeFile.previous_filename &&
-                  ` (was: ${activeFile.previous_filename})`}
               </PanelHeader>}
             <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
               {activeFile ?
