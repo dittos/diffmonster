@@ -71,6 +71,12 @@ const LineTypeComponents = {
       background: oc.green[3],
     }),
   },
+  [LineType.NOEOL]: {
+    LineNumberCell: BaseLineNumberCell,
+    ContentCell: g(BaseContentCell)({
+      color: oc.red[7],
+    }),
+  },
 };
 
 const CommentContainer = g.div({

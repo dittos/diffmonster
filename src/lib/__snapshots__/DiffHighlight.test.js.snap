@@ -1,3 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
 exports[`DiffHighlight does not highlight whole line 1`] = `
 Array [
   Object {

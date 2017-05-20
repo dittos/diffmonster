@@ -1,3 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
 exports[`parsePatch parses patch 1`] = `
 Array [
   Object {
@@ -239,7 +241,7 @@ Array [
         "type": "+",
       },
       Object {
-        "content": "        requireNonNull(stage, \"stage\");",
+        "content": "        requireNonNull(stage, \\"stage\\");",
         "fromLine": 0,
         "position": 32,
         "toLine": 52,
@@ -461,6 +463,13 @@ Array [
         "position": 63,
         "toLine": 83,
         "type": " ",
+      },
+      Object {
+        "content": "No newline at end of file",
+        "fromLine": 0,
+        "position": 64,
+        "toLine": 0,
+        "type": "\\\\",
       },
     ],
     "position": 24,

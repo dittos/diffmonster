@@ -2,6 +2,7 @@ export const LineType = {
   CONTEXT: ' ',
   ADDITION: '+',
   DELETION: '-',
+  NOEOL: '\\',
 };
 
 export function parsePatch(patch) {
@@ -75,6 +76,14 @@ function parseLines(hunk) {
           toLine: 0,
           position,
           content,
+        };
+      case LineType.NOEOL:
+        return {
+          type,
+          fromLine: 0,
+          toLine: 0,
+          position,
+          content: content.trim(),
         };
       default:
         throw new Error('invalid format');
