@@ -46,7 +46,6 @@ describe('PullRequestRoute', () => {
     GithubAuth.startAuth.mockReturnValue(startAuthPromise);
 
     wrapper.instance()._login({ preventDefault() {} });
-    expect(wrapper.contains(<Loading />)).toEqual(true);
 
     Github.getPullRequest.mockClear();
     _resolve(); await startAuthPromise; // Promise actually resolves after a tick

@@ -2,18 +2,8 @@ import React, { Component } from 'react';
 import { NonIdealState } from '@blueprintjs/core';
 import DocumentTitle from 'react-document-title';
 import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/zip';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/combineLatest';
-import 'rxjs/add/operator/distinctUntilChanged';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/exhaustMap';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/publish';
-import 'rxjs/add/operator/startWith';
-import 'rxjs/add/operator/catch';
 import querystring from 'querystring';
 import Loading from '../ui/Loading';
 import PullRequest from '../ui/PullRequest';
@@ -28,67 +18,38 @@ export default class PullRequestRoute extends Component {
   state = {
     data: { isLoading: true }
   };
-  props$ = new Subject();
-  refresh$ = new BehaviorSubject(false);
+  subscription = new Subscription();
 
   componentDidMount() {
-    const match$ = this.props$.map(props => props.match);
-
-    this.subscription = Observable.combineLatest(
-        match$.distinctUntilChanged((a, b) => a.url === b.url),
-        this.refresh$
-      )
-      .map(([match, ]) => match.params)
-      .switchMap(params =>
-        Observable.zip(
-          getPullRequest(params.owner, params.repo, params.id),
-          getPullRequestFiles(params.owner, params.repo, params.id),
-          (pullRequest, files) => ({ pullRequest, files })
-        )
-        .exhaustMap(data =>
-          getPullRequestComments(data.pullRequest)
-            .map(comments => ({ ...data, comments }))
-            .startWith(data)
-        )
-        .catch(err => {
-          if (err.status === 404) {
-            return Observable.of({ notFound: true });
-          } else {
-            console.error(err)
-            return Observable.of({ isLoading: true });
-          }
-        })
-        .startWith({ isLoading: true })
-      )
-      .subscribe(data => this.setState({ data }), err => console.error(err));
-
-    this.props$.next(this.props);
+    this._load(this.props.match.params);
   }
 
   componentWillReceiveProps(nextProps) {
-    this.props$.next(nextProps);
+    const params = this.props.match.params;
+    const nextParams = nextProps.match.params;
+    if (
+      params.owner !== nextParams.owner ||
+      params.repo !== nextParams.repo ||
+      params.id !== nextParams.id
+    ) {
+      this._load(nextProps.match.params);
+    }
   }
 
   componentWillUnmount() {
-    if (this.subscription)
-      this.subscription.unsubscribe();
+    this._cancelLoad();
   }
 
   render() {
-    if (this.state.data.isLoading)
+    const { data } = this.state;
+
+    if (data.isLoading)
       return <Loading />;
     
-    if (this.state.data.notFound)
+    if (data.notFound)
       return this._renderNotFound();
 
-    const { pullRequest, files, comments = [] } = this.state.data;
-
-    const queryParams = querystring.parse(this.props.location.search.substring(1));
-    const activePath = queryParams.path;
-    let activeFile;
-    if (activePath) {
-      activeFile = files.filter(file => file.filename === activePath)[0];
-    }
+    const { pullRequest, files, comments = [] } = data;
 
     return (
       <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
@@ -96,7 +57,7 @@ export default class PullRequestRoute extends Component {
           pullRequest={pullRequest}
           files={files}
           comments={comments}
-          activeFile={activeFile}
+          activeFile={this._getActiveFile()}
           getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
         />
       </DocumentTitle>
@@ -117,9 +78,52 @@ export default class PullRequestRoute extends Component {
     )
   }
 
+  _load(params) {
+    this._cancelLoad();
+    this.setState({ data: { isLoading: true } });
+
+    const { owner, repo, id } = params;
+    this.subscription.add(Observable.zip(
+      getPullRequest(owner, repo, id),
+      getPullRequestFiles(owner, repo, id),
+      (pullRequest, files) => ({ pullRequest, files })
+    ).subscribe(data => {
+      this.setState({ data });
+
+      this.subscription.add(getPullRequestComments(data.pullRequest)
+        .subscribe(comments => {
+          this.setState({ data: { ...this.state.data, comments } });
+        }));
+    }, err => {
+      if (err.status === 404) {
+        this.setState({ data: { notFound: true } });
+      } else {
+        console.log(err);
+        // TODO: show error
+      }
+    }));
+  }
+
+  _reload() {
+    this._load(this.props.match.params);
+  }
+
+  _cancelLoad() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      this.subscription = new Subscription();
+    }
+  }
+
+  _getActiveFile() {
+    const queryParams = querystring.parse(this.props.location.search.substring(1));
+    const activePath = queryParams.path;
+    if (this.state.data.files)
+      return this.state.data.files.filter(file => file.filename === activePath)[0];
+  }
+
   _login = event => {
     event.preventDefault();
-    this.setState({ data: { isLoading: true } }); // Loading
-    startAuth().then(() => this.refresh$.next(true));
+    startAuth().then(() => this._reload());
   };
 }
