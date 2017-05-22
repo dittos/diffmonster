@@ -124,6 +124,6 @@ export default class PullRequestRoute extends Component {
 
   _login = event => {
     event.preventDefault();
-    startAuth().then(() => this._reload());
+    startAuth();
   };
 }

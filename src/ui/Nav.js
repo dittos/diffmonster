@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import { Popover, Position } from '@blueprintjs/core';
 import g from 'glamorous';
 import { css } from 'glamor';
-import Inbox from '../ui/Inbox';
+import Inbox from './Inbox';
+import { getUserInfo } from '../lib/GithubAuth';
 
 const inboxPopover = css({
   '& .pt-popover-content': {
@@ -19,6 +20,8 @@ export default class Nav extends Component {
   };
 
   render() {
+    const user = getUserInfo();
+
     return (
       <nav className="pt-navbar pt-dark">
         <div className="pt-navbar-group pt-align-left">
@@ -35,7 +38,7 @@ export default class Nav extends Component {
           >
             <button className="pt-button pt-minimal pt-icon-inbox">Inbox</button>
           </Popover>
-          <button className="pt-button pt-minimal pt-icon-user"></button>
+          <button className="pt-button pt-minimal pt-icon-user">{user && user.login}</button>
         </div>
       </nav>
     );

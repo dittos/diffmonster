@@ -25,7 +25,7 @@ class App extends Component {
   };
 
   componentDidMount() {
-    GithubAuth.initialize().subscribe(() => {
+    GithubAuth.initialize().then(() => {
       this.setState({ isLoading: false });
     });
   }

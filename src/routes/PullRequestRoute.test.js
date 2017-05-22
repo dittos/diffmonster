@@ -40,16 +40,6 @@ describe('PullRequestRoute', () => {
 
     expect(wrapper.contains(<Loading />)).toEqual(false);
     expect(wrapper.type()).not.toEqual(PullRequest);
-
-    let _resolve;
-    const startAuthPromise = new Promise(resolve => _resolve = resolve);
-    GithubAuth.startAuth.mockReturnValue(startAuthPromise);
-
-    wrapper.instance()._login({ preventDefault() {} });
-
-    Github.getPullRequest.mockClear();
-    _resolve(); await startAuthPromise; // Promise actually resolves after a tick
-    expect(Github.getPullRequest).toHaveBeenCalled();
   });
 
   it('should render without selected file', () => {

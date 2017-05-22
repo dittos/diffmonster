@@ -7,7 +7,3 @@ export function refValues(ref) {
     return () => ref.off('value', callback);
   });
 }
-
-export function githubTokenRef(uid) {
-  return firebase.database().ref(`githubTokens/${uid}`);
-}

@@ -6,7 +6,8 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/zip';
 import 'rxjs/add/operator/switchMap';
 import Loading from '../ui/Loading';
-import { getAuthenticatedUser, searchIssues } from '../lib/Github';
+import { searchIssues } from '../lib/Github';
+import { getUserInfo } from '../lib/GithubAuth';
 
 const Container = g.div({
   padding: '8px 16px',
@@ -55,14 +56,14 @@ export default class Inbox extends React.Component {
   };
 
   componentDidMount() {
-    this.subscription = getAuthenticatedUser()
-      .switchMap(user => Observable.zip(
-        searchIssues(`type:pr is:open reviewed-by:${user.login}`),
-        searchIssues(`type:pr is:open review-requested:${user.login}`),
-        searchIssues(`type:pr is:open author:${user.login}`),
-        (reviewed, reviewRequested, created) =>
-          ({ reviewed, reviewRequested, created })
-      ))
+    const user = getUserInfo();
+    this.subscription = Observable.zip(
+      searchIssues(`type:pr is:open reviewed-by:${user.login}`),
+      searchIssues(`type:pr is:open review-requested:${user.login}`),
+      searchIssues(`type:pr is:open author:${user.login}`),
+      (reviewed, reviewRequested, created) =>
+        ({ reviewed, reviewRequested, created })
+    )
       .subscribe(data => this.setState({ data }), err => console.error(err));
   }
 

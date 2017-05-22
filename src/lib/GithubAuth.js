@@ -1,27 +1,22 @@
 import * as firebase from 'firebase';
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/publish';
 import 'rxjs/add/operator/first';
-import { refValues, githubTokenRef } from './FirebaseRefs';
+import 'rxjs/add/operator/toPromise';
+import { getAuthenticatedUser } from './Github';
 
 let _accessToken;
+let _userInfo;
 
-export async function startAuth() {
+export function startAuth() {
   const provider = new firebase.auth.GithubAuthProvider();
   provider.addScope('repo');
   provider.setCustomParameters({
     'allow_signup': 'false'
   });
-
-  const result = await firebase.auth().signInWithPopup(provider);
-  _accessToken = result.credential.accessToken;
-  return githubTokenRef(result.user.uid).set(result.credential.accessToken);
+  firebase.auth().signInWithRedirect(provider);
 }
 
-function authStateChanges() {
+function firebaseAuthStateChanges() {
   return Observable.create(obs => {
     const unsubscribe = firebase.auth().onAuthStateChanged(
       user => obs.next(user),
@@ -32,23 +27,33 @@ function authStateChanges() {
   });
 }
 
-export function initialize() {
-  const tokens = authStateChanges()
-    .switchMap(user => {
-      if (user)
-        return refValues(githubTokenRef(user.uid));
-      else
-        return Observable.of(null);
-    })
-    .publish().refCount();
+function tokenLocalStorageKey(uid) {
+  return `githubTokens/${uid}`;
+}
 
-  tokens.subscribe(accessToken => {
+export async function initialize() {
+  const result = await firebase.auth().getRedirectResult();
+
+  let accessToken;
+  if (result.user) {
+    // Redirected
+    localStorage.setItem(tokenLocalStorageKey(result.user.uid), result.credential.accessToken);
+    accessToken = result.credential.accessToken;
+  } else {
+    const user = await firebaseAuthStateChanges().first().toPromise();
+    accessToken = localStorage.getItem(tokenLocalStorageKey(user.uid));
+  }
+
+  if (accessToken) {
     _accessToken = accessToken;
-  });
-
-  return tokens.first();
+    _userInfo = await getAuthenticatedUser().toPromise();
+  }
 }
 
 export function getAccessToken() {
   return _accessToken;
+}
+
+export function getUserInfo() {
+  return _userInfo;
 }
