@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import { Popover, Position } from '@blueprintjs/core';
+import { Popover, Position, Intent, Button, Menu, MenuItem } from '@blueprintjs/core';
 import g from 'glamorous';
 import { css } from 'glamor';
 import Inbox from './Inbox';
-import { getUserInfo } from '../lib/GithubAuth';
+import { getUserInfo, signOut, startAuth } from '../lib/GithubAuth';
 
 const inboxPopover = css({
   '& .pt-popover-content': {
@@ -15,10 +15,6 @@ const inboxPopover = css({
 });
 
 export default class Nav extends Component {
-  state = {
-    isInboxOpen: false,
-  };
-
   render() {
     const user = getUserInfo();
 
@@ -28,17 +24,36 @@ export default class Nav extends Component {
           <div className="pt-navbar-heading">Diff Monster</div>
         </div>
         <div className="pt-navbar-group pt-align-right">
-          <Popover
-            isOpen={this.state.isInboxOpen}
-            onInteraction={isOpen => this.setState({ isInboxOpen: isOpen })}
-            content={<Inbox onLinkClick={() => this.setState({ isInboxOpen: false })} />}
+          {user && <Popover
+            content={<Inbox />}
             position={Position.BOTTOM_RIGHT} 
             popoverClassName={inboxPopover.toString()}
             inheritDarkTheme={false}
           >
-            <button className="pt-button pt-minimal pt-icon-inbox">Inbox</button>
-          </Popover>
-          <button className="pt-button pt-minimal pt-icon-user">{user && user.login}</button>
+            <Button
+              className="pt-minimal"
+              iconName="inbox"
+            />
+          </Popover>}
+          {user && <Popover
+            content={<Menu>
+              <MenuItem text="Sign out" onClick={signOut} />
+            </Menu>}
+            position={Position.BOTTOM_RIGHT} 
+            inheritDarkTheme={false}
+          >
+            <Button
+              className="pt-minimal"
+              iconName="user"
+              text={user.login}
+            />
+          </Popover>}
+          {!user && <Button
+            intent={Intent.PRIMARY}
+            iconName="log-in"
+            text="Login with GitHub"
+            onClick={startAuth}
+          />}
         </div>
       </nav>
     );

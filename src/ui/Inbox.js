@@ -116,7 +116,7 @@ export default class Inbox extends React.Component {
                 <Repo>{owner}/{repo}</Repo>
                 <Title
                   to={`/${owner}/${repo}/pull/${pullRequestId}`}
-                  onClick={this.props.onLinkClick}
+                  className="pt-popover-dismiss"
                 >{item.title}</Title>
               </ResultItem>
             );

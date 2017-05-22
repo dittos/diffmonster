@@ -16,6 +16,13 @@ export function startAuth() {
   firebase.auth().signInWithRedirect(provider);
 }
 
+export function signOut() {
+  const auth = firebase.auth();
+  localStorage.removeItem(tokenLocalStorageKey(auth.currentUser.uid));
+  auth.signOut();
+  window.location.reload(); // TODO: without refresh
+}
+
 function firebaseAuthStateChanges() {
   return Observable.create(obs => {
     const unsubscribe = firebase.auth().onAuthStateChanged(
@@ -41,7 +48,9 @@ export async function initialize() {
     accessToken = result.credential.accessToken;
   } else {
     const user = await firebaseAuthStateChanges().first().toPromise();
-    accessToken = localStorage.getItem(tokenLocalStorageKey(user.uid));
+    if (user) {
+      accessToken = localStorage.getItem(tokenLocalStorageKey(user.uid));
+    }
   }
 
   if (accessToken) {
