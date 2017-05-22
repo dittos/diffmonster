@@ -66,3 +66,8 @@ export function getAccessToken() {
 export function getUserInfo() {
   return _userInfo;
 }
+
+export function getFirebaseUid() {
+  const user = firebase.auth().currentUser;
+  return user && user.uid;
+}

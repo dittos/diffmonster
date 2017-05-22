@@ -7,3 +7,7 @@ export function refValues(ref) {
     return () => ref.off('value', callback);
   });
 }
+
+export function reviewStateRef(pullRequestId, uid) {
+  return firebase.database().ref(`reviewStates/${pullRequestId}/${uid}`);
+}

@@ -12,7 +12,8 @@ import {
   getPullRequestFiles,
   getPullRequestComments,
 } from '../lib/Github';
-import { startAuth } from '../lib/GithubAuth';
+import { startAuth, getFirebaseUid } from '../lib/GithubAuth';
+import { refValues, reviewStateRef } from '../lib/FirebaseRefs';
 
 export default class PullRequestRoute extends Component {
   state = {
@@ -59,6 +60,7 @@ export default class PullRequestRoute extends Component {
           comments={comments}
           activeFile={this._getActiveFile()}
           getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
+          onReviewStateChange={this._onReviewStateChange}
         />
       </DocumentTitle>
     );
@@ -92,8 +94,25 @@ export default class PullRequestRoute extends Component {
 
       this.subscription.add(getPullRequestComments(data.pullRequest)
         .subscribe(comments => {
-          this.setState({ data: { ...this.state.data, comments } });
+          this.setState(({ data }) => ({ data: { ...data, comments } }));
         }));
+
+      const uid = getFirebaseUid();
+      if (uid) {
+        this.subscription.add(refValues(reviewStateRef(data.pullRequest.id, uid))
+          .subscribe(reviewState => {
+            if (!reviewState) {
+              reviewState = {};
+            }
+            this.setState(({ data }) => ({ data: {
+              ...data,
+              files: data.files.map(file => ({
+                ...file,
+                reviewState: reviewState[file.sha] || false
+              }))
+            } }));
+          }));
+      }
     }, err => {
       if (err.status === 404) {
         this.setState({ data: { notFound: true } });
@@ -125,5 +144,11 @@ export default class PullRequestRoute extends Component {
   _login = event => {
     event.preventDefault();
     startAuth();
+  };
+
+  _onReviewStateChange = (file, reviewState) => {
+    reviewStateRef(this.state.data.pullRequest.id, getFirebaseUid())
+      .child(file.sha)
+      .set(reviewState);
   };
 }

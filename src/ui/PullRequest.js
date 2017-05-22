@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import g from 'glamorous';
-import { Colors, Classes } from '@blueprintjs/core';
+import { Colors, Classes, Switch } from '@blueprintjs/core';
 import FileTree from '../ui/FileTree';
 import { parsePatch } from '../lib/PatchParser';
 import PullRequestFile from './PullRequestFile';
 import Summary, { Header as SummaryHeader } from './Summary';
+import { reviewStateRef } from '../lib/FirebaseRefs';
 
 const NoPreview = g.div({
   padding: '16px',
@@ -46,7 +47,7 @@ const ContentPanel = g(Panel)({
 
 export default class PullRequest extends Component {
   componentDidUpdate(prevProps) {
-    if (prevProps.activeFile !== this.props.activeFile) {
+    if (prevProps.activeFile.sha !== this.props.activeFile.sha) {
       if (this._scrollEl)
         findDOMNode(this._scrollEl).scrollTop = 0;
     }
@@ -86,6 +87,12 @@ export default class PullRequest extends Component {
                     ` (was: ${activeFile.previous_filename})`}
                 </g.Div>
                 <g.Div flex="initial">
+                  {activeFile.reviewState != null && <Switch
+                    className="pt-inline"
+                    checked={activeFile.reviewState}
+                    label="Done"
+                    onChange={this._onReviewStateChange}
+                  />}
                   <a href={getBlobUrlWithLine(activeFile, parsedPatch)} target="_blank">View</a>
                 </g.Div>
               </PanelHeader>}
@@ -106,6 +113,10 @@ export default class PullRequest extends Component {
       </g.Div>
     );
   }
+
+  _onReviewStateChange = event => {
+    this.props.onReviewStateChange(this.props.activeFile, event.target.checked);
+  };
 }
 
 function getBlobUrlWithLine(file, parsedPatch) {

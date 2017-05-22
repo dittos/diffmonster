@@ -42,6 +42,7 @@ class FileTree extends React.Component {
           iconName: ICON_NAME_BY_STATUS[file.status],
           label: path.split('/').pop(),
           isSelected: this.props.activePath === path,
+          secondaryLabel: file.reviewState && <span className="pt-icon-standard pt-icon-small-tick" />,
           _path: path,
         });
       }
