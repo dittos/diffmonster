@@ -19,7 +19,7 @@ const Panel = g.div({
 });
 
 const PanelHeader = g.div({
-  flex: '0 0',
+  flex: '0 0 auto',
   padding: '0 16px',
   lineHeight: '32px',
   height: '32px',
@@ -47,7 +47,9 @@ const ContentPanel = g(Panel)({
 
 export default class PullRequest extends Component {
   componentDidUpdate(prevProps) {
-    if (prevProps.activeFile.sha !== this.props.activeFile.sha) {
+    const prevSha = prevProps.activeFile && prevProps.activeFile.sha;
+    const sha = this.props.activeFile && this.props.activeFile.sha;
+    if (prevSha !== sha) {
       if (this._scrollEl)
         findDOMNode(this._scrollEl).scrollTop = 0;
     }
