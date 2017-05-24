@@ -6,18 +6,19 @@ import Loading from '../ui/Loading';
 import PullRequest from '../ui/PullRequest';
 import * as Github from '../lib/Github';
 import * as GithubAuth from '../lib/GithubAuth';
+import * as Database from '../lib/Database';
 import pullRequestFixture from '../fixtures/pull-request.json';
 import pullRequestFilesFixture from '../fixtures/pull-request-files.json';
 import pullRequestCommentsFixture from '../fixtures/pull-request-comments.json';
 
 jest.mock('../lib/Github');
 jest.mock('../lib/GithubAuth');
+jest.mock('../lib/Database');
 
 describe('PullRequestRoute', () => {
   beforeEach(() => {
-    Github.getPullRequest.mockReset();
-    Github.getPullRequestFiles.mockReset();
-    Github.getPullRequestComments.mockReset();
+    jest.clearAllMocks();
+    GithubAuth.isAuthenticated.mockReturnValue(false);
   });
 
   it('should render not found view', async () => {
@@ -81,14 +82,15 @@ describe('PullRequestRoute', () => {
     expect(wrapper.contains(<Loading />)).toEqual(false);
     const pr = wrapper.find(PullRequest);
     expect(pr.length).toEqual(1);
-    expect(pr.prop('pullRequest')).toEqual(pullRequestFixture);
-    expect(pr.prop('files')).toEqual(pullRequestFilesFixture);
-    expect(pr.prop('comments')).toEqual([]);
+    const data = pr.prop('data');
+    expect(data.pullRequest).toEqual(pullRequestFixture);
+    expect(data.files).toEqual(pullRequestFilesFixture);
+    expect(data.comments).toEqual(undefined);
     expect(pr.prop('activeFile')).toEqual(undefined);
 
     pullRequestComments$.next(pullRequestCommentsFixture);
     pullRequestComments$.complete();
-    expect(wrapper.find(PullRequest).prop('comments'))
+    expect(wrapper.find(PullRequest).prop('data').comments)
       .toEqual(pullRequestCommentsFixture);
   });
 
@@ -113,9 +115,10 @@ describe('PullRequestRoute', () => {
     expect(wrapper.contains(<Loading />)).toEqual(false);
     const pr = wrapper.find(PullRequest);
     expect(pr.length).toEqual(1);
-    expect(pr.prop('pullRequest')).toEqual(pullRequestFixture);
-    expect(pr.prop('files')).toEqual(pullRequestFilesFixture);
-    expect(pr.prop('comments')).toEqual(pullRequestCommentsFixture);
+    const data = pr.prop('data');
+    expect(data.pullRequest).toEqual(pullRequestFixture);
+    expect(data.files).toEqual(pullRequestFilesFixture);
+    expect(data.comments).toEqual(pullRequestCommentsFixture);
     expect(pr.prop('activeFile').filename).toEqual(path);
   });
 });

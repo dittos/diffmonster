@@ -47,7 +47,7 @@ const ContentPanel = g(Panel)({
 
 export default class PullRequest extends Component {
   componentDidUpdate(prevProps) {
-    if (prevProps.pullRequest.id !== this.props.pullRequest.id ||
+    if (prevProps.data.pullRequest.id !== this.props.data.pullRequest.id ||
         (prevProps.activeFile && prevProps.activeFile.sha) !==
         (this.props.activeFile && this.props.activeFile.sha)) {
       if (this._scrollEl)
@@ -57,15 +57,17 @@ export default class PullRequest extends Component {
 
   render() {
     const {
-      pullRequest,
-      files,
-      comments,
-      hasReviewStates,
-      reviewStates,
-      reviewedFileCount,
       activeFile,
       getFilePath,
     } = this.props;
+    const {
+      pullRequest,
+      files,
+      comments = [],
+      isLoadingReviewStates,
+      reviewStates,
+      reviewedFileCount,
+    } = this.props.data;
 
     let parsedPatch;
     if (activeFile && activeFile.patch)
@@ -83,11 +85,10 @@ export default class PullRequest extends Component {
                 Files
               </g.Div>
               <g.Div flex="initial">
-                {hasReviewStates && (
-                  reviewStates ?
-                    <g.Span color={Colors.GRAY1}>{reviewedFileCount} of {files.length} reviewed</g.Span> :
-                    <g.Span color={Colors.GRAY4}>Loading...</g.Span>
-                )}
+                {reviewStates ?
+                  <g.Span color={Colors.GRAY1}>{reviewedFileCount} of {files.length} reviewed</g.Span> :
+                  isLoadingReviewStates &&
+                    <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
               </g.Div>
             </PanelHeader>
             <g.Div flex="1" overflowY="auto">
@@ -122,7 +123,7 @@ export default class PullRequest extends Component {
                   <PullRequestFile
                     file={activeFile}
                     parsedPatch={parsedPatch}
-                    comments={comments ? comments.filter(c => c.path === activeFile.filename) : []}
+                    comments={comments.filter(c => c.path === activeFile.filename)}
                   /> :
                   <NoPreview>{/* Nothing changed or binary file */}</NoPreview> :
                 <Summary pullRequest={pullRequest} />

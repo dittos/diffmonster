@@ -50,22 +50,10 @@ export default class PullRequestRoute extends Component {
     if (data.notFound)
       return this._renderNotFound();
 
-    const {
-      pullRequest,
-      files,
-      reviewStates,
-      reviewedFileCount,
-      comments = [],
-    } = data;
-
     return (
-      <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
+      <DocumentTitle title={`${data.pullRequest.title} - ${data.pullRequest.base.repo.full_name}#${data.pullRequest.number}`}>
         <PullRequest
-          pullRequest={pullRequest}
-          files={files}
-          comments={comments}
-          reviewStates={reviewStates}
-          reviewedFileCount={reviewedFileCount}
+          data={data}
           activeFile={this._getActiveFile()}
           getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
           onReviewStateChange={this._onReviewStateChange}
@@ -98,6 +86,7 @@ export default class PullRequestRoute extends Component {
       getPullRequestFiles(owner, repo, id),
       (pullRequest, files) => ({ pullRequest, files })
     ).subscribe(data => {
+      data.isLoadingReviewStates = isAuthenticated();
       this.setState({ data });
 
       this.subscription.add(getPullRequestComments(data.pullRequest)
@@ -105,11 +94,9 @@ export default class PullRequestRoute extends Component {
           this.setState(({ data }) => ({ data: { ...data, comments } }));
         }));
 
-      if (isAuthenticated()) {
+      if (data.isLoadingReviewStates) {
         this.subscription.add(observeReviewStates(data.pullRequest.id)
           .subscribe(reviewStates => this._applyReviewStates(reviewStates)));
-      } else {
-        this.setState(({ data }) => ({ data: { ...data, hasReviewStates: false } }));
       }
     }, err => {
       if (err.status === 404) {
@@ -140,7 +127,7 @@ export default class PullRequestRoute extends Component {
             ...file,
             isReviewed: reviewStates[file.sha],
           })),
-          hasReviewStates: true,
+          isLoadingReviewStates: false,
           reviewStates,
           reviewedFileCount,
         }
