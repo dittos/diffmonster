@@ -108,6 +108,8 @@ export default class PullRequestRoute extends Component {
       if (isAuthenticated()) {
         this.subscription.add(observeReviewStates(data.pullRequest.id)
           .subscribe(reviewStates => this._applyReviewStates(reviewStates)));
+      } else {
+        this.setState(({ data }) => ({ data: { ...data, hasReviewStates: false } }));
       }
     }, err => {
       if (err.status === 404) {
@@ -138,6 +140,7 @@ export default class PullRequestRoute extends Component {
             ...file,
             isReviewed: reviewStates[file.sha],
           })),
+          hasReviewStates: true,
           reviewStates,
           reviewedFileCount,
         }

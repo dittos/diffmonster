@@ -60,6 +60,7 @@ export default class PullRequest extends Component {
       pullRequest,
       files,
       comments,
+      hasReviewStates,
       reviewStates,
       reviewedFileCount,
       activeFile,
@@ -82,9 +83,11 @@ export default class PullRequest extends Component {
                 Files
               </g.Div>
               <g.Div flex="initial">
-                {reviewStates ?
-                  <g.Span color={Colors.GRAY1}>{reviewedFileCount} of {files.length} reviewed</g.Span> :
-                  <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
+                {hasReviewStates && (
+                  reviewStates ?
+                    <g.Span color={Colors.GRAY1}>{reviewedFileCount} of {files.length} reviewed</g.Span> :
+                    <g.Span color={Colors.GRAY4}>Loading...</g.Span>
+                )}
               </g.Div>
             </PanelHeader>
             <g.Div flex="1" overflowY="auto">
@@ -101,7 +104,7 @@ export default class PullRequest extends Component {
                 <g.Div flex="1">
                   {activeFile.filename}
                   {activeFile.previous_filename &&
-                    ` (was: ${activeFile.previous_filename})`}
+                    <g.Span color={Colors.GRAY1}> (was: {activeFile.previous_filename})</g.Span>}
                 </g.Div>
                 <g.Div flex="initial">
                   {reviewStates && <Switch
