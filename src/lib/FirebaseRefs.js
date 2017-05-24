@@ -8,6 +8,6 @@ export function refValues(ref) {
   });
 }
 
-export function reviewStateRef(pullRequestId, uid) {
+export function reviewStatesRef(pullRequestId, uid) {
   return firebase.database().ref(`reviewStates/${pullRequestId}/${uid}`);
 }

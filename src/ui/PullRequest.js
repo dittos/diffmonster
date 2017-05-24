@@ -6,7 +6,6 @@ import FileTree from '../ui/FileTree';
 import { parsePatch } from '../lib/PatchParser';
 import PullRequestFile from './PullRequestFile';
 import Summary, { Header as SummaryHeader } from './Summary';
-import { reviewStateRef } from '../lib/FirebaseRefs';
 
 const NoPreview = g.div({
   padding: '16px',
@@ -19,12 +18,13 @@ const Panel = g.div({
 });
 
 const PanelHeader = g.div({
+  display: 'flex',
   flex: '0 0 auto',
   padding: '0 16px',
   lineHeight: '32px',
   height: '32px',
 
-  color: Colors.GRAY1,
+  color: Colors.DARK_GRAY1,
   background: Colors.LIGHT_GRAY5,
   borderBottom: `1px solid ${Colors.GRAY5}`,
 });
@@ -47,16 +47,24 @@ const ContentPanel = g(Panel)({
 
 export default class PullRequest extends Component {
   componentDidUpdate(prevProps) {
-    const prevSha = prevProps.activeFile && prevProps.activeFile.sha;
-    const sha = this.props.activeFile && this.props.activeFile.sha;
-    if (prevSha !== sha) {
+    if (prevProps.pullRequest.id !== this.props.pullRequest.id ||
+        (prevProps.activeFile && prevProps.activeFile.sha) !==
+        (this.props.activeFile && this.props.activeFile.sha)) {
       if (this._scrollEl)
         findDOMNode(this._scrollEl).scrollTop = 0;
     }
   }
 
   render() {
-    const { pullRequest, files, comments, activeFile, getFilePath } = this.props;
+    const {
+      pullRequest,
+      files,
+      comments,
+      reviewStates,
+      reviewedFileCount,
+      activeFile,
+      getFilePath,
+    } = this.props;
 
     let parsedPatch;
     if (activeFile && activeFile.patch)
@@ -70,7 +78,14 @@ export default class PullRequest extends Component {
         <g.Div flex="1" display="flex" overflow="auto">
           <FileTreePanel>
             <PanelHeader>
-              Files
+              <g.Div flex="1">
+                Files
+              </g.Div>
+              <g.Div flex="initial">
+                {reviewStates ?
+                  <g.Span color={Colors.GRAY1}>{reviewedFileCount} of {files.length} reviewed</g.Span> :
+                  <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
+              </g.Div>
             </PanelHeader>
             <g.Div flex="1" overflowY="auto">
               <FileTree
@@ -82,16 +97,16 @@ export default class PullRequest extends Component {
           </FileTreePanel>
           <ContentPanel>
             {activeFile &&
-              <PanelHeader css={{display: 'flex'}}>
+              <PanelHeader>
                 <g.Div flex="1">
                   {activeFile.filename}
                   {activeFile.previous_filename &&
                     ` (was: ${activeFile.previous_filename})`}
                 </g.Div>
                 <g.Div flex="initial">
-                  {activeFile.reviewState != null && <Switch
+                  {reviewStates && <Switch
                     className="pt-inline"
-                    checked={activeFile.reviewState}
+                    checked={activeFile.isReviewed}
                     label="Done"
                     onChange={this._onReviewStateChange}
                   />}

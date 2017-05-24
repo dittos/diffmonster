@@ -13,7 +13,7 @@ import {
   getPullRequestComments,
 } from '../lib/Github';
 import { startAuth, getFirebaseUid } from '../lib/GithubAuth';
-import { refValues, reviewStateRef } from '../lib/FirebaseRefs';
+import { refValues, reviewStatesRef } from '../lib/FirebaseRefs';
 
 export default class PullRequestRoute extends Component {
   state = {
@@ -50,7 +50,13 @@ export default class PullRequestRoute extends Component {
     if (data.notFound)
       return this._renderNotFound();
 
-    const { pullRequest, files, comments = [] } = data;
+    const {
+      pullRequest,
+      files,
+      reviewStates,
+      reviewedFileCount,
+      comments = [],
+    } = data;
 
     return (
       <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
@@ -58,6 +64,8 @@ export default class PullRequestRoute extends Component {
           pullRequest={pullRequest}
           files={files}
           comments={comments}
+          reviewStates={reviewStates}
+          reviewedFileCount={reviewedFileCount}
           activeFile={this._getActiveFile()}
           getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
           onReviewStateChange={this._onReviewStateChange}
@@ -99,19 +107,8 @@ export default class PullRequestRoute extends Component {
 
       const uid = getFirebaseUid();
       if (uid) {
-        this.subscription.add(refValues(reviewStateRef(data.pullRequest.id, uid))
-          .subscribe(reviewState => {
-            if (!reviewState) {
-              reviewState = {};
-            }
-            this.setState(({ data }) => ({ data: {
-              ...data,
-              files: data.files.map(file => ({
-                ...file,
-                reviewState: reviewState[file.sha] || false
-              }))
-            } }));
-          }));
+        this.subscription.add(refValues(reviewStatesRef(data.pullRequest.id, uid))
+          .subscribe(reviewStates => this._applyReviewStates(reviewStates)));
       }
     }, err => {
       if (err.status === 404) {
@@ -121,6 +118,32 @@ export default class PullRequestRoute extends Component {
         // TODO: show error
       }
     }));
+  }
+
+  _applyReviewStates(reviewStates) {
+    // NOTE: could be called multiple times if reviewStates change
+
+    if (!reviewStates)
+      reviewStates = {};
+
+    this.setState(({ data }) => {
+      let reviewedFileCount = 0;
+      for (let file of data.files)
+        if (reviewStates[file.sha])
+          reviewedFileCount++;
+
+      return {
+        data: {
+          ...data,
+          files: data.files.map(file => ({
+            ...file,
+            isReviewed: reviewStates[file.sha],
+          })),
+          reviewStates,
+          reviewedFileCount,
+        }
+      }
+    });
   }
 
   _reload() {
@@ -137,8 +160,9 @@ export default class PullRequestRoute extends Component {
   _getActiveFile() {
     const queryParams = querystring.parse(this.props.location.search.substring(1));
     const activePath = queryParams.path;
-    if (this.state.data.files)
-      return this.state.data.files.filter(file => file.filename === activePath)[0];
+    const files = this.state.data.files;
+    if (activePath && files)
+      return files.filter(file => file.filename === activePath)[0];
   }
 
   _login = event => {
@@ -147,7 +171,7 @@ export default class PullRequestRoute extends Component {
   };
 
   _onReviewStateChange = (file, reviewState) => {
-    reviewStateRef(this.state.data.pullRequest.id, getFirebaseUid())
+    reviewStatesRef(this.state.data.pullRequest.id, getFirebaseUid())
       .child(file.sha)
       .set(reviewState);
   };
