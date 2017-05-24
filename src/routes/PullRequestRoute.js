@@ -12,8 +12,8 @@ import {
   getPullRequestFiles,
   getPullRequestComments,
 } from '../lib/Github';
-import { startAuth, getFirebaseUid } from '../lib/GithubAuth';
-import { refValues, reviewStatesRef } from '../lib/FirebaseRefs';
+import { startAuth, isAuthenticated } from '../lib/GithubAuth';
+import { observeReviewStates, setReviewState } from '../lib/Database';
 
 export default class PullRequestRoute extends Component {
   state = {
@@ -105,9 +105,8 @@ export default class PullRequestRoute extends Component {
           this.setState(({ data }) => ({ data: { ...data, comments } }));
         }));
 
-      const uid = getFirebaseUid();
-      if (uid) {
-        this.subscription.add(refValues(reviewStatesRef(data.pullRequest.id, uid))
+      if (isAuthenticated()) {
+        this.subscription.add(observeReviewStates(data.pullRequest.id)
           .subscribe(reviewStates => this._applyReviewStates(reviewStates)));
       }
     }, err => {
@@ -171,8 +170,6 @@ export default class PullRequestRoute extends Component {
   };
 
   _onReviewStateChange = (file, reviewState) => {
-    reviewStatesRef(this.state.data.pullRequest.id, getFirebaseUid())
-      .child(file.sha)
-      .set(reviewState);
+    setReviewState(this.state.data.pullRequest.id, file.sha, reviewState);
   };
 }

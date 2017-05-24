@@ -67,7 +67,6 @@ export function getUserInfo() {
   return _userInfo;
 }
 
-export function getFirebaseUid() {
-  const user = firebase.auth().currentUser;
-  return user && user.uid;
+export function isAuthenticated() {
+  return Boolean(_userInfo);
 }
