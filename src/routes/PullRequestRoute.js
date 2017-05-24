@@ -90,13 +90,11 @@ export default class PullRequestRoute extends Component {
       this.setState({ data });
 
       this.subscription.add(getPullRequestComments(data.pullRequest)
-        .subscribe(comments => {
-          this.setState(({ data }) => ({ data: { ...data, comments } }));
-        }));
+        .subscribe(this._applyComments, err => console.error(err)));
 
       if (data.isLoadingReviewStates) {
         this.subscription.add(observeReviewStates(data.pullRequest.id)
-          .subscribe(reviewStates => this._applyReviewStates(reviewStates)));
+          .subscribe(this._applyReviewStates, err => console.error(err)));
       }
     }, err => {
       if (err.status === 404) {
@@ -108,7 +106,24 @@ export default class PullRequestRoute extends Component {
     }));
   }
 
-  _applyReviewStates(reviewStates) {
+  _applyComments = comments => {
+    if (!comments)
+      return;
+
+    this.setState(({ data }) => {
+      return {
+        data: {
+          ...data,
+          files: data.files.map(file => ({
+            ...file,
+            comments: comments.filter(comment => comment.path === file.filename),
+          })),
+        }
+      };
+    });
+  };
+
+  _applyReviewStates = reviewStates => {
     // NOTE: could be called multiple times if reviewStates change
 
     if (!reviewStates)
@@ -133,7 +148,7 @@ export default class PullRequestRoute extends Component {
         }
       }
     });
-  }
+  };
 
   _reload() {
     this._load(this.props.match.params);

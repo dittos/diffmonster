@@ -171,15 +171,17 @@ function Hunk({ hunk, commentsByPosition, language }) {
   );
 }
 
-export default function PullRequestFile({ file, parsedPatch, comments }) {
+export default function PullRequestFile({ file, parsedPatch }) {
   const commentsByPosition = {};
-  comments.forEach(comment => {
-    if (comment.position) {
-      if (!commentsByPosition[comment.position])
-        commentsByPosition[comment.position] = [];
-      commentsByPosition[comment.position].push(comment);
-    }
-  });
+  if (file.comments) {
+    file.comments.forEach(comment => {
+      if (comment.position) {
+        if (!commentsByPosition[comment.position])
+          commentsByPosition[comment.position] = [];
+        commentsByPosition[comment.position].push(comment);
+      }
+    });
+  }
 
   let language;
   const parts = file.filename.split('.');

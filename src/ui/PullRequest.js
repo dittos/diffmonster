@@ -63,7 +63,6 @@ export default class PullRequest extends Component {
     const {
       pullRequest,
       files,
-      comments = [],
       isLoadingReviewStates,
       reviewStates,
       reviewedFileCount,
@@ -123,7 +122,6 @@ export default class PullRequest extends Component {
                   <PullRequestFile
                     file={activeFile}
                     parsedPatch={parsedPatch}
-                    comments={comments.filter(c => c.path === activeFile.filename)}
                   /> :
                   <NoPreview>{/* Nothing changed or binary file */}</NoPreview> :
                 <Summary pullRequest={pullRequest} />
