@@ -110,6 +110,9 @@ export default class PullRequestRoute extends Component {
     if (!comments)
       return;
 
+    // Exclude outdated comments
+    comments = comments.filter(comment => Boolean(comment.position));
+
     this.setState(({ data }) => {
       return {
         data: {

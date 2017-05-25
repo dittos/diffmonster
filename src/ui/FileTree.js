@@ -1,5 +1,6 @@
 import React from 'react';
 import { withRouter } from 'react-router';
+import g from 'glamorous';
 import { Tree } from '@blueprintjs/core';
 import { makeTree } from '../lib/FileTree';
 
@@ -8,6 +9,10 @@ const ICON_NAME_BY_STATUS = {
   removed: 'delete',
   renamed: 'circle-arrow-right',
 };
+
+const SecondaryLabel = g.span({
+  whiteSpace: 'nowrap',
+});
 
 class FileTree extends React.Component {
   render() {
@@ -42,7 +47,12 @@ class FileTree extends React.Component {
           iconName: ICON_NAME_BY_STATUS[file.status],
           label: path.split('/').pop(),
           isSelected: this.props.activePath === path,
-          secondaryLabel: file.isReviewed && <span className="pt-icon-standard pt-icon-small-tick" />,
+          secondaryLabel: <SecondaryLabel>
+            {!file.isReviewed && file.comments && file.comments.length > 0 &&
+              <span className="pt-icon-standard pt-icon-comment" />}
+            {file.isReviewed &&
+              <span className="pt-icon-standard pt-icon-small-tick" />}
+          </SecondaryLabel>,
           _path: path,
         });
       }
