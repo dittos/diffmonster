@@ -6,6 +6,7 @@ import FileTree from '../ui/FileTree';
 import { parsePatch } from '../lib/PatchParser';
 import PullRequestFile from './PullRequestFile';
 import Summary, { Header as SummaryHeader } from './Summary';
+import { isAuthenticated } from '../lib/GithubAuth';
 
 const NoPreview = g.div({
   padding: '16px',
@@ -122,6 +123,7 @@ export default class PullRequest extends Component {
                   <PullRequestFile
                     file={activeFile}
                     parsedPatch={parsedPatch}
+                    canCreateComment={isAuthenticated()}
                   /> :
                   <NoPreview>{/* Nothing changed or binary file */}</NoPreview> :
                 <Summary pullRequest={pullRequest} />

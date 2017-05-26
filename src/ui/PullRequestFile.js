@@ -1,6 +1,6 @@
 import React from 'react';
 import g from 'glamorous';
-import { Colors } from '@blueprintjs/core';
+import { Colors, Button, Intent } from '@blueprintjs/core';
 import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
@@ -25,32 +25,51 @@ const HunkHeaderRow = g.tr({
   lineHeight: '32px',
 });
 
-const BaseLineNumberCell = g.td({
+const AddCommentIcon = 'PullRequestFile-AddCommentIcon';
+
+const BaseLineRow = g.tr({
+  [`& .${AddCommentIcon}`]: {
+    visibility: 'hidden',
+  },
+  [`&:hover .${AddCommentIcon}`]: {
+    visibility: 'visible',
+  },
+});
+
+const AddCommentCell = g.td({
+  padding: '0 5px',
+  cursor: 'pointer',
+  color: Colors.GRAY1,
+  '&:hover': {
+    color: Colors.BLUE1,
+  },
+});
+
+const LineNumberCell = g.td({
   width: '1%',
   minWidth: '50px',
   padding: '0 10px',
   boxSizing: 'border-box',
   textAlign: 'right',
   verticalAlign: 'top',
-  borderRight: `1px solid ${Colors.LIGHT_GRAY2}`,
 });
 
 const BaseContentCell = g.td({
   whiteSpace: 'pre-wrap',
   padding: '0 10px',
+  background: Colors.WHITE,
 });
 
 const LineTypeComponents = {
   [LineType.CONTEXT]: {
-    LineNumberCell: g(BaseLineNumberCell)({
+    LineRow: g(BaseLineRow)({
       background: Colors.LIGHT_GRAY5,
     }),
     ContentCell: BaseContentCell,
   },
   [LineType.DELETION]: {
-    LineNumberCell: g(BaseLineNumberCell)({
+    LineRow: g(BaseLineRow)({
       background: oc.red[2],
-      borderColor: oc.red[2],
     }),
     ContentCell: g(BaseContentCell)({
       background: oc.red[1],
@@ -60,9 +79,8 @@ const LineTypeComponents = {
     }),
   },
   [LineType.ADDITION]: {
-    LineNumberCell: g(BaseLineNumberCell)({
+    LineRow: g(BaseLineRow)({
       background: oc.green[2],
-      borderColor: oc.green[2],
     }),
     ContentCell: g(BaseContentCell)({
       background: oc.green[1],
@@ -72,7 +90,6 @@ const LineTypeComponents = {
     }),
   },
   [LineType.NOEOL]: {
-    LineNumberCell: BaseLineNumberCell,
     ContentCell: g(BaseContentCell)({
       color: oc.red[7],
     }),
@@ -90,6 +107,19 @@ const Comment = g.div({
   border: `1px solid ${Colors.GRAY5}`,
   borderRadius: '3px',
   fontFamily: 'sans-serif',
+});
+
+const CommentComposer = g.div({
+  margin: '8px',
+  fontFamily: 'sans-serif',
+});
+
+const CommentComposerActions = g.div({
+  marginTop: '8px',
+
+  '& button': {
+    marginRight: '8px',
+  }
 });
 
 const CommentMeta = g.div({
@@ -113,10 +143,10 @@ class Highlighter {
   }
 }
 
-function CommentThread({ comments }) {
+function CommentThread({ comments, showComposer }) {
   return (
     <CommentContainer>
-      {comments.map((comment, i) =>
+      {comments && comments.map((comment, i) =>
         <Comment first={i === 0} key={comment.id}>
           <CommentMeta>
             <CommentUser>{comment.user.login}</CommentUser>
@@ -124,54 +154,80 @@ function CommentThread({ comments }) {
           <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
         </Comment>
       )}
+      {showComposer && <CommentComposer key="composer">
+        <textarea
+          placeholder="Write comment..."
+          className="pt-input pt-fill"
+        />
+        <CommentComposerActions>
+          <Button text="Write" intent={Intent.PRIMARY} />
+          <Button text="Cancel" />
+        </CommentComposerActions>
+      </CommentComposer>}
     </CommentContainer>
   );
 }
 
-function Hunk({ hunk, commentsByPosition, language }) {
-  const lines = [];
-  const highlighter = language ? new Highlighter(language) : null;
-  highlightDiff(hunk).forEach(line => {
-    const C = LineTypeComponents[line.type];
-    lines.push(
-      <tr key={'L' + line.position}>
-        <C.LineNumberCell>{line.fromLine || ''}</C.LineNumberCell>
-        <C.LineNumberCell>{line.toLine || ''}</C.LineNumberCell>
-        <C.ContentCell>
-        {line.content.map((span, spanIndex) => {
-          const props = {
-            key: spanIndex,
-          };
-          if (highlighter)
-            props.dangerouslySetInnerHTML = {__html: highlighter.highlight(span.content)};
-          else
-            props.children = span.content;
-          return span.highlight ?
-            <C.Highlight {...props} />
-            : <span {...props} />;
-        })}
-        </C.ContentCell>
-      </tr>
-    );
-    const comments = commentsByPosition[line.position];
-    if (comments) {
+class Hunk extends React.Component {
+  state = {
+    commentComposerPosition: -1,
+  };
+
+  render() {
+    const { hunk, commentsByPosition, language, canCreateComment } = this.props;
+    const lines = [];
+    const highlighter = language ? new Highlighter(language) : null;
+    highlightDiff(hunk).forEach(line => {
+      const C = LineTypeComponents[line.type];
       lines.push(
-        <tr key={'C' + comments[0].id}>
-          <td colSpan={3} style={{padding: 0}}>
-            <CommentThread comments={comments} />
-          </td>
-        </tr>
+        <C.LineRow key={'L' + line.position}>
+          {canCreateComment &&
+            <AddCommentCell onClick={() => this._openCommentComposer(line)}>
+              <span className={`pt-icon-standard pt-icon-comment ${AddCommentIcon}`} />
+            </AddCommentCell>}
+          <LineNumberCell>{line.fromLine || ''}</LineNumberCell>
+          <LineNumberCell>{line.toLine || ''}</LineNumberCell>
+          <C.ContentCell>
+          {line.content.map((span, spanIndex) => {
+            const props = {
+              key: spanIndex,
+            };
+            if (highlighter)
+              props.dangerouslySetInnerHTML = {__html: highlighter.highlight(span.content)};
+            else
+              props.children = span.content;
+            return span.highlight ?
+              <C.Highlight {...props} />
+              : <span {...props} />;
+          })}
+          </C.ContentCell>
+        </C.LineRow>
       );
-    }
-  });
-  return (
-    <HunkGroup>
-      {lines}
-    </HunkGroup>
-  );
+      const comments = commentsByPosition[line.position];
+      const showComposer = line.position === this.state.commentComposerPosition;
+      if (comments || showComposer) {
+        lines.push(
+          <tr key={'C' + line.position}>
+            <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
+              <CommentThread comments={comments} showComposer={showComposer} />
+            </td>
+          </tr>
+        );
+      }
+    });
+    return (
+      <HunkGroup>
+        {lines}
+      </HunkGroup>
+    );
+  }
+
+  _openCommentComposer(line) {
+    this.setState({ commentComposerPosition: line.position });
+  }
 }
 
-export default function PullRequestFile({ file, parsedPatch }) {
+export default function PullRequestFile({ file, parsedPatch, canCreateComment }) {
   const commentsByPosition = {};
   if (file.comments) {
     file.comments.forEach(comment => {
@@ -191,12 +247,16 @@ export default function PullRequestFile({ file, parsedPatch }) {
       language = ext;
   }
 
+  const colSpan = canCreateComment ? 4 : 3;
+
   return (
     <DiffTable>
       {parsedPatch.map((hunk, i) =>
         [<thead>
           <HunkHeaderRow>
-            <td style={{paddingTop: i > 0 ? '16px' : 0}} colSpan={3}>{hunk.header}</td>
+            <td style={{paddingTop: i > 0 ? '16px' : 0}} colSpan={colSpan}>
+              {hunk.header}
+            </td>
           </HunkHeaderRow>
         </thead>,
         <Hunk
@@ -204,6 +264,7 @@ export default function PullRequestFile({ file, parsedPatch }) {
           hunk={hunk}
           commentsByPosition={commentsByPosition}
           language={language}
+          canCreateComment={canCreateComment}
         />]
       )}
     </DiffTable>
