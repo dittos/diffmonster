@@ -4,7 +4,7 @@ import g from 'glamorous';
 import { Colors, Classes, Switch } from '@blueprintjs/core';
 import FileTree from '../ui/FileTree';
 import { parsePatch } from '../lib/PatchParser';
-import PullRequestFile from './PullRequestFile';
+import Diff from './Diff';
 import Summary, { Header as SummaryHeader } from './Summary';
 import { isAuthenticated } from '../lib/GithubAuth';
 
@@ -120,7 +120,7 @@ export default class PullRequest extends Component {
             <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
               {activeFile ?
                 parsedPatch ?
-                  <PullRequestFile
+                  <Diff
                     file={activeFile}
                     parsedPatch={parsedPatch}
                     canCreateComment={isAuthenticated()}
