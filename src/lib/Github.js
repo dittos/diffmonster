@@ -54,9 +54,6 @@ export function getPullRequestComments(pullRequest) {
   return paginated(ajax({
     url: `${pullRequest.url}/comments`,
     method: 'get',
-    headers: {
-      'Accept': 'application/vnd.github.black-cat-preview+json'
-    }
   }));
 }
 
@@ -71,5 +68,16 @@ export function searchIssues(q) {
   return ajax({
     url: `${BASE_URL}/search/issues?q=${encodeURIComponent(q)}`,
     method: 'get',
+  }).map(resp => resp.response);
+}
+
+export function addPullRequestReviewComment(pullRequest, data) {
+  return ajax({
+    url: `${pullRequest.url}/comments`,
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: data,
   }).map(resp => resp.response);
 }

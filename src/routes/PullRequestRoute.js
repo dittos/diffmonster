@@ -20,6 +20,7 @@ export default class PullRequestRoute extends Component {
     data: { isLoading: true }
   };
   subscription = new Subscription();
+  loadId = 0;
 
   componentDidMount() {
     this._load(this.props.match.params);
@@ -53,6 +54,7 @@ export default class PullRequestRoute extends Component {
     return (
       <DocumentTitle title={`${data.pullRequest.title} - ${data.pullRequest.base.repo.full_name}#${data.pullRequest.number}`}>
         <PullRequest
+          key={this.loadId}
           data={data}
           activeFile={this._getActiveFile()}
           getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
@@ -79,6 +81,7 @@ export default class PullRequestRoute extends Component {
   _load(params) {
     this._cancelLoad();
     this.setState({ data: { isLoading: true } });
+    this.loadId++;
 
     const { owner, repo, id } = params;
     this.subscription.add(Observable.zip(
@@ -86,15 +89,19 @@ export default class PullRequestRoute extends Component {
       getPullRequestFiles(owner, repo, id),
       (pullRequest, files) => ({ pullRequest, files })
     ).subscribe(data => {
-      data.isLoadingReviewStates = isAuthenticated();
-      this.setState({ data });
+      try {
+        data.isLoadingReviewStates = isAuthenticated();
+        this.setState({ data });
 
-      this.subscription.add(getPullRequestComments(data.pullRequest)
-        .subscribe(this._applyComments, err => console.error(err)));
+        this.subscription.add(getPullRequestComments(data.pullRequest)
+          .subscribe(this._applyComments, err => console.error(err)));
 
-      if (data.isLoadingReviewStates) {
-        this.subscription.add(observeReviewStates(data.pullRequest.id)
-          .subscribe(this._applyReviewStates, err => console.error(err)));
+        if (data.isLoadingReviewStates) {
+          this.subscription.add(observeReviewStates(data.pullRequest.id)
+            .subscribe(this._applyReviewStates, err => console.error(err)));
+        }
+      } catch (e) {
+        console.error(e);
       }
     }, err => {
       if (err.status === 404) {

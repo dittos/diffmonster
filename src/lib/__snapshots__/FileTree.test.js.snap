@@ -1,3 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
 exports[`makeTree should concatenate dirs with only a dir 1`] = `
 Object {
   "dirs": Object {

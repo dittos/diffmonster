@@ -15,14 +15,21 @@ const SecondaryLabel = g.span({
 });
 
 class FileTree extends React.Component {
-  render() {
-    const { files } = this.props;
+  state = {
+    tree: makeTree(this.props.files),
+  };
 
+  componentWillReceiveProps(nextProps) {
+    if (this.props.files !== nextProps.files)
+      this.setState({ tree: makeTree(nextProps.files) });
+  }
+
+  render() {
     // TODO: collapsible
     return (
       <Tree
-        contents={this._renderTree(makeTree(files))}
-        onNodeClick={this._onNodeClick.bind(this)}
+        contents={this._renderTree(this.state.tree)}
+        onNodeClick={this._onNodeClick}
       />
     );
   }
@@ -60,11 +67,11 @@ class FileTree extends React.Component {
     return nodes;
   }
 
-  _onNodeClick(node) {
+  _onNodeClick = node => {
     if (!node.isSelected && node._path) {
       this.props.history.push(this.props.getFilePath(node._path));
     }
-  }
+  };
 }
 
 export default withRouter(FileTree);

@@ -4,7 +4,7 @@ import { Colors } from '@blueprintjs/core';
 import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
-import { LineType } from '../lib/PatchParser';
+import { LineType, parsePatch } from '../lib/PatchParser';
 import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 
@@ -178,17 +178,20 @@ class Hunk extends React.Component {
 
 export default class Diff extends React.Component {
   state = {
+    parsedPatch: parsePatch(this.props.file.patch),
     commentComposerPosition: -1,
   };
 
   componentWillReceiveProps(nextProps) {
     if (this.props.file.sha !== nextProps.file.sha) {
       this._closeCommentComposer();
+      this.setState({ parsedPatch: parsePatch(nextProps.file.patch) });
     }
   }
 
   render() {
-    const { file, parsedPatch, canCreateComment } = this.props;
+    const { file, canCreateComment } = this.props;
+    const parsedPatch = this.state.parsedPatch;
     const commentsByPosition = {};
     if (file.comments) {
       file.comments.forEach(comment => {
