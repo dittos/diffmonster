@@ -1,12 +1,12 @@
 import React from 'react';
 import g from 'glamorous';
-import { Colors, Button, Intent } from '@blueprintjs/core';
+import { Colors } from '@blueprintjs/core';
 import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
-import marked from 'marked';
 import { LineType } from '../lib/PatchParser';
 import { highlightDiff } from '../lib/DiffHighlight';
+import CommentThread from './CommentThread';
 
 const DiffTable = g.table({
   lineHeight: '20px',
@@ -101,35 +101,6 @@ const CommentContainer = g.div({
   borderBottom: `1px solid ${Colors.LIGHT_GRAY2}`,
 });
 
-const Comment = g.div({
-  padding: '8px',
-  margin: '8px',
-  border: `1px solid ${Colors.GRAY5}`,
-  borderRadius: '3px',
-  fontFamily: 'sans-serif',
-});
-
-const CommentComposer = g.div({
-  margin: '8px',
-  fontFamily: 'sans-serif',
-});
-
-const CommentComposerActions = g.div({
-  marginTop: '8px',
-
-  '& button': {
-    marginRight: '8px',
-  }
-});
-
-const CommentMeta = g.div({
-  paddingBottom: '8px',
-});
-
-const CommentUser = g.a({
-  fontWeight: 'bold',
-});
-
 class Highlighter {
   constructor(lang) {
     this.lang = lang;
@@ -143,38 +114,16 @@ class Highlighter {
   }
 }
 
-function CommentThread({ comments, showComposer }) {
-  return (
-    <CommentContainer>
-      {comments && comments.map((comment, i) =>
-        <Comment first={i === 0} key={comment.id}>
-          <CommentMeta>
-            <CommentUser>{comment.user.login}</CommentUser>
-          </CommentMeta>
-          <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
-        </Comment>
-      )}
-      {showComposer && <CommentComposer key="composer">
-        <textarea
-          placeholder="Write comment..."
-          className="pt-input pt-fill"
-        />
-        <CommentComposerActions>
-          <Button text="Write" intent={Intent.PRIMARY} />
-          <Button text="Cancel" />
-        </CommentComposerActions>
-      </CommentComposer>}
-    </CommentContainer>
-  );
-}
-
 class Hunk extends React.Component {
-  state = {
-    commentComposerPosition: -1,
-  };
-
   render() {
-    const { hunk, commentsByPosition, language, canCreateComment } = this.props;
+    const {
+      hunk,
+      commentsByPosition,
+      language,
+      canCreateComment,
+      commentComposerPosition,
+      onCloseCommentComposer,
+    } = this.props;
     const lines = [];
     const highlighter = language ? new Highlighter(language) : null;
     highlightDiff(hunk).forEach(line => {
@@ -182,7 +131,7 @@ class Hunk extends React.Component {
       lines.push(
         <C.LineRow key={'L' + line.position}>
           {canCreateComment &&
-            <AddCommentCell onClick={() => this._openCommentComposer(line)}>
+            <AddCommentCell onClick={() => this.props.onOpenCommentComposer(line.position)}>
               <span className={`pt-icon-standard pt-icon-comment ${AddCommentIcon}`} />
             </AddCommentCell>}
           <LineNumberCell>{line.fromLine || ''}</LineNumberCell>
@@ -204,69 +153,99 @@ class Hunk extends React.Component {
         </C.LineRow>
       );
       const comments = commentsByPosition[line.position];
-      const showComposer = line.position === this.state.commentComposerPosition;
+      const showComposer = line.position === commentComposerPosition;
       if (comments || showComposer) {
         lines.push(
           <tr key={'C' + line.position}>
             <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
-              <CommentThread comments={comments} showComposer={showComposer} />
+              <CommentContainer>
+                <CommentThread
+                  comments={comments}
+                  showComposer={showComposer}
+                  onCloseComposer={onCloseCommentComposer}
+                />
+              </CommentContainer>
             </td>
           </tr>
         );
       }
     });
     return (
-      <HunkGroup>
-        {lines}
-      </HunkGroup>
+      <HunkGroup>{lines}</HunkGroup>
     );
-  }
-
-  _openCommentComposer(line) {
-    this.setState({ commentComposerPosition: line.position });
   }
 }
 
-export default function PullRequestFile({ file, parsedPatch, canCreateComment }) {
-  const commentsByPosition = {};
-  if (file.comments) {
-    file.comments.forEach(comment => {
-      if (comment.position) {
-        if (!commentsByPosition[comment.position])
-          commentsByPosition[comment.position] = [];
-        commentsByPosition[comment.position].push(comment);
-      }
-    });
+export default class Diff extends React.Component {
+  state = {
+    commentComposerPosition: -1,
+  };
+
+  componentWillReceiveProps(nextProps) {
+    if (this.props.file.sha !== nextProps.file.sha) {
+      this._closeCommentComposer();
+    }
   }
 
-  let language;
-  const parts = file.filename.split('.');
-  if (parts.length > 1) {
-    const ext = parts[parts.length - 1];
-    if (getLanguage(ext))
-      language = ext;
-  }
+  render() {
+    const { file, parsedPatch, canCreateComment } = this.props;
+    const commentsByPosition = {};
+    if (file.comments) {
+      file.comments.forEach(comment => {
+        if (comment.position) {
+          if (!commentsByPosition[comment.position])
+            commentsByPosition[comment.position] = [];
+          commentsByPosition[comment.position].push(comment);
+        }
+      });
+    }
 
-  const colSpan = canCreateComment ? 4 : 3;
+    let language;
+    const parts = file.filename.split('.');
+    if (parts.length > 1) {
+      const ext = parts[parts.length - 1];
+      if (getLanguage(ext))
+        language = ext;
+    }
 
-  return (
-    <DiffTable>
-      {parsedPatch.map((hunk, i) =>
-        [<thead>
+    const colSpan = canCreateComment ? 4 : 3;
+
+    const items = [];
+    for (var i = 0; i < parsedPatch.length; i++) {
+      const hunk = parsedPatch[i];
+      items.push(
+        <thead key={'H' + i}>
           <HunkHeaderRow>
             <td style={{paddingTop: i > 0 ? '16px' : 0}} colSpan={colSpan}>
               {hunk.header}
             </td>
           </HunkHeaderRow>
-        </thead>,
+        </thead>
+      );
+      items.push(
         <Hunk
-          key={hunk.position}
+          key={'L' + i}
           hunk={hunk}
           commentsByPosition={commentsByPosition}
           language={language}
           canCreateComment={canCreateComment}
-        />]
-      )}
-    </DiffTable>
-  );
+          commentComposerPosition={this.state.commentComposerPosition}
+          onOpenCommentComposer={this._openCommentComposer}
+          onCloseCommentComposer={this._closeCommentComposer}
+        />
+      );
+    }
+
+    return (
+      <DiffTable>{items}</DiffTable>
+    );
+  }
+
+  _openCommentComposer = position => {
+    this.setState({ commentComposerPosition: position });
+  };
+
+  _closeCommentComposer = () => {
+    this.setState({ commentComposerPosition: -1 });
+  };
 }
