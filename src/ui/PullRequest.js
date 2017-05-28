@@ -1,11 +1,14 @@
 import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
+import { connect } from 'react-redux';
+import DocumentTitle from 'react-document-title';
 import g from 'glamorous';
-import { Colors, Classes, Switch } from '@blueprintjs/core';
-import FileTree from '../ui/FileTree';
+import { Colors, Classes, Switch, NonIdealState } from '@blueprintjs/core';
+import FileTree from './FileTree';
 import Diff from './Diff';
 import Summary, { Header as SummaryHeader } from './Summary';
-import { isAuthenticated } from '../lib/GithubAuth';
+import Loading from './Loading';
+import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
 
 const NoPreview = g.div({
@@ -46,7 +49,7 @@ const ContentPanel = g(Panel)({
   margin: '0 6px 6px 0',
 });
 
-export default class PullRequest extends Component {
+class PullRequest extends Component {
   componentDidUpdate(prevProps) {
     if (prevProps.activePath !== this.props.activePath) {
       if (this._scrollEl)
@@ -55,16 +58,26 @@ export default class PullRequest extends Component {
   }
 
   render() {
+    if (this.props.status === 'loading')
+      return <Loading />;
+    
+    if (this.props.status === 'notFound')
+      return this._renderNotFound();
+
+    const pullRequest = this.props.pullRequest;
+
     return (
-      <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
-        <g.Div flex="0" className={Classes.DARK}>
-          <SummaryHeader pullRequest={this.props.pullRequest} />
+      <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
+        <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
+          <g.Div flex="0" className={Classes.DARK}>
+            <SummaryHeader pullRequest={pullRequest} />
+          </g.Div>
+          <g.Div flex="1" display="flex" overflow="auto">
+            {this._renderFileTree()}
+            {this._renderContent()}
+          </g.Div>
         </g.Div>
-        <g.Div flex="1" display="flex" overflow="auto">
-          {this._renderFileTree()}
-          {this._renderContent()}
-        </g.Div>
-      </g.Div>
+      </DocumentTitle>
     );
   }
 
@@ -161,6 +174,20 @@ export default class PullRequest extends Component {
     );
   }
 
+  _renderNotFound() {
+    return (
+      <NonIdealState
+        title="Not Found"
+        visual="warning-sign"
+        description={
+          <p>
+            <a href="#" onClick={this._login}>Login with GitHub</a> to view private repos.
+          </p>
+        }
+      />
+    )
+  }
+
   _getReviewedFileCount() {
     let count = 0;
     if (this.props.reviewStates) {
@@ -181,4 +208,11 @@ export default class PullRequest extends Component {
     const activeFile = activePath && files.filter(file => file.filename === activePath)[0];
     setReviewState(pullRequest.id, activeFile.sha, event.target.checked);
   };
+
+  _login = event => {
+    event.preventDefault();
+    startAuth();
+  };
 }
+
+export default connect(state => state)(PullRequest);

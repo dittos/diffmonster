@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { NonIdealState } from '@blueprintjs/core';
-import DocumentTitle from 'react-document-title';
 import { Observable } from 'rxjs/Observable';
 import { Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/zip';
@@ -11,14 +10,16 @@ import {
   getPullRequest,
   getPullRequestFiles,
   getPullRequestComments,
-  addPullRequestReviewComment,
 } from '../lib/Github';
-import { startAuth, isAuthenticated } from '../lib/GithubAuth';
+import { isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import withQueryParams from '../lib/withQueryParams';
 
-class PullRequestRoute extends Component {
-  state = {
+import { createStore } from 'redux';
+import { Provider } from 'react-redux';
+
+function getInitialState() {
+  return {
     status: 'loading',
     pullRequest: null,
     files: null,
@@ -26,9 +27,55 @@ class PullRequestRoute extends Component {
     isLoadingReviewStates: false,
     reviewStates: null,
   };
+}
+
+function reducer(state = getInitialState(), action) {
+  switch (action.type) {
+    case 'FETCH':
+      return getInitialState();
+
+    case 'FETCH_ERROR':
+      return {
+        ...state,
+        status: 'notFound',
+      };
+
+    case 'FETCH_SUCCESS':
+      return {
+        ...state,
+        status: 'success',
+        ...action.payload,
+      };
+
+    case 'COMMENTS_FETCHED':
+      return {
+        ...state,
+        comments: action.payload,
+      };
+
+    case 'COMMENT_ADDED':
+      return {
+        ...state,
+        comments: state.comments.concat(action.payload),
+      };
+
+    case 'REVIEW_STATES_CHANGED':
+      return {
+        ...state,
+        reviewStates: action.payload,
+        isLoadingReviewStates: false,
+      };
+  }
+
+  return state;
+}
+
+class PullRequestRoute extends Component {
   subscription = new Subscription();
+  store = createStore(reducer);
 
   componentDidMount() {
+    this.store.subscribe(() => console.log(this.store.getState()))
     this._load(this.props.match.params);
   }
 
@@ -49,53 +96,19 @@ class PullRequestRoute extends Component {
   }
 
   render() {
-    if (this.state.status === 'loading')
-      return <Loading />;
-    
-    if (this.state.status === 'notFound')
-      return this._renderNotFound();
-
     return (
-      <DocumentTitle title={`${this.state.pullRequest.title} - ${this.state.pullRequest.base.repo.full_name}#${this.state.pullRequest.number}`}>
+      <Provider store={this.store}>
         <PullRequest
-          pullRequest={this.state.pullRequest}
-          files={this.state.files}
-          comments={this.state.comments}
-          isLoadingReviewStates={this.state.isLoadingReviewStates}
-          reviewStates={this.state.reviewStates}
           activePath={this.props.queryParams.path}
           onSelectFile={this._onSelectFile}
-          onAddComment={this._addComment}
         />
-      </DocumentTitle>
+      </Provider>
     );
-  }
-
-  _renderNotFound() {
-    return (
-      <NonIdealState
-        title="Not Found"
-        visual="warning-sign"
-        description={
-          <p>
-            <a href="#" onClick={this._login}>Login with GitHub</a> to view private repos.
-          </p>
-        }
-      />
-    )
   }
 
   _load(params) {
     this._cancelLoad();
-    const shouldLoadReviewStates = isAuthenticated();
-    this.setState({
-      status: 'loading',
-      pullRequest: null,
-      files: null,
-      comments: null,
-      reviewStates: null,
-      isLoadingReviewStates: shouldLoadReviewStates,
-    });
+    this.store.dispatch({ type: 'FETCH' });
 
     const { owner, repo, id } = params;
     this.subscription.add(Observable.zip(
@@ -103,15 +116,20 @@ class PullRequestRoute extends Component {
       getPullRequestFiles(owner, repo, id)
     ).subscribe(([ pullRequest, files ]) => {
       try {
-        this.setState({
-          status: 'success',
-          pullRequest,
-          files,
+        const shouldLoadReviewStates = isAuthenticated();
+
+        this.store.dispatch({
+          type: 'FETCH_SUCCESS',
+          payload: {
+            pullRequest,
+            files,
+            isLoadingReviewStates: shouldLoadReviewStates,
+          },
         });
 
         this.subscription.add(getPullRequestComments(pullRequest)
           .subscribe(
-            comments => this.setState({ comments }),
+            comments => this.store.dispatch({ type: 'COMMENTS_FETCHED', payload: comments }),
             err => console.error(err)
           ));
 
@@ -119,7 +137,7 @@ class PullRequestRoute extends Component {
           this.subscription.add(observeReviewStates(pullRequest.id)
             .subscribe(
               reviewStates =>
-                this.setState({ reviewStates, isLoadingReviewStates: false }),
+                this.store.dispatch({ type: 'REVIEW_STATES_CHANGED', payload: reviewStates || {} }),
               err => console.error(err)
             ));
         }
@@ -128,7 +146,7 @@ class PullRequestRoute extends Component {
       }
     }, err => {
       if (err.status === 404) {
-        this.setState({ status: 'notFound' });
+        this.store.dispatch({ type: 'FETCH_ERROR' });
       } else {
         console.log(err);
         // TODO: show error
@@ -146,21 +164,6 @@ class PullRequestRoute extends Component {
       this.subscription = new Subscription();
     }
   }
-
-  _login = event => {
-    event.preventDefault();
-    startAuth();
-  };
-
-  _addComment = (comment) => {
-    const pullRequest = this.state.pullRequest;
-    return addPullRequestReviewComment(pullRequest, {
-      ...comment,
-      commit_id: pullRequest.head.sha,
-    }).do(comment => {
-      this.setState(({ comments }) => ({ comments: comments.concat(comment) }));
-    });
-  };
 
   _onSelectFile = path => {
     this.props.history.push({

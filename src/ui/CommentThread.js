@@ -1,8 +1,10 @@
 import React from 'react';
+import { connect } from 'react-redux';
 import g from 'glamorous';
 import { Colors, Button, Intent } from '@blueprintjs/core';
 import marked from 'marked';
 import { Subscription } from 'rxjs/Subscription';
+import { addPullRequestReviewComment } from '../lib/Github';
 
 const Comment = g.div({
   padding: '8px',
@@ -33,7 +35,7 @@ const CommentUser = g.a({
   fontWeight: 'bold',
 });
 
-export default class CommentThread extends React.Component {
+class CommentThread extends React.Component {
   state = {
     commentBody: '',
     addingComment: false,
@@ -88,12 +90,19 @@ export default class CommentThread extends React.Component {
 
   _addComment = () => {
     this.setState({ addingComment: true });
+
+    const pullRequest = this.props.pullRequest;
     this.subscription.add(
-      this.props.onAddComment({
+      addPullRequestReviewComment(pullRequest, {
         body: this.state.commentBody,
         position: this.props.position,
         path: this.props.file.filename,
-      }).subscribe(() => {
+        commit_id: pullRequest.head.sha,
+      }).subscribe(comment => {
+        this.props.dispatch({
+          type: 'COMMENT_ADDED',
+          payload: comment,
+        });
         this.setState({ addingComment: false });
         this._closeComposer();
       })
@@ -105,3 +114,7 @@ export default class CommentThread extends React.Component {
     this.setState({ commentBody: '' });
   };
 }
+
+export default connect(state => ({
+  pullRequest: state.pullRequest,
+}))(CommentThread);
