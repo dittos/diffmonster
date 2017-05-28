@@ -5,7 +5,6 @@ import { Observable } from 'rxjs/Observable';
 import { Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/zip';
 import 'rxjs/add/operator/do';
-import querystring from 'querystring';
 import Loading from '../ui/Loading';
 import PullRequest from '../ui/PullRequest';
 import {
@@ -16,8 +15,9 @@ import {
 } from '../lib/Github';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates, setReviewState } from '../lib/Database';
+import withQueryParams from '../lib/withQueryParams';
 
-export default class PullRequestRoute extends Component {
+class PullRequestRoute extends Component {
   state = {
     data: { isLoading: true }
   };
@@ -192,8 +192,7 @@ export default class PullRequestRoute extends Component {
   }
 
   _getActiveFile() {
-    const queryParams = querystring.parse(this.props.location.search.substring(1));
-    const activePath = queryParams.path;
+    const activePath = this.props.queryParams.path;
     const files = this.state.data.files;
     if (activePath && files)
       return files.filter(file => file.filename === activePath)[0];
@@ -216,3 +215,5 @@ export default class PullRequestRoute extends Component {
     }).do(this._applyAddedComment);
   };
 }
+
+export default withQueryParams(PullRequestRoute);

@@ -44,7 +44,6 @@ export default class CommentThread extends React.Component {
     const {
       comments,
       showComposer,
-      onCloseComposer,
     } = this.props;
     return (
       <div>
