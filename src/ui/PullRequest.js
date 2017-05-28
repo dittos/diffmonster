@@ -6,6 +6,7 @@ import FileTree from '../ui/FileTree';
 import Diff from './Diff';
 import Summary, { Header as SummaryHeader } from './Summary';
 import { isAuthenticated } from '../lib/GithubAuth';
+import { setReviewState } from '../lib/Database';
 
 const NoPreview = g.div({
   padding: '16px',
@@ -47,8 +48,7 @@ const ContentPanel = g(Panel)({
 
 export default class PullRequest extends Component {
   componentDidUpdate(prevProps) {
-    if ((prevProps.activeFile && prevProps.activeFile.sha) !==
-        (this.props.activeFile && this.props.activeFile.sha)) {
+    if (prevProps.activePath !== this.props.activePath) {
       if (this._scrollEl)
         findDOMNode(this._scrollEl).scrollTop = 0;
     }
@@ -58,11 +58,11 @@ export default class PullRequest extends Component {
     return (
       <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
         <g.Div flex="0" className={Classes.DARK}>
-          <SummaryHeader pullRequest={this.props.data.pullRequest} />
+          <SummaryHeader pullRequest={this.props.pullRequest} />
         </g.Div>
         <g.Div flex="1" display="flex" overflow="auto">
           {this._renderFileTree()}
-          {this._renderContent(this.props.activeFile)}
+          {this._renderContent()}
         </g.Div>
       </g.Div>
     );
@@ -70,15 +70,22 @@ export default class PullRequest extends Component {
 
   _renderFileTree() {
     const {
-      activeFile,
-      getFilePath,
-    } = this.props;
-    const {
       files,
+      comments,
       isLoadingReviewStates,
       reviewStates,
-      reviewedFileCount,
-    } = this.props.data;
+      activePath,
+      onSelectFile,
+    } = this.props;
+    
+    const commentCountByPath = {};
+    if (comments) {
+      for (let comment of comments) {
+        if (!commentCountByPath[comment.path])
+          commentCountByPath[comment.path] = 0;
+        commentCountByPath[comment.path]++;
+      }
+    }
 
     return (
       <FileTreePanel>
@@ -88,27 +95,35 @@ export default class PullRequest extends Component {
           </g.Div>
           <g.Div flex="initial">
             {reviewStates ?
-              <g.Span color={Colors.GRAY1}>{reviewedFileCount} of {files.length} reviewed</g.Span> :
+              <g.Span color={Colors.GRAY1}>{this._getReviewedFileCount()} of {files.length} reviewed</g.Span> :
               isLoadingReviewStates &&
                 <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
           </g.Div>
         </PanelHeader>
         <g.Div flex="1" overflowY="auto">
           <FileTree
-            files={files}
-            activePath={activeFile && activeFile.filename}
-            getFilePath={getFilePath}
+            files={files.map(file => ({
+              ...file,
+              commentCount: commentCountByPath[file.filename],
+              isReviewed: reviewStates && reviewStates[file.sha],
+            }))}
+            activePath={activePath}
+            onSelectFile={onSelectFile}
           />
         </g.Div>
       </FileTreePanel>
     );
   }
 
-  _renderContent(activeFile) {
+  _renderContent() {
     const {
       pullRequest,
+      files,
+      comments,
+      activePath,
       reviewStates,
-    } = this.props.data;
+    } = this.props;
+    const activeFile = activePath && files.filter(file => file.filename === activePath)[0];
 
     return (
       <ContentPanel>
@@ -122,7 +137,7 @@ export default class PullRequest extends Component {
             <g.Div flex="initial">
               {reviewStates && <Switch
                 className="pt-inline"
-                checked={activeFile.isReviewed}
+                checked={reviewStates[activeFile.sha] || false}
                 label="Done"
                 onChange={this._onReviewStateChange}
               />}
@@ -134,6 +149,7 @@ export default class PullRequest extends Component {
             activeFile.patch ?
               <Diff
                 file={activeFile}
+                comments={comments && comments.filter(c => c.path === activePath)}
                 canCreateComment={isAuthenticated()}
                 onAddComment={this.props.onAddComment}
               /> :
@@ -145,7 +161,24 @@ export default class PullRequest extends Component {
     );
   }
 
+  _getReviewedFileCount() {
+    let count = 0;
+    if (this.props.reviewStates) {
+      this.props.files.forEach(file => {
+        if (this.props.reviewStates[file.sha])
+          count++;
+      });
+    }
+    return count;
+  }
+
   _onReviewStateChange = event => {
-    this.props.onReviewStateChange(this.props.activeFile, event.target.checked);
+    const {
+      pullRequest,
+      files,
+      activePath,
+    } = this.props;
+    const activeFile = activePath && files.filter(file => file.filename === activePath)[0];
+    setReviewState(pullRequest.id, activeFile.sha, event.target.checked);
   };
 }

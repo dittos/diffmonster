@@ -37,6 +37,7 @@ const BaseLineRow = g.tr({
 });
 
 const AddCommentCell = g.td({
+  width: '16px',
   padding: '0 5px',
   cursor: 'pointer',
   color: Colors.GRAY1,
@@ -195,11 +196,11 @@ export default class Diff extends React.Component {
   }
 
   render() {
-    const { file, canCreateComment } = this.props;
+    const { file, comments, canCreateComment } = this.props;
     const parsedPatch = this.state.parsedPatch;
     const commentsByPosition = {};
-    if (file.comments) {
-      file.comments.forEach(comment => {
+    if (comments) {
+      comments.forEach(comment => {
         if (comment.position) {
           if (!commentsByPosition[comment.position])
             commentsByPosition[comment.position] = [];

@@ -1,5 +1,4 @@
 import React from 'react';
-import { withRouter } from 'react-router';
 import g from 'glamorous';
 import { Tree } from '@blueprintjs/core';
 import { makeTree } from '../lib/FileTree';
@@ -55,7 +54,7 @@ class FileTree extends React.Component {
           label: path.split('/').pop(),
           isSelected: this.props.activePath === path,
           secondaryLabel: <SecondaryLabel>
-            {!file.isReviewed && file.comments && file.comments.length > 0 &&
+            {!file.isReviewed && file.commentCount > 0 &&
               <span className="pt-icon-standard pt-icon-comment" />}
             {file.isReviewed &&
               <span className="pt-icon-standard pt-icon-small-tick" />}
@@ -69,9 +68,9 @@ class FileTree extends React.Component {
 
   _onNodeClick = node => {
     if (!node.isSelected && node._path) {
-      this.props.history.push(this.props.getFilePath(node._path));
+      this.props.onSelectFile(node._path);
     }
   };
 }
 
-export default withRouter(FileTree);
+export default FileTree;

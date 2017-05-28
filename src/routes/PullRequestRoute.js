@@ -14,15 +14,19 @@ import {
   addPullRequestReviewComment,
 } from '../lib/Github';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
-import { observeReviewStates, setReviewState } from '../lib/Database';
+import { observeReviewStates } from '../lib/Database';
 import withQueryParams from '../lib/withQueryParams';
 
 class PullRequestRoute extends Component {
   state = {
-    data: { isLoading: true }
+    status: 'loading',
+    pullRequest: null,
+    files: null,
+    comments: null,
+    isLoadingReviewStates: false,
+    reviewStates: null,
   };
   subscription = new Subscription();
-  loadId = 0;
 
   componentDidMount() {
     this._load(this.props.match.params);
@@ -45,22 +49,22 @@ class PullRequestRoute extends Component {
   }
 
   render() {
-    const { data } = this.state;
-
-    if (data.isLoading)
+    if (this.state.status === 'loading')
       return <Loading />;
     
-    if (data.notFound)
+    if (this.state.status === 'notFound')
       return this._renderNotFound();
 
     return (
-      <DocumentTitle title={`${data.pullRequest.title} - ${data.pullRequest.base.repo.full_name}#${data.pullRequest.number}`}>
+      <DocumentTitle title={`${this.state.pullRequest.title} - ${this.state.pullRequest.base.repo.full_name}#${this.state.pullRequest.number}`}>
         <PullRequest
-          key={this.loadId}
-          data={data}
-          activeFile={this._getActiveFile()}
-          getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
-          onReviewStateChange={this._onReviewStateChange}
+          pullRequest={this.state.pullRequest}
+          files={this.state.files}
+          comments={this.state.comments}
+          isLoadingReviewStates={this.state.isLoadingReviewStates}
+          reviewStates={this.state.reviewStates}
+          activePath={this.props.queryParams.path}
+          onSelectFile={this._onSelectFile}
           onAddComment={this._addComment}
         />
       </DocumentTitle>
@@ -83,102 +87,54 @@ class PullRequestRoute extends Component {
 
   _load(params) {
     this._cancelLoad();
-    this.setState({ data: { isLoading: true } });
-    this.loadId++;
+    const shouldLoadReviewStates = isAuthenticated();
+    this.setState({
+      status: 'loading',
+      pullRequest: null,
+      files: null,
+      comments: null,
+      reviewStates: null,
+      isLoadingReviewStates: shouldLoadReviewStates,
+    });
 
     const { owner, repo, id } = params;
     this.subscription.add(Observable.zip(
       getPullRequest(owner, repo, id),
-      getPullRequestFiles(owner, repo, id),
-      (pullRequest, files) => ({ pullRequest, files })
-    ).subscribe(data => {
+      getPullRequestFiles(owner, repo, id)
+    ).subscribe(([ pullRequest, files ]) => {
       try {
-        data.isLoadingReviewStates = isAuthenticated();
-        this.setState({ data });
+        this.setState({
+          status: 'success',
+          pullRequest,
+          files,
+        });
 
-        this.subscription.add(getPullRequestComments(data.pullRequest)
-          .subscribe(this._applyComments, err => console.error(err)));
+        this.subscription.add(getPullRequestComments(pullRequest)
+          .subscribe(
+            comments => this.setState({ comments }),
+            err => console.error(err)
+          ));
 
-        if (data.isLoadingReviewStates) {
-          this.subscription.add(observeReviewStates(data.pullRequest.id)
-            .subscribe(this._applyReviewStates, err => console.error(err)));
+        if (shouldLoadReviewStates) {
+          this.subscription.add(observeReviewStates(pullRequest.id)
+            .subscribe(
+              reviewStates =>
+                this.setState({ reviewStates, isLoadingReviewStates: false }),
+              err => console.error(err)
+            ));
         }
       } catch (e) {
         console.error(e);
       }
     }, err => {
       if (err.status === 404) {
-        this.setState({ data: { notFound: true } });
+        this.setState({ status: 'notFound' });
       } else {
         console.log(err);
         // TODO: show error
       }
     }));
   }
-
-  _applyComments = comments => {
-    if (!comments)
-      return;
-
-    // Exclude outdated comments
-    comments = comments.filter(comment => Boolean(comment.position));
-
-    this.setState(({ data }) => {
-      return {
-        data: {
-          ...data,
-          files: data.files.map(file => ({
-            ...file,
-            comments: comments.filter(comment => comment.path === file.filename),
-          })),
-        }
-      };
-    });
-  };
-
-  _applyAddedComment = comment => {
-    this.setState(({ data }) => {
-      return {
-        data: {
-          ...data,
-          files: data.files.map(file => file.filename === comment.path ? {
-            ...file,
-            comments: [
-              ...file.comments,
-              comment,
-            ]
-          } : file),
-        }
-      };
-    });
-  };
-
-  _applyReviewStates = reviewStates => {
-    // NOTE: could be called multiple times if reviewStates change
-
-    if (!reviewStates)
-      reviewStates = {};
-
-    this.setState(({ data }) => {
-      let reviewedFileCount = 0;
-      for (let file of data.files)
-        if (reviewStates[file.sha])
-          reviewedFileCount++;
-
-      return {
-        data: {
-          ...data,
-          files: data.files.map(file => ({
-            ...file,
-            isReviewed: reviewStates[file.sha],
-          })),
-          isLoadingReviewStates: false,
-          reviewStates,
-          reviewedFileCount,
-        }
-      }
-    });
-  };
 
   _reload() {
     this._load(this.props.match.params);
@@ -191,28 +147,26 @@ class PullRequestRoute extends Component {
     }
   }
 
-  _getActiveFile() {
-    const activePath = this.props.queryParams.path;
-    const files = this.state.data.files;
-    if (activePath && files)
-      return files.filter(file => file.filename === activePath)[0];
-  }
-
   _login = event => {
     event.preventDefault();
     startAuth();
   };
 
-  _onReviewStateChange = (file, reviewState) => {
-    setReviewState(this.state.data.pullRequest.id, file.sha, reviewState);
-  };
-
   _addComment = (comment) => {
-    const pullRequest = this.state.data.pullRequest;
+    const pullRequest = this.state.pullRequest;
     return addPullRequestReviewComment(pullRequest, {
       ...comment,
       commit_id: pullRequest.head.sha,
-    }).do(this._applyAddedComment);
+    }).do(comment => {
+      this.setState(({ comments }) => ({ comments: comments.concat(comment) }));
+    });
+  };
+
+  _onSelectFile = path => {
+    this.props.history.push({
+      ...this.props.location,
+      search: path ? `?path=${encodeURIComponent(path)}` : '',
+    });
   };
 }
 
