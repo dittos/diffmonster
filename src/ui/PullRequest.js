@@ -135,6 +135,7 @@ export default class PullRequest extends Component {
               <Diff
                 file={activeFile}
                 canCreateComment={isAuthenticated()}
+                onAddComment={this.props.onAddComment}
               /> :
               <NoPreview>{/* Nothing changed or binary file */}</NoPreview> :
             <Summary pullRequest={pullRequest} />

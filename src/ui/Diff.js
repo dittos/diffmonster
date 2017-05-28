@@ -118,11 +118,13 @@ class Hunk extends React.Component {
   render() {
     const {
       hunk,
+      file,
       commentsByPosition,
       language,
       canCreateComment,
       commentComposerPosition,
       onCloseCommentComposer,
+      onAddComment,
     } = this.props;
     const lines = [];
     const highlighter = language ? new Highlighter(language) : null;
@@ -160,9 +162,12 @@ class Hunk extends React.Component {
             <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
               <CommentContainer>
                 <CommentThread
+                  file={file}
+                  position={line.position}
                   comments={comments}
                   showComposer={showComposer}
                   onCloseComposer={onCloseCommentComposer}
+                  onAddComment={onAddComment}
                 />
               </CommentContainer>
             </td>
@@ -228,6 +233,7 @@ export default class Diff extends React.Component {
       items.push(
         <Hunk
           key={'L' + i}
+          file={file}
           hunk={hunk}
           commentsByPosition={commentsByPosition}
           language={language}
@@ -235,6 +241,7 @@ export default class Diff extends React.Component {
           commentComposerPosition={this.state.commentComposerPosition}
           onOpenCommentComposer={this._openCommentComposer}
           onCloseCommentComposer={this._closeCommentComposer}
+          onAddComment={this.props.onAddComment}
         />
       );
     }

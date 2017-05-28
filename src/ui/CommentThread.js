@@ -2,6 +2,7 @@ import React from 'react';
 import g from 'glamorous';
 import { Colors, Button, Intent } from '@blueprintjs/core';
 import marked from 'marked';
+import { Subscription } from 'rxjs/Subscription';
 
 const Comment = g.div({
   padding: '8px',
@@ -32,27 +33,76 @@ const CommentUser = g.a({
   fontWeight: 'bold',
 });
 
-export default function CommentThread({ comments, showComposer, onCloseComposer }) {
-  return (
-    <div>
-      {comments && comments.map((comment, i) =>
-        <Comment first={i === 0} key={comment.id}>
-          <CommentMeta>
-            <CommentUser>{comment.user.login}</CommentUser>
-          </CommentMeta>
-          <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
-        </Comment>
-      )}
-      {showComposer && <CommentComposer key="composer">
-        <textarea
-          placeholder="Write comment..."
-          className="pt-input pt-fill"
-        />
-        <CommentComposerActions>
-          <Button text="Write" intent={Intent.PRIMARY} />
-          <Button text="Cancel" onClick={onCloseComposer} />
-        </CommentComposerActions>
-      </CommentComposer>}
-    </div>
-  );
+export default class CommentThread extends React.Component {
+  state = {
+    commentBody: '',
+    addingComment: false,
+  };
+  subscription = new Subscription();
+
+  render() {
+    const {
+      comments,
+      showComposer,
+      onCloseComposer,
+    } = this.props;
+    return (
+      <div>
+        {comments && comments.map((comment, i) =>
+          <Comment first={i === 0} key={comment.id}>
+            <CommentMeta>
+              <CommentUser>{comment.user.login}</CommentUser>
+            </CommentMeta>
+            <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
+          </Comment>
+        )}
+        {showComposer && <CommentComposer>
+          <textarea
+            placeholder="Leave a comment"
+            className="pt-input pt-fill"
+            value={this.state.commentBody}
+            onChange={event => this.setState({ commentBody: event.target.value })}
+            autoFocus
+            disabled={this.state.addingComment}
+          />
+          <CommentComposerActions>
+            <Button
+              text="Add comment"
+              intent={Intent.PRIMARY}
+              onClick={this._addComment}
+              loading={this.state.addingComment}
+            />
+            <Button
+              text="Cancel"
+              onClick={this._closeComposer}
+              disabled={this.state.addingComment}
+            />
+          </CommentComposerActions>
+        </CommentComposer>}
+      </div>
+    );
+  }
+
+  componentWillUnmount() {
+    this.subscription.unsubscribe();
+  }
+
+  _addComment = () => {
+    this.setState({ addingComment: true });
+    this.subscription.add(
+      this.props.onAddComment({
+        body: this.state.commentBody,
+        position: this.props.position,
+        path: this.props.file.filename,
+      }).subscribe(() => {
+        this.setState({ addingComment: false });
+        this._closeComposer();
+      })
+    );
+  };
+
+  _closeComposer = () => {
+    this.props.onCloseComposer();
+    this.setState({ commentBody: '' });
+  };
 }

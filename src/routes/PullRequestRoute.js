@@ -4,6 +4,7 @@ import DocumentTitle from 'react-document-title';
 import { Observable } from 'rxjs/Observable';
 import { Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/zip';
+import 'rxjs/add/operator/do';
 import querystring from 'querystring';
 import Loading from '../ui/Loading';
 import PullRequest from '../ui/PullRequest';
@@ -11,6 +12,7 @@ import {
   getPullRequest,
   getPullRequestFiles,
   getPullRequestComments,
+  addPullRequestReviewComment,
 } from '../lib/Github';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates, setReviewState } from '../lib/Database';
@@ -59,6 +61,7 @@ export default class PullRequestRoute extends Component {
           activeFile={this._getActiveFile()}
           getFilePath={path => ({...this.props.location, search: path ? `?path=${encodeURIComponent(path)}` : ''})}
           onReviewStateChange={this._onReviewStateChange}
+          onAddComment={this._addComment}
         />
       </DocumentTitle>
     );
@@ -133,6 +136,23 @@ export default class PullRequestRoute extends Component {
     });
   };
 
+  _applyAddedComment = comment => {
+    this.setState(({ data }) => {
+      return {
+        data: {
+          ...data,
+          files: data.files.map(file => file.filename === comment.path ? {
+            ...file,
+            comments: [
+              ...file.comments,
+              comment,
+            ]
+          } : file),
+        }
+      };
+    });
+  };
+
   _applyReviewStates = reviewStates => {
     // NOTE: could be called multiple times if reviewStates change
 
@@ -186,5 +206,13 @@ export default class PullRequestRoute extends Component {
 
   _onReviewStateChange = (file, reviewState) => {
     setReviewState(this.state.data.pullRequest.id, file.sha, reviewState);
+  };
+
+  _addComment = (comment) => {
+    const pullRequest = this.state.data.pullRequest;
+    return addPullRequestReviewComment(pullRequest, {
+      ...comment,
+      commit_id: pullRequest.head.sha,
+    }).do(this._applyAddedComment);
   };
 }
