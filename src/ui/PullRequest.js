@@ -166,7 +166,16 @@ class PullRequest extends Component {
                 canCreateComment={isAuthenticated()}
                 onAddComment={this.props.onAddComment}
               /> :
-              <NoPreview>{/* Nothing changed or binary file */}</NoPreview> :
+              <NoPreview>
+                <p>Can't render diff due to one of the following reasons:</p>
+                {/* cannot know easily because of GitHub API limitation */}
+                <ul>
+                  <li>No change</li>
+                  <li>File is empty</li>
+                  <li>Diff is too large</li>
+                  <li>Binary file</li>
+                </ul>
+              </NoPreview> :
             <Summary pullRequest={pullRequest} />
           }
         </g.Div>
