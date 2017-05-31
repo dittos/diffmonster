@@ -31,6 +31,7 @@ const separator = <Separator />;
 const PullRequestBody = g.div({
   maxWidth: '50em',
   margin: '16px auto',
+  padding: '0 2em',
 });
 
 const Title = g.div({
