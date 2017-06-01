@@ -16,6 +16,7 @@ const SecondaryLabel = g.span({
 class FileTree extends React.Component {
   state = {
     tree: makeTree(this.props.files),
+    collapsed: {},
   };
 
   componentWillReceiveProps(nextProps) {
@@ -24,11 +25,12 @@ class FileTree extends React.Component {
   }
 
   render() {
-    // TODO: collapsible
     return (
       <Tree
         contents={this._renderTree(this.state.tree)}
         onNodeClick={this._onNodeClick}
+        onNodeExpand={this._onNodeClick}
+        onNodeCollapse={this._onNodeClick}
       />
     );
   }
@@ -42,7 +44,7 @@ class FileTree extends React.Component {
         id: subPrefix,
         label: subtree.name,
         childNodes: this._renderTree(subtree, subPrefix),
-        isExpanded: true,
+        isExpanded: !this.state.collapsed[subPrefix],
       });
     }
     if (tree.files) {
@@ -59,7 +61,6 @@ class FileTree extends React.Component {
             {file.isReviewed &&
               <span className="pt-icon-standard pt-icon-small-tick" />}
           </SecondaryLabel>,
-          _path: path,
         });
       }
     }
@@ -67,8 +68,21 @@ class FileTree extends React.Component {
   }
 
   _onNodeClick = node => {
-    if (!node.isSelected && node._path) {
-      this.props.onSelectFile(node._path);
+    if (node.childNodes) {
+      // dir node
+      const isExpanded = node.isExpanded;
+      this.setState(({ collapsed }) => {
+        if (isExpanded)
+          collapsed[node.id] = true;
+        else
+          delete collapsed[node.id];
+        return { collapsed };
+      });
+    } else {
+      // file node
+      if (!node.isSelected) {
+        this.props.onSelectFile(node.id);
+      }
     }
   };
 }
