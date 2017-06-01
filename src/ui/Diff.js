@@ -91,6 +91,7 @@ const LineTypeComponents = {
     }),
   },
   [LineType.NOEOL]: {
+    LineRow: BaseLineRow,
     ContentCell: g(BaseContentCell)({
       color: oc.red[7],
     }),
