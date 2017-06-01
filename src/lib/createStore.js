@@ -11,26 +11,27 @@ import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/catch';
 import {
   getPullRequest,
-  getPullRequestFiles,
+  getPullRequestAsDiff,
   getPullRequestComments,
 } from './Github';
 import { isAuthenticated } from './GithubAuth';
 import { observeReviewStates } from './Database';
+import { parseDiff } from './DiffParser';
 
 const fetchEpic = action$ =>
   action$.ofType('FETCH').switchMap(action =>
     Observable.zip(
       getPullRequest(action.payload.owner, action.payload.repo, action.payload.id),
-      getPullRequestFiles(action.payload.owner, action.payload.repo, action.payload.id)
+      getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.id)
     )
     .catch(error => Observable.of({ type: 'FETCH_ERROR', payload: error }))
-    .switchMap(([ pullRequest, files ]) => {
+    .switchMap(([ pullRequest, diff ]) => {
       const shouldLoadReviewStates = isAuthenticated();
       const success$ = Observable.of(({
         type: 'FETCH_SUCCESS',
         payload: {
           pullRequest,
-          files,
+          files: parseDiff(diff),
           isLoadingReviewStates: shouldLoadReviewStates,
         },
       }));

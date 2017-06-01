@@ -1,7 +1,7 @@
 // JavaScript port of diff-highlight script in Git
 // https://github.com/git/git/blob/3dbfe2b8ae94cbdae5f3d32581aedaa5510fdc87/contrib/diff-highlight/diff-highlight
 
-import { LineType } from './PatchParser';
+import { LineType } from './DiffParser';
 
 export function highlightDiff(hunk) {
   const lines = [];

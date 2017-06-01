@@ -154,12 +154,12 @@ class PullRequest extends Component {
                 label="Done"
                 onChange={this._onReviewStateChange}
               />}
-              <a href={activeFile.blob_url} target="_blank">View</a>
+              <a href={getBlobUrl(pullRequest, activeFile)} target="_blank">View</a>
             </g.Div>
           </PanelHeader>}
         <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
           {activeFile ?
-            activeFile.patch ?
+            activeFile.blocks && activeFile.blocks.length > 0 ?
               <Diff
                 file={activeFile}
                 comments={comments && comments.filter(c => c.path === activePath)}
@@ -167,14 +167,7 @@ class PullRequest extends Component {
                 onAddComment={this.props.onAddComment}
               /> :
               <NoPreview>
-                <p>Can't render diff due to one of the following reasons:</p>
-                {/* cannot know easily because of GitHub API limitation */}
-                <ul>
-                  <li>No change</li>
-                  <li>File is empty</li>
-                  <li>Diff is too large</li>
-                  <li>Binary file</li>
-                </ul>
+                No change
               </NoPreview> :
             <Summary pullRequest={pullRequest} />
           }
@@ -222,6 +215,10 @@ class PullRequest extends Component {
     event.preventDefault();
     startAuth();
   };
+}
+
+function getBlobUrl(pullRequest, file) {
+  return `${pullRequest.head.repo.html_url}/blob/${pullRequest.head.sha}/${file.filename}`;
 }
 
 export default connect(state => state)(PullRequest);

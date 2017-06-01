@@ -4,7 +4,7 @@ import { Colors } from '@blueprintjs/core';
 import oc from 'open-color';
 import { highlight, getLanguage } from "highlight.js";
 import "highlight.js/styles/default.css";
-import { LineType, parsePatch } from '../lib/PatchParser';
+import { LineType } from '../lib/DiffParser';
 import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 
@@ -138,8 +138,8 @@ class Hunk extends React.Component {
             <AddCommentCell onClick={() => this.props.onOpenCommentComposer(line.position)}>
               <span className={`pt-icon-standard pt-icon-comment ${AddCommentIcon}`} />
             </AddCommentCell>}
-          <LineNumberCell>{line.fromLine || ''}</LineNumberCell>
-          <LineNumberCell>{line.toLine || ''}</LineNumberCell>
+          <LineNumberCell>{line.oldNumber || ''}</LineNumberCell>
+          <LineNumberCell>{line.newNumber || ''}</LineNumberCell>
           <C.ContentCell>
           {line.content.map((span, spanIndex) => {
             const props = {
@@ -185,20 +185,17 @@ class Hunk extends React.Component {
 
 export default class Diff extends React.Component {
   state = {
-    parsedPatch: parsePatch(this.props.file.patch),
     commentComposerPosition: -1,
   };
 
   componentWillReceiveProps(nextProps) {
     if (this.props.file.sha !== nextProps.file.sha) {
       this._closeCommentComposer();
-      this.setState({ parsedPatch: parsePatch(nextProps.file.patch) });
     }
   }
 
   render() {
     const { file, comments, canCreateComment } = this.props;
-    const parsedPatch = this.state.parsedPatch;
     const commentsByPosition = {};
     if (comments) {
       comments.forEach(comment => {
@@ -210,19 +207,11 @@ export default class Diff extends React.Component {
       });
     }
 
-    let language;
-    const parts = file.filename.split('.');
-    if (parts.length > 1) {
-      const ext = parts[parts.length - 1];
-      if (getLanguage(ext))
-        language = ext;
-    }
-
     const colSpan = canCreateComment ? 4 : 3;
 
     const items = [];
-    for (var i = 0; i < parsedPatch.length; i++) {
-      const hunk = parsedPatch[i];
+    for (var i = 0; i < file.blocks.length; i++) {
+      const hunk = file.blocks[i];
       items.push(
         <thead key={'H' + i}>
           <HunkHeaderRow>
@@ -238,7 +227,7 @@ export default class Diff extends React.Component {
           file={file}
           hunk={hunk}
           commentsByPosition={commentsByPosition}
-          language={language}
+          language={file.language && getLanguage(file.language) ? file.language : null}
           canCreateComment={canCreateComment}
           commentComposerPosition={this.state.commentComposerPosition}
           onOpenCommentComposer={this._openCommentComposer}

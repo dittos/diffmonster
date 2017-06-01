@@ -43,11 +43,15 @@ function paginated(obs) {
   });
 }
 
-export function getPullRequestFiles(owner, repo, id) {
-  return paginated(ajax({
-    url: `${pullRequestUrl(owner, repo, id)}/files`,
+export function getPullRequestAsDiff(owner, repo, id) {
+  return ajax({
+    url: `${pullRequestUrl(owner, repo, id)}`,
     method: 'get',
-  }));
+    headers: {
+      'Accept': 'application/vnd.github.v3.diff',
+    },
+    responseType: 'text',
+  }).map(resp => resp.response);
 }
 
 export function getPullRequestComments(pullRequest) {
