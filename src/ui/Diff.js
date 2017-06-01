@@ -90,12 +90,6 @@ const LineTypeComponents = {
       background: oc.green[3],
     }),
   },
-  [LineType.NOEOL]: {
-    LineRow: BaseLineRow,
-    ContentCell: g(BaseContentCell)({
-      color: oc.red[7],
-    }),
-  },
 };
 
 const CommentContainer = g.div({
@@ -106,12 +100,20 @@ const CommentContainer = g.div({
 class Highlighter {
   constructor(lang) {
     this.lang = lang;
-    this.stack = null;
+    this.oldStack = null;
+    this.newStack = null;
   }
 
-  highlight(code) {
-    const result = highlight(this.lang, code, false, this.stack);
-    this.stack = result.top;
+  highlight(code, lineType) {
+    const stack = lineType === LineType.DELETION ? this.oldStack : this.newStack;
+    const result = highlight(this.lang, code, false, stack);
+    if (lineType === LineType.DELETION) {
+      this.oldStack = result.top;
+    } else if (lineType === LineType.ADDITION) {
+      this.newStack = result.top;
+    } else {
+      this.oldStack = this.newStack = result.top;
+    }
     return result.value;
   }
 }
@@ -145,10 +147,13 @@ class Hunk extends React.Component {
             const props = {
               key: spanIndex,
             };
+            let content = span.content;
+            if (spanIndex === line.content.length - 1)
+              content += '\n';
             if (highlighter)
-              props.dangerouslySetInnerHTML = {__html: highlighter.highlight(span.content)};
+              props.dangerouslySetInnerHTML = {__html: highlighter.highlight(content, line.type)};
             else
-              props.children = span.content;
+              props.children = content;
             return span.highlight ?
               <C.Highlight {...props} />
               : <span {...props} />;

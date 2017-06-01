@@ -4,7 +4,6 @@ export const LineType = {
   CONTEXT: 'd2h-cntx',
   ADDITION: 'd2h-ins',
   DELETION: 'd2h-del',
-  NOEOL: '\\', // bye
 };
 
 export function parseDiff(diff) {
