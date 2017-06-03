@@ -6,6 +6,7 @@
     "@blueprintjs/core": "^1.17.1",
     "diff2html": "^2.3.0",
     "firebase": "^4.0.0",
+    "fuzzaldrin-plus": "^0.4.1",
     "glamor": "^2.20.25",
     "glamorous": "^3.13.3",
     "highlight.js": "^9.11.0",

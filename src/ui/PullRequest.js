@@ -113,17 +113,15 @@ class PullRequest extends Component {
                 <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
           </g.Div>
         </PanelHeader>
-        <g.Div flex="1" overflowY="auto">
-          <FileTree
-            files={files.map(file => ({
-              ...file,
-              commentCount: commentCountByPath[file.filename],
-              isReviewed: reviewStates && reviewStates[file.sha],
-            }))}
-            activePath={activePath}
-            onSelectFile={onSelectFile}
-          />
-        </g.Div>
+        <FileTree
+          files={files.map(file => ({
+            ...file,
+            commentCount: commentCountByPath[file.filename],
+            isReviewed: reviewStates && reviewStates[file.sha],
+          }))}
+          activePath={activePath}
+          onSelectFile={onSelectFile}
+        />
       </FileTreePanel>
     );
   }

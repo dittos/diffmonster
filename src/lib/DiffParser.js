@@ -11,6 +11,7 @@ export function parseDiff(diff) {
   const parsed = Diff2Html.getJsonFromDiff(diff);
   parsed.forEach(file => {
     file.filename = file.isDeleted ? file.oldName : file.newName;
+    // TODO: GitHub doesn't provide checksum for content unchanged file
     file.sha = file.isDeleted ? file.checksumBefore : file.checksumAfter;
     if (file.isDeleted) {
       file.status = 'removed';
