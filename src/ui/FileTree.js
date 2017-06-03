@@ -32,10 +32,6 @@ const FilteredTreeNode = css({
   },
 });
 
-const SecondaryLabel = g.span({
-  whiteSpace: 'nowrap',
-});
-
 class FileTree extends React.Component {
   state = {
     query: '',
@@ -87,12 +83,12 @@ class FileTree extends React.Component {
         id: path,
         iconName: ICON_NAME_BY_STATUS[file.status],
         className: FilteredTreeNode.toString(),
-        label: <div>
-          <div>{this._highlightMatch(basename, matches, basenameOffset)}</div>
-          <div className={`${Classes.TEXT_OVERFLOW_ELLIPSIS} ${Dir}`}>
+        label: [
+          this._highlightMatch(basename, matches, basenameOffset),
+          <div key="dir" className={`${Classes.TEXT_OVERFLOW_ELLIPSIS} ${Dir}`}>
             {this._highlightMatch(dir, matches, 0)}
           </div>
-        </div>,
+        ],
         isSelected: this.props.activePath === path,
         secondaryLabel: this._renderSecondaryLabel(file),
       });
@@ -129,14 +125,13 @@ class FileTree extends React.Component {
   }
 
   _renderSecondaryLabel(file) {
-    return (
-      <SecondaryLabel>
-        {!file.isReviewed && file.commentCount > 0 &&
-          <span className="pt-icon-standard pt-icon-comment" />}
-        {file.isReviewed &&
-          <span className="pt-icon-standard pt-icon-small-tick" />}
-      </SecondaryLabel>
-    );
+    if (!file.isReviewed && file.commentCount > 0) {
+      return <span className="pt-icon-standard pt-icon-comment" />;
+    } else if (file.isReviewed) {
+      return <span className="pt-icon-standard pt-icon-small-tick" />;
+    } else {
+      return null;
+    }
   }
 
   _getTree(files, query) {
@@ -157,7 +152,9 @@ class FileTree extends React.Component {
       const unmatched = path.substring(lastIndex, matchIndex)
       if (unmatched) {
         if (matchedChars.length > 0) {
-          fragment.push(<b key={matchIndex}>{matchedChars.join('')}</b>)
+          const joined = matchedChars.join('');
+          if (joined)
+            fragment.push(<b key={matchIndex}>{joined}</b>)
           matchedChars = []
         }
 
@@ -169,11 +166,15 @@ class FileTree extends React.Component {
     }
 
     if (matchedChars.length > 0) {
-      fragment.push(<b key="last">{matchedChars.join('')}</b>)
+      const joined = matchedChars.join('');
+      if (joined)
+        fragment.push(<b key="last">{joined}</b>)
     }
 
     // Remaining characters are plain text
-    fragment.push(path.substring(lastIndex))
+    const last = path.substring(lastIndex)
+    if (last)
+      fragment.push(last)
     return fragment
   }
 
