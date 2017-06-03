@@ -45,7 +45,8 @@ function paginated(obs) {
 
 export function getPullRequestAsDiff(owner, repo, id) {
   return ajax({
-    url: `${pullRequestUrl(owner, repo, id)}`,
+    // Append query string to prevent interfering caches
+    url: `${pullRequestUrl(owner, repo, id)}?.diff`,
     method: 'get',
     headers: {
       'Accept': 'application/vnd.github.v3.diff',
