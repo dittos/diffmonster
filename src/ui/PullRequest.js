@@ -94,6 +94,8 @@ class PullRequest extends Component {
     const commentCountByPath = {};
     if (comments) {
       for (let comment of comments) {
+        if (!comment.position)
+          continue;
         if (!commentCountByPath[comment.path])
           commentCountByPath[comment.path] = 0;
         commentCountByPath[comment.path]++;
