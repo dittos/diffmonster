@@ -1,9 +1,10 @@
 import React from 'react';
 import { css } from 'glamor';
 import g from 'glamorous';
-import { Tree, InputGroup, Colors, Classes } from '@blueprintjs/core';
+import { InputGroup, Colors, Classes } from '@blueprintjs/core';
 import FuzzySearch from 'fuzzaldrin-plus';
 import { makeTree } from '../lib/FileTree';
+import { Tree } from './Tree';
 
 const ICON_NAME_BY_STATUS = {
   added: 'add',
