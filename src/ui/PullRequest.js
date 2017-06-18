@@ -4,9 +4,10 @@ import { connect } from 'react-redux';
 import DocumentTitle from 'react-document-title';
 import g from 'glamorous';
 import { Colors, Classes, Switch, NonIdealState } from '@blueprintjs/core';
+import Header from './Header';
 import FileTree from './FileTree';
 import Diff from './Diff';
-import Summary, { Header as SummaryHeader } from './Summary';
+import Summary from './Summary';
 import Loading from './Loading';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
@@ -67,10 +68,10 @@ class PullRequest extends Component {
     const pullRequest = this.props.pullRequest;
 
     return (
-      <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
+      <DocumentTitle title={`${pullRequest.title} - ${pullRequest.repository.nameWithOwner}#${pullRequest.number}`}>
         <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
           <g.Div flex="0" className={Classes.DARK}>
-            <SummaryHeader pullRequest={pullRequest} />
+            <Header />
           </g.Div>
           <g.Div flex="1" display="flex" overflow="auto">
             {this._renderFileTree()}
@@ -218,7 +219,7 @@ class PullRequest extends Component {
 }
 
 function getBlobUrl(pullRequest, file) {
-  return `${pullRequest.head.repo.html_url}/blob/${pullRequest.head.sha}/${file.filename}`;
+  return `${pullRequest.headRepository.url}/blob/${pullRequest.headRef.target.oid}/${file.filename}`;
 }
 
 export default connect(state => state)(PullRequest);

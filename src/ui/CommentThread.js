@@ -1,10 +1,10 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import g from 'glamorous';
-import { Colors, Button, Intent } from '@blueprintjs/core';
+import { Colors, Button, Intent, Tag } from '@blueprintjs/core';
 import marked from 'marked';
 import { Subscription } from 'rxjs/Subscription';
-import { addPullRequestReviewComment } from '../lib/Github';
+import { addPullRequestComment, addPullRequestReviewComment } from '../lib/Github';
 
 const Comment = g.div({
   padding: '8px',
@@ -33,6 +33,7 @@ const CommentMeta = g.div({
 
 const CommentUser = g.a({
   fontWeight: 'bold',
+  marginRight: '8px',
 });
 
 class CommentThread extends React.Component {
@@ -46,15 +47,19 @@ class CommentThread extends React.Component {
     const {
       comments,
       showComposer,
+      latestReview,
     } = this.props;
+    const hasPendingReview = latestReview && latestReview.state === 'PENDING';
+
     return (
       <div>
         {comments && comments.map((comment, i) =>
           <Comment first={i === 0} key={comment.id}>
             <CommentMeta>
-              <CommentUser>{comment.user.login}</CommentUser>
+              <CommentUser href={comment.author.url} target="_blank">{comment.author.login}</CommentUser>
+              {comment.isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
             </CommentMeta>
-            <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
+            <div dangerouslySetInnerHTML={{__html: comment.bodyHTML}} />
           </Comment>
         )}
         {showComposer && <CommentComposer>
@@ -68,15 +73,21 @@ class CommentThread extends React.Component {
           />
           <CommentComposerActions>
             <Button
-              text="Add comment"
-              intent={Intent.PRIMARY}
-              onClick={this._addComment}
-              loading={this.state.addingComment}
-            />
-            <Button
               text="Cancel"
               onClick={this._closeComposer}
               disabled={this.state.addingComment}
+            />
+            {!hasPendingReview &&
+              <Button
+                text="Add single comment"
+                onClick={this._addSingleComment}
+                disabled={this.state.addingComment}
+              />}
+            <Button
+              text={hasPendingReview ? 'Add review comment' : 'Start a review'}
+              intent={Intent.PRIMARY}
+              onClick={this._addReviewComment}
+              loading={this.state.addingComment}
             />
           </CommentComposerActions>
         </CommentComposer>}
@@ -88,17 +99,40 @@ class CommentThread extends React.Component {
     this.subscription.unsubscribe();
   }
 
-  _addComment = () => {
+  _addSingleComment = () => {
     this.setState({ addingComment: true });
 
     const pullRequest = this.props.pullRequest;
     this.subscription.add(
-      addPullRequestReviewComment(pullRequest, {
+      addPullRequestComment(pullRequest, {
         body: this.state.commentBody,
         position: this.props.position,
         path: this.props.file.filename,
-        commit_id: pullRequest.head.sha,
+        commit_id: pullRequest.headRef.target.oid,
       }).subscribe(comment => {
+        this.props.dispatch({
+          type: 'COMMENT_ADDED',
+          payload: comment,
+        });
+        this.setState({ addingComment: false });
+        this._closeComposer();
+      })
+    );
+  };
+
+  _addReviewComment = () => {
+    this.setState({ addingComment: true });
+
+    const { pullRequest, latestReview } = this.props;
+    // TODO: create a review if no latestReview exists
+    this.subscription.add(
+      addPullRequestReviewComment(latestReview, {
+        body: this.state.commentBody,
+        position: this.props.position,
+        path: this.props.file.filename,
+        commit_id: pullRequest.headRef.target.oid,
+      }).subscribe(comment => {
+        comment.isPending = true;
         this.props.dispatch({
           type: 'COMMENT_ADDED',
           payload: comment,
@@ -117,4 +151,5 @@ class CommentThread extends React.Component {
 
 export default connect(state => ({
   pullRequest: state.pullRequest,
+  latestReview: state.latestReview,
 }))(CommentThread);

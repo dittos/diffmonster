@@ -10,36 +10,92 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/catch';
 import {
-  getPullRequest,
+  graphql,
   getPullRequestAsDiff,
+  getPullRequestReviews,
   getPullRequestComments,
+  getPullRequestReviewComments,
 } from './Github';
-import { isAuthenticated } from './GithubAuth';
+import { isAuthenticated, getUserInfo } from './GithubAuth';
 import { observeReviewStates } from './Database';
 import { parseDiff } from './DiffParser';
+
+function getLatestReviewAndPendingComments(owner, repo, id) {
+  const currentUser = getUserInfo();
+  if (!currentUser)
+    return Observable.of({ latestReview: null });
+
+  return getPullRequestReviews(owner, repo, id)
+    .switchMap(reviews => {
+      let latestReview = null;
+      for (const review of reviews) {
+        if (!review.viewerDidAuthor)
+          continue;
+        if (!latestReview || new Date(latestReview.createdAt) < new Date(review.createdAt))
+          latestReview = review;
+      }
+      if (!latestReview || latestReview.state !== 'PENDING')
+        return Observable.of({ latestReview });
+      
+      // Load comments only if state is PENDING
+      return getPullRequestReviewComments(owner, repo, id, latestReview.databaseId)
+        .map(comments => ({
+          latestReview,
+          pendingComments: comments,
+        }));
+    });
+}
 
 const fetchEpic = action$ =>
   action$.ofType('FETCH').switchMap(action =>
     Observable.zip(
-      getPullRequest(action.payload.owner, action.payload.repo, action.payload.id),
-      getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.id)
+      graphql(`
+        query($owner: String!, $repo: String!, $id: Int!) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $id) {
+              id
+              number
+              url
+              title
+              bodyHTML
+              repository { nameWithOwner, owner { login } }
+              state
+              author { login, url }
+              headRefName
+              headRef { name, target { oid } }
+              headRepository {
+                url
+                owner { login }
+              }
+              baseRefName
+            }
+          }
+        }
+      `, {
+        owner: action.payload.owner,
+        repo: action.payload.repo,
+        id: Number(action.payload.id),
+      }).map(data => data.repository.pullRequest),
+      getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.id),
+      getLatestReviewAndPendingComments(action.payload.owner, action.payload.repo, Number(action.payload.id)),
     )
-    .catch(error => Observable.of({ type: 'FETCH_ERROR', payload: error }))
-    .switchMap(([ pullRequest, diff ]) => {
-      const shouldLoadReviewStates = isAuthenticated();
+    .switchMap(([ pullRequest, diff, { latestReview, pendingComments } ]) => {
+      const authenticated = isAuthenticated();
       const success$ = Observable.of(({
         type: 'FETCH_SUCCESS',
         payload: {
           pullRequest,
           files: parseDiff(diff),
-          isLoadingReviewStates: shouldLoadReviewStates,
+          latestReview,
+          pendingComments,
+          isLoadingReviewStates: authenticated,
         },
       }));
 
-      const comments$ = getPullRequestComments(pullRequest)
+      const comments$ = getPullRequestComments(pullRequest.id)
         .map(comments => ({ type: 'COMMENTS_FETCHED', payload: comments }));
 
-      const reviewStates$ = shouldLoadReviewStates ?
+      const reviewStates$ = authenticated ?
         observeReviewStates(pullRequest.id)
           .map(reviewStates =>
             ({ type: 'REVIEW_STATES_CHANGED', payload: reviewStates || {} })) :
@@ -47,7 +103,11 @@ const fetchEpic = action$ =>
       
       return Observable.concat(success$, comments$.merge(reviewStates$));
     })
-  );
+  )
+  .catch(error => {
+    console.error(error);
+    return Observable.of({ type: 'FETCH_ERROR', payload: error });
+  });
 
 const rootEpic = combineEpics(
   fetchEpic,
@@ -61,6 +121,7 @@ function getInitialState() {
     comments: null,
     isLoadingReviewStates: false,
     reviewStates: null,
+    latestReview: null,
   };
 }
 
@@ -75,17 +136,21 @@ function reducer(state = getInitialState(), action) {
         status: action.payload && action.payload.status === 404 ? 'notFound' : 'loading',
       };
 
-    case 'FETCH_SUCCESS':
+    case 'FETCH_SUCCESS': {
+      const pendingComments = action.payload.pendingComments || [];
+      delete action.payload.pendingComments;
       return {
         ...state,
-        status: 'success',
         ...action.payload,
+        status: 'success',
+        comments: pendingComments.map(c => ({ ...c, isPending: true })),
       };
+    }
 
     case 'COMMENTS_FETCHED':
       return {
         ...state,
-        comments: action.payload,
+        comments: state.comments.concat(action.payload),
       };
 
     case 'COMMENT_ADDED':
