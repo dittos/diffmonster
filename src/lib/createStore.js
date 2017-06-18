@@ -24,7 +24,6 @@ const fetchEpic = action$ =>
       getPullRequest(action.payload.owner, action.payload.repo, action.payload.id),
       getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.id)
     )
-    .catch(error => Observable.of({ type: 'FETCH_ERROR', payload: error }))
     .switchMap(([ pullRequest, diff ]) => {
       const shouldLoadReviewStates = isAuthenticated();
       const success$ = Observable.of(({
@@ -47,6 +46,7 @@ const fetchEpic = action$ =>
       
       return Observable.concat(success$, comments$.merge(reviewStates$));
     })
+    .catch(error => Observable.of({ type: 'FETCH_ERROR', payload: error }))
   );
 
 const rootEpic = combineEpics(
