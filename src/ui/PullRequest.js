@@ -6,7 +6,8 @@ import g from 'glamorous';
 import { Colors, Classes, Switch, NonIdealState } from '@blueprintjs/core';
 import FileTree from './FileTree';
 import Diff from './Diff';
-import Summary, { Header as SummaryHeader } from './Summary';
+import Header from './Header';
+import Summary from './Summary';
 import Loading from './Loading';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
@@ -70,7 +71,7 @@ class PullRequest extends Component {
       <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
         <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
           <g.Div flex="0" className={Classes.DARK}>
-            <SummaryHeader pullRequest={pullRequest} />
+            <Header />
           </g.Div>
           <g.Div flex="1" display="flex" overflow="auto">
             {this._renderFileTree()}
