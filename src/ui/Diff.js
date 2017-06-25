@@ -7,6 +7,7 @@ import "highlight.js/styles/default.css";
 import { LineType } from '../lib/DiffParser';
 import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
+import CommentComposer from './CommentComposer';
 
 const DiffTable = g.table({
   lineHeight: '20px',
@@ -128,7 +129,6 @@ class Hunk extends React.Component {
       canCreateComment,
       commentComposerPosition,
       onCloseCommentComposer,
-      onAddComment,
     } = this.props;
     const lines = [];
     const highlighter = language ? new Highlighter(language) : null;
@@ -169,13 +169,13 @@ class Hunk extends React.Component {
             <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
               <CommentContainer>
                 <CommentThread
+                  comments={comments}
+                />
+                {showComposer && <CommentComposer
                   file={file}
                   position={line.position}
-                  comments={comments}
-                  showComposer={showComposer}
                   onCloseComposer={onCloseCommentComposer}
-                  onAddComment={onAddComment}
-                />
+                />}
               </CommentContainer>
             </td>
           </tr>
@@ -237,7 +237,6 @@ export default class Diff extends React.Component {
           commentComposerPosition={this.state.commentComposerPosition}
           onOpenCommentComposer={this._openCommentComposer}
           onCloseCommentComposer={this._closeCommentComposer}
-          onAddComment={this.props.onAddComment}
         />
       );
     }

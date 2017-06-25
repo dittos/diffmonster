@@ -165,7 +165,6 @@ class PullRequest extends Component {
                 file={activeFile}
                 comments={comments && comments.filter(c => c.path === activePath)}
                 canCreateComment={isAuthenticated()}
-                onAddComment={this.props.onAddComment}
               /> :
               <NoPreview>
                 No change
