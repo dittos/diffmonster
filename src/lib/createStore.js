@@ -52,7 +52,12 @@ const fetchEpic = action$ =>
               databaseId
             }
           }
-        `) :
+        `).catch(error => {
+          if (error.some(e => e.type === 'NOT_FOUND')) {
+            error = { status: 404 }; // XXX
+          }
+          throw error;
+        }) :
         Observable.of(null)
     )
     .switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
