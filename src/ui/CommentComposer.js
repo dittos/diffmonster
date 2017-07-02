@@ -1,9 +1,15 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import g from 'glamorous';
-import { Colors, Button, Intent } from '@blueprintjs/core';
+import { Button, Intent } from '@blueprintjs/core';
 import { Subscription } from 'rxjs/Subscription';
-import { addPullRequestReviewComment } from '../lib/Github';
+import 'rxjs/add/operator/mergeMap';
+import {
+  addPullRequestReviewComment,
+  addPendingPullRequestReview,
+  addPullRequestReviewCommentOnReview,
+  PullRequestReviewState
+} from '../lib/Github';
 
 const Container = g.div({
   margin: '8px',
@@ -27,6 +33,7 @@ class CommentComposer extends React.Component {
 
   render() {
     const { latestReview } = this.props;
+    const hasPendingReview = latestReview && latestReview.state === PullRequestReviewState.PENDING;
     return (
       <Container>
         <textarea
@@ -43,10 +50,15 @@ class CommentComposer extends React.Component {
             onClick={this._closeComposer}
             disabled={this.state.addingComment}
           />
-          <Button
+          {!hasPendingReview && <Button
             text="Add single comment"
-            intent={Intent.PRIMARY}
             onClick={this._addSingleComment}
+            disabled={this.state.addingComment}
+          />}
+          <Button
+            text={hasPendingReview ? 'Add review comment' : 'Start a review'}
+            intent={Intent.PRIMARY}
+            onClick={this._addComment}
             disabled={this.state.addingComment}
           />
         </Actions>
@@ -79,6 +91,55 @@ class CommentComposer extends React.Component {
     );
   };
 
+  _addComment = () => {
+    this.setState({ addingComment: true });
+
+    const {
+      pullRequest,
+      pullRequestIdFromGraphQL,
+      latestReview
+    } = this.props;
+
+    if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
+      this.subscription.add(
+        addPullRequestReviewCommentOnReview(
+          latestReview.id,
+          pullRequest.head.sha,
+          this.state.commentBody,
+          this.props.file.filename,
+          this.props.position
+        ).subscribe(comment => {
+          this.props.dispatch({
+            type: 'PENDING_COMMENTS_ADDED',
+            payload: [comment],
+          });
+          this.setState({ addingComment: false });
+          this._closeComposer();
+        })
+      );
+    } else {
+      this.subscription.add(
+        addPendingPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, [{
+          path: this.props.file.filename,
+          position: this.props.position,
+          body: this.state.commentBody,
+        }])
+        .subscribe(review => {
+          this.props.dispatch({
+            type: 'REVIEW_ADDED',
+            payload: review,
+          });
+          this.props.dispatch({
+            type: 'PENDING_COMMENTS_ADDED',
+            payload: review.comments.nodes,
+          });
+          this.setState({ addingComment: false });
+          this._closeComposer();
+        })
+      );
+    }
+  };
+
   _closeComposer = () => {
     this.props.onCloseComposer();
     this.setState({ commentBody: '' });
@@ -87,4 +148,6 @@ class CommentComposer extends React.Component {
 
 export default connect(state => ({
   pullRequest: state.pullRequest,
+  pullRequestIdFromGraphQL: state.pullRequestIdFromGraphQL,
+  latestReview: state.latestReview,
 }))(CommentComposer);

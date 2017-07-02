@@ -17,6 +17,25 @@ export const PullRequestReviewState = {
   DISMISSED: 'DISMISSED',
 };
 
+const pullRequestReviewFragment = `
+  id
+  state
+  viewerDidAuthor
+  createdAt
+  databaseId
+`;
+
+const pullRequestReviewCommentRestLikeFragment = `
+  id: databaseId
+  user: author {
+    html_url: url
+    login
+  }
+  body
+  path
+  position
+`;
+
 function ajax(request) {
   if (!request.responseType)
     request.responseType = 'json'; 
@@ -118,9 +137,9 @@ export function searchIssues(q) {
   }).map(resp => resp.response);
 }
 
-export function getPullRequestReviewComments(owner, repo, id, reviewId) {
+export function getPullRequestReviewComments(pullRequest, reviewId) {
   return paginated(ajax({
-    url: `${pullRequestUrl(owner, repo, id)}/reviews/${reviewId}/comments`,
+    url: `${pullRequest.url}/reviews/${reviewId}/comments`,
     method: 'get',
   }));
 }
@@ -136,16 +155,17 @@ export function addPullRequestReviewComment(pullRequest, data) {
   }).map(resp => resp.response);
 }
 
-export function addPullRequestReview(pullRequestId, commitId, comments) {
+export function addPendingPullRequestReview(pullRequestId, commitId, comments) {
   return graphql(`
-    mutation($input: AddPullRequestReviewInput!) {
+    mutation($input: AddPullRequestReviewInput!, $commentCount: Int) {
       addPullRequestReview(input: $input) {
         pullRequestReview {
-          id
-          state
-          viewerDidAuthor
-          createdAt
-          databaseId
+          ${pullRequestReviewFragment}
+          comments(first: $commentCount) {
+            nodes {
+              ${pullRequestReviewCommentRestLikeFragment}
+            }
+          }
         }
       }
     }
@@ -154,8 +174,44 @@ export function addPullRequestReview(pullRequestId, commitId, comments) {
       pullRequestId,
       commitOID: commitId,
       comments,
+    },
+    commentCount: comments.length,
+  }).map(resp => resp.addPullRequestReview.pullRequestReview);
+}
+
+export function addPullRequestReview(pullRequestId, commitId, event) {
+  return graphql(`
+    mutation($input: AddPullRequestReviewInput!) {
+      addPullRequestReview(input: $input) {
+        pullRequestReview {
+          ${pullRequestReviewFragment}
+        }
+      }
+    }
+  `, {
+    input: {
+      pullRequestId,
+      commitOID: commitId,
+      event,
     }
   }).map(resp => resp.addPullRequestReview.pullRequestReview);
+}
+
+export function submitPullRequestReview(pullRequestReviewId, event) {
+  return graphql(`
+    mutation($input: SubmitPullRequestReviewInput!) {
+      submitPullRequestReview(input: $input) {
+        pullRequestReview {
+          ${pullRequestReviewFragment}
+        }
+      }
+    }
+  `, {
+    input: {
+      pullRequestReviewId,
+      event,
+    }
+  }).map(resp => resp.submitPullRequestReview.pullRequestReview);
 }
 
 export function addPullRequestReviewCommentOnReview(reviewId, commitId, body, path, position) {
@@ -163,7 +219,7 @@ export function addPullRequestReviewCommentOnReview(reviewId, commitId, body, pa
     mutation($input: AddPullRequestReviewCommentInput!) {
       addPullRequestReviewComment(input: $input) {
         comment {
-          id
+          ${pullRequestReviewCommentRestLikeFragment}
         }
       }
     }

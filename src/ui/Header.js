@@ -2,7 +2,8 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import g from 'glamorous';
-import { AnchorButton, Classes, Colors } from '@blueprintjs/core';
+import { AnchorButton, Button, Classes, Colors, Tag, Intent } from '@blueprintjs/core';
+import { PullRequestReviewState } from '../lib/Github';
 
 const Meta = g.div({
   padding: '8px',
@@ -33,41 +34,97 @@ const Title = g.div({
   fontWeight: 'bold',
 });
 
-function Header({ pullRequest }) {
-  return <g.Div padding="8px">
-    <Links>
-      <AnchorButton
-        href={pullRequest.html_url}
-        target="_blank"
-        rightIconName="share"
-        className={Classes.MINIMAL}
-      >
-        View on GitHub
-      </AnchorButton>
-    </Links>
-    <Title>
-      <Link
-        to={`/${pullRequest.base.repo.full_name}/pull/${pullRequest.number}`}
-        className={`${Classes.BUTTON} ${Classes.MINIMAL} pt-icon-git-pull`}
-      >
-        {pullRequest.title}
-      </Link>
-    </Title>
-    <Meta>
-      {pullRequest.base.repo.full_name}
-      #{pullRequest.number}
-      {separator}
-      {pullRequest.state === 'open' ? 'Open' :
-        pullRequest.merged ? 'Merged' :
-          'Closed'}
-      {separator}
-      by <a href={pullRequest.user.html_url} target="_blank">{pullRequest.user.login}</a>
-      {separator}
-      <Branch>{pullRequest.head.label}</Branch>
-      <MergeInto>&rarr;</MergeInto>
-      <Branch>{pullRequest.base.label}</Branch>
-    </Meta>
-  </g.Div>;
+class Header extends React.Component {
+  render() {
+    const { pullRequest, latestReview, comments, currentUser } = this.props;
+    const latestReviewState = latestReview && latestReview.state;
+    const canApprove = currentUser &&
+      pullRequest.user.id !== currentUser.id &&
+      latestReviewState !== PullRequestReviewState.PENDING &&
+      latestReviewState !== PullRequestReviewState.APPROVED;
+    let pendingCommentCount = 0;
+    if (comments) {
+      for (const comment of comments)
+        if (comment.isPending)
+          pendingCommentCount++;
+    }
+
+    return <g.Div padding="8px">
+      <Links>
+        {latestReviewState === PullRequestReviewState.PENDING && (
+          <Button
+            intent={Intent.PRIMARY}
+            iconName="upload"
+            loading={this.props.isAddingReview}
+            onClick={this._publishPendingComments}
+          >
+            Publish comments {pendingCommentCount > 0 && <Tag className={Classes.ROUND}>{pendingCommentCount}</Tag>}
+          </Button>
+        )}
+        {latestReviewState === PullRequestReviewState.APPROVED &&
+          <Button intent={Intent.SUCCESS} active={true} iconName="tick">Approved</Button>}
+        {canApprove && (
+          <Button
+            intent={Intent.SUCCESS}
+            iconName="tick"
+            loading={this.props.isAddingReview}
+            onClick={this._approve}
+          >
+            Approve
+          </Button>
+        )}
+        {' '}
+        <AnchorButton
+          href={pullRequest.html_url}
+          target="_blank"
+          rightIconName="share"
+          className={Classes.MINIMAL}
+        >
+          View on GitHub
+        </AnchorButton>
+      </Links>
+      <Title>
+        <Link
+          to={`/${pullRequest.base.repo.full_name}/pull/${pullRequest.number}`}
+          className={`${Classes.BUTTON} ${Classes.MINIMAL} pt-icon-git-pull`}
+        >
+          {pullRequest.title}
+        </Link>
+      </Title>
+      <Meta>
+        {pullRequest.base.repo.full_name}
+        #{pullRequest.number}
+        {separator}
+        {pullRequest.state === 'open' ? 'Open' :
+          pullRequest.merged ? 'Merged' :
+            'Closed'}
+        {separator}
+        by <a href={pullRequest.user.html_url} target="_blank">{pullRequest.user.login}</a>
+        {separator}
+        <Branch>{pullRequest.head.label}</Branch>
+        <MergeInto>&rarr;</MergeInto>
+        <Branch>{pullRequest.base.label}</Branch>
+      </Meta>
+    </g.Div>;
+  }
+
+  _publishPendingComments = () => {
+    this.props.dispatch({
+      type: 'SUBMIT_REVIEW',
+      payload: {
+        event: 'COMMENT'
+      }
+    })
+  };
+
+  _approve = () => {
+    this.props.dispatch({
+      type: 'ADD_REVIEW',
+      payload: {
+        event: 'APPROVE'
+      }
+    })
+  };
 }
 
 export default connect(state => state)(Header);
