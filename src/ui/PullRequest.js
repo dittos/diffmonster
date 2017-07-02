@@ -155,7 +155,7 @@ class PullRequest extends Component {
                 label="Done"
                 onChange={this._onReviewStateChange}
               />}
-              <a href={getBlobUrl(pullRequest, activeFile)} target="_blank">View</a>
+              <a href={getBlobUrl(pullRequest, activeFile)} target="_blank" rel="noopener noreferrer">View</a>
             </g.Div>
           </PanelHeader>}
         <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
@@ -183,7 +183,7 @@ class PullRequest extends Component {
         visual="warning-sign"
         description={
           <p>
-            <a href="#" onClick={this._login}>Login with GitHub</a> to view private repos.
+            <a href="" onClick={this._login}>Login with GitHub</a> to view private repos.
           </p>
         }
       />

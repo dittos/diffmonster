@@ -4,7 +4,6 @@
  * of the license at https://github.com/palantir/blueprint/blob/master/LICENSE
  * and https://github.com/palantir/blueprint/blob/master/PATENTS
  */
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
 var classNames = require("classnames");
@@ -15,7 +14,7 @@ var treeNode_1 = require("./TreeNode");
 var Tree = (function (_super) {
     tslib_1.__extends(Tree, _super);
     function Tree() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
+        var _this = (_super !== null && _super.apply(this, arguments)) || this;
         _this.nodeRefs = {};
         _this.handleNodeCollapse = function (node, e) {
             _this.handlerHelper(_this.props.onNodeCollapse, node, e);

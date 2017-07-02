@@ -42,7 +42,7 @@ const Title = g(Link, {
 function parsePullRequestHtmlUrl(htmlUrl) {
   // FIXME: this is so hacky
   const path = htmlUrl.replace('https://github.com/', '');
-  const [ owner, repo, _, pullRequestId ] = path.split('/');
+  const [ owner, repo, , pullRequestId ] = path.split('/');
   return {
     owner,
     repo,

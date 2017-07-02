@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Popover, Position, Intent, Button, Menu, MenuItem } from '@blueprintjs/core';
-import g from 'glamorous';
 import { css } from 'glamor';
 import Inbox from './Inbox';
 import { getUserInfo, signOut, startAuth } from '../lib/GithubAuth';

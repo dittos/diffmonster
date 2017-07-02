@@ -99,7 +99,7 @@ class Header extends React.Component {
           pullRequest.merged ? 'Merged' :
             'Closed'}
         {separator}
-        by <a href={pullRequest.user.html_url} target="_blank">{pullRequest.user.login}</a>
+        by <a href={pullRequest.user.html_url} target="_blank" rel="noopener noreferrer">{pullRequest.user.login}</a>
         {separator}
         <Branch>{pullRequest.head.label}</Branch>
         <MergeInto>&rarr;</MergeInto>

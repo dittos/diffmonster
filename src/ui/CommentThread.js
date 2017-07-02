@@ -26,7 +26,7 @@ function CommentThread({ comments }) {
       {comments && comments.map((comment, i) =>
         <Comment first={i === 0} key={comment.id}>
           <CommentMeta>
-            <CommentUser href={comment.user.html_url} target="_blank">{comment.user.login}</CommentUser>
+            <CommentUser href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</CommentUser>
             {comment.isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
           </CommentMeta>
           <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
