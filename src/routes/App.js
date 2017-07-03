@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Route } from 'react-router-dom';
+import { Colors } from '@blueprintjs/core';
 import g from 'glamorous';
 import PullRequestRoute from './PullRequestRoute';
 import IndexRoute from './IndexRoute';
@@ -34,7 +35,9 @@ class App extends Component {
     if (this.state.isLoading) {
       return (
         <Viewport>
-          <Loading />
+          <g.Div flex="1" backgroundColor={Colors.DARK_GRAY3}>
+            <Loading />
+          </g.Div>
         </Viewport>
       );
     } else {
