@@ -70,13 +70,20 @@ class CommentComposer extends React.Component {
     this.subscription.unsubscribe();
   }
 
+  _getBodyWithSig() {
+    // TODO: fix hardcoding
+    const url = this.props.pullRequest.html_url.replace('github.com/', 'diff.sapzil.org/#/') +
+      '?path=' + encodeURIComponent(this.props.file.filename);
+    return `${this.state.commentBody}\n\n<sub>_commented via [Diff Monster](${url})_</sub>`;
+  }
+
   _addSingleComment = () => {
     this.setState({ addingComment: true });
 
     const pullRequest = this.props.pullRequest;
     this.subscription.add(
       addPullRequestReviewComment(pullRequest, {
-        body: this.state.commentBody,
+        body: this._getBodyWithSig(),
         position: this.props.position,
         path: this.props.file.filename,
         commit_id: pullRequest.head.sha,
@@ -105,7 +112,7 @@ class CommentComposer extends React.Component {
         addPullRequestReviewCommentOnReview(
           latestReview.id,
           pullRequest.head.sha,
-          this.state.commentBody,
+          this._getBodyWithSig(),
           this.props.file.filename,
           this.props.position
         ).subscribe(comment => {
@@ -122,7 +129,7 @@ class CommentComposer extends React.Component {
         addPendingPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, [{
           path: this.props.file.filename,
           position: this.props.position,
-          body: this.state.commentBody,
+          body: this._getBodyWithSig(),
         }])
         .subscribe(review => {
           this.props.dispatch({

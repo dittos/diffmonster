@@ -20,6 +20,14 @@ const CommentUser = g.a({
   marginRight: '8px',
 });
 
+const CommentBody = g.div({
+  fontSize: '13px',
+
+  '& p:last-child': {
+    marginBottom: 0
+  }
+});
+
 function CommentThread({ comments }) {
   return (
     <div>
@@ -29,7 +37,7 @@ function CommentThread({ comments }) {
             <CommentUser href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</CommentUser>
             {comment.isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
           </CommentMeta>
-          <div dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
+          <CommentBody dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
         </Comment>
       )}
     </div>
