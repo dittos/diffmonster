@@ -8,7 +8,7 @@ import './index.css';
 // Initialize Firebase
 const config = {
   apiKey: "AIzaSyBovmje_t2kOCWvlSOTLJz5z40zHSduEKo",
-  authDomain: "diffmonster-8550b.firebaseapp.com",
+  authDomain: "diff.sapzil.org",
   databaseURL: "https://diffmonster-8550b.firebaseio.com",
   projectId: "diffmonster-8550b",
   storageBucket: "diffmonster-8550b.appspot.com",
