@@ -1,7 +1,7 @@
 import React from 'react';
 import g from 'glamorous';
 import { Link } from 'react-router-dom';
-import { Button, Intent, Colors } from '@blueprintjs/core';
+import { AnchorButton, Button, Intent, Colors } from '@blueprintjs/core';
 import { isAuthenticated, startAuth } from '../lib/GithubAuth';
 import Nav from '../ui/Nav';
 
@@ -31,8 +31,13 @@ const Cards = g.div({
 
 const ButtonContainer = g.div({
   textAlign: 'center',
-  marginTop: '20px',
+  padding: '10px 0',
 });
+
+// eslint-disable-next-line
+const bookmarkletUrl = "javascript:location.href='https://diff.sapzil.org/#'+(location.host==='github.com'?location.pathname:'/')";
+
+const isFirefox = /Firefox/.exec(navigator.userAgent);
 
 export default class IndexRoute extends React.Component {
   render() {
@@ -42,8 +47,8 @@ export default class IndexRoute extends React.Component {
           <Title>Welcome</Title>
 
           <p className="pt-running-text">
-            <strong>Diff Monster</strong> is a tool for reviewing GitHub Pull Requests,
-            especially big ones.
+            <strong>Diff Monster</strong> is a tool for reviewing GitHub Pull
+            Requests—especially big ones.
           </p>
 
           <Cards>
@@ -65,6 +70,33 @@ export default class IndexRoute extends React.Component {
                 <Link to="/kubernetes/kubernetes/pull/46669">pull</Link>{' '}
                 <Link to="/square/okhttp/pull/3207">requests</Link>.
               </p>
+            </div>
+          </Cards>
+
+          <Cards>
+            <div className="pt-card">
+              <h5><span className="pt-icon-large pt-icon-bookmark" /> Install Bookmarklet</h5>
+
+              <p>Drag the link to your bookmarks bar, then use it in GitHub pull request page.</p>
+
+              <ButtonContainer>
+                <AnchorButton
+                  intent={Intent.PRIMARY}
+                  iconName="bookmark"
+                  text="Open in Diff Monster"
+                  href={bookmarkletUrl}
+                  onClick={this._showBookmarkletNotice}
+                  disabled={isFirefox}
+                />
+              </ButtonContainer>
+
+              {isFirefox && (
+                <p className="pt-text-muted">
+                  <span className="pt-icon-standard pt-icon-warning-sign" />{' '}
+                  The bookmarklet won't work on Firefox due to CSP of github.com.{' '}
+                  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=866522" target="_blank" rel="noopener noreferrer">Learn more...</a>
+                </p>
+              )}
             </div>
           </Cards>
 
@@ -119,5 +151,10 @@ export default class IndexRoute extends React.Component {
         alert('Invalid format :(');
       }
     }
+  };
+
+  _showBookmarkletNotice = event => {
+    event.preventDefault();
+    alert('Drag it to your bookmarks bar!');
   };
 }
