@@ -9,10 +9,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 1,
+    "newNumber": 1,
+    "oldNumber": 1,
     "position": 1,
-    "toLine": 1,
-    "type": " ",
+    "type": "d2h-cntx",
   },
   Object {
     "content": Array [
@@ -21,10 +21,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 2,
+    "newNumber": null,
+    "oldNumber": 2,
     "position": 2,
-    "toLine": 0,
-    "type": "-",
+    "type": "d2h-del",
   },
   Object {
     "content": Array [
@@ -33,10 +33,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 0,
+    "newNumber": 2,
+    "oldNumber": null,
     "position": 3,
-    "toLine": 2,
-    "type": "+",
+    "type": "d2h-ins",
   },
   Object {
     "content": Array [
@@ -45,10 +45,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 3,
+    "newNumber": 3,
+    "oldNumber": 3,
     "position": 4,
-    "toLine": 3,
-    "type": " ",
+    "type": "d2h-cntx",
   },
 ]
 `;
@@ -62,10 +62,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 1,
+    "newNumber": 1,
+    "oldNumber": 1,
     "position": 1,
-    "toLine": 1,
-    "type": " ",
+    "type": "d2h-cntx",
   },
   Object {
     "content": Array [
@@ -78,10 +78,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 2,
+    "newNumber": null,
+    "oldNumber": 2,
     "position": 2,
-    "toLine": 0,
-    "type": "-",
+    "type": "d2h-del",
   },
   Object {
     "content": Array [
@@ -94,10 +94,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 0,
+    "newNumber": 2,
+    "oldNumber": null,
     "position": 3,
-    "toLine": 2,
-    "type": "+",
+    "type": "d2h-ins",
   },
   Object {
     "content": Array [
@@ -106,10 +106,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 3,
+    "newNumber": 3,
+    "oldNumber": 3,
     "position": 4,
-    "toLine": 3,
-    "type": " ",
+    "type": "d2h-cntx",
   },
 ]
 `;
@@ -123,10 +123,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 1,
+    "newNumber": 1,
+    "oldNumber": 1,
     "position": 1,
-    "toLine": 1,
-    "type": " ",
+    "type": "d2h-cntx",
   },
   Object {
     "content": Array [
@@ -139,10 +139,10 @@ Array [
         "highlight": true,
       },
     ],
-    "fromLine": 2,
+    "newNumber": null,
+    "oldNumber": 2,
     "position": 2,
-    "toLine": 0,
-    "type": "-",
+    "type": "d2h-del",
   },
   Object {
     "content": Array [
@@ -155,10 +155,10 @@ Array [
         "highlight": true,
       },
     ],
-    "fromLine": 0,
+    "newNumber": 2,
+    "oldNumber": null,
     "position": 3,
-    "toLine": 2,
-    "type": "+",
+    "type": "d2h-ins",
   },
   Object {
     "content": Array [
@@ -167,10 +167,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 3,
+    "newNumber": 3,
+    "oldNumber": 3,
     "position": 4,
-    "toLine": 3,
-    "type": " ",
+    "type": "d2h-cntx",
   },
 ]
 `;
@@ -184,10 +184,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 1,
+    "newNumber": 1,
+    "oldNumber": 1,
     "position": 1,
-    "toLine": 1,
-    "type": " ",
+    "type": "d2h-cntx",
   },
   Object {
     "content": Array [
@@ -204,10 +204,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 2,
+    "newNumber": null,
+    "oldNumber": 2,
     "position": 2,
-    "toLine": 0,
-    "type": "-",
+    "type": "d2h-del",
   },
   Object {
     "content": Array [
@@ -224,10 +224,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 0,
+    "newNumber": 2,
+    "oldNumber": null,
     "position": 3,
-    "toLine": 2,
-    "type": "+",
+    "type": "d2h-ins",
   },
   Object {
     "content": Array [
@@ -236,10 +236,10 @@ Array [
         "highlight": false,
       },
     ],
-    "fromLine": 3,
+    "newNumber": 3,
+    "oldNumber": 3,
     "position": 4,
-    "toLine": 3,
-    "type": " ",
+    "type": "d2h-cntx",
   },
 ]
 `;
