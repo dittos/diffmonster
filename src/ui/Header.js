@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import g from 'glamorous';
 import { AnchorButton, Button, Classes, Colors, Tag, Intent } from '@blueprintjs/core';
 import { PullRequestReviewState } from '../lib/Github';
-import { submitReview, addReview } from '../lib/Store';
+import { submitReview, addReview } from '../lib/store/ReviewStore';
 
 const Meta = g.div({
   padding: '8px',

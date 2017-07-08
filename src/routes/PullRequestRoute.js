@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import PullRequest from '../ui/PullRequest';
 import withQueryParams from '../lib/withQueryParams';
-import { fetch, fetchCancel } from '../lib/Store';
+import { fetch, fetchCancel } from '../lib/store/PullRequestStore';
 
 class PullRequestRoute extends React.Component {
   componentDidMount() {
