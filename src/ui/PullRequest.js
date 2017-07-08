@@ -11,6 +11,7 @@ import Summary from './Summary';
 import Loading from './Loading';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
+import { deleteComment } from '../stores/CommentStore';
 
 const NoPreview = g.div({
   padding: '16px',
@@ -171,6 +172,7 @@ class PullRequest extends Component {
                 comments={comments.filter(c => c.path === activePath)}
                 pendingComments={pendingComments.filter(c => c.path === activePath)}
                 canCreateComment={isAuthenticated()}
+                deleteComment={this._deleteComment}
               /> :
               <NoPreview>
                 No change
@@ -220,6 +222,12 @@ class PullRequest extends Component {
   _login = event => {
     event.preventDefault();
     startAuth();
+  };
+
+  _deleteComment = commentId => {
+    if (window.confirm('Are you sure?')) {
+      this.props.dispatch(deleteComment(commentId));
+    }
   };
 }
 

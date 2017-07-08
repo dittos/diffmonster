@@ -8,6 +8,7 @@ import 'rxjs/add/operator/do';
 import {
   addPullRequestReviewCommentOnReview,
   addPullRequestReview,
+  deletePullRequestReviewComment,
   PullRequestReviewState,
   PullRequestReviewEvent,
 } from '../lib/Github';
@@ -22,6 +23,9 @@ const ADD_SINGLE_COMMENT_ERROR = 'ADD_SINGLE_COMMENT_ERROR';
 const ADD_REVIEW_COMMENT = 'ADD_REVIEW_COMMENT';
 const ADD_REVIEW_COMMENT_SUCCESS = 'ADD_REVIEW_COMMENT_SUCCESS';
 const ADD_REVIEW_COMMENT_ERROR = 'ADD_REVIEW_COMMENT_ERROR';
+const DELETE_COMMENT = 'DELETE_COMMENT';
+const DELETE_COMMENT_SUCCESS = 'DELETE_COMMENT_SUCCESS';
+const DELETE_COMMENT_ERROR = 'DELETE_COMMENT_ERROR';
 
 export function addSingleComment({ body, position, path }, subject) {
   return { type: ADD_SINGLE_COMMENT, payload: { body, position, path }, meta: { subject } };
@@ -29,6 +33,10 @@ export function addSingleComment({ body, position, path }, subject) {
 
 export function addReviewComment({ body, position, path }, subject) {
   return { type: ADD_REVIEW_COMMENT, payload: { body, position, path }, meta: { subject } };
+}
+
+export function deleteComment(commentId) {
+  return { type: DELETE_COMMENT, payload: commentId };
 }
 
 const addSingleCommentEpic = (action$, store) =>
@@ -98,9 +106,25 @@ const addReviewCommentEpic = (action$, store) =>
     }
   });
 
+const deleteCommentEpic = (action$, store) =>
+  action$.ofType(DELETE_COMMENT).mergeMap(action => {
+    const commentId = action.payload;
+    const { pullRequest } = store.getState();
+    return deletePullRequestReviewComment(pullRequest, commentId)
+      .map(() => ({
+        type: DELETE_COMMENT_SUCCESS,
+        payload: commentId,
+      }))
+      .catch(error => Observable.of({
+        type: DELETE_COMMENT_ERROR,
+        payload: error,
+      }));
+  });
+
 export const commentEpic = combineEpics(
   addSingleCommentEpic,
   addReviewCommentEpic,
+  deleteCommentEpic,
 );
 
 export default function commentsReducer(state, action) {
@@ -140,6 +164,13 @@ export default function commentsReducer(state, action) {
       return {
         ...state,
         isAddingReview: false,
+      };
+    
+    case DELETE_COMMENT_SUCCESS:
+      return {
+        ...state,
+        comments: state.comments.filter(c => c.id !== action.payload),
+        pendingComments: state.pendingComments.filter(c => c.id !== action.payload),
       };
 
     default:

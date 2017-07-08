@@ -26,13 +26,13 @@ const HunkHeaderRow = g.tr({
   lineHeight: '32px',
 });
 
-const AddCommentIcon = 'PullRequestFile-AddCommentIcon';
+const addCommentIconClassName = 'PullRequestFile-AddCommentIcon';
 
 const BaseLineRow = g.tr({
-  [`& .${AddCommentIcon}`]: {
+  [`& .${addCommentIconClassName}`]: {
     visibility: 'hidden',
   },
-  [`&:hover .${AddCommentIcon}`]: {
+  [`&:hover .${addCommentIconClassName}`]: {
     visibility: 'visible',
   },
 });
@@ -131,6 +131,7 @@ class Hunk extends React.Component {
       canCreateComment,
       commentComposerPosition,
       onCloseCommentComposer,
+      deleteComment,
     } = this.props;
     const lines = [];
     const highlighter = language ? new Highlighter(language) : null;
@@ -140,7 +141,7 @@ class Hunk extends React.Component {
         <C.LineRow key={'L' + line.position}>
           {canCreateComment &&
             <AddCommentCell onClick={() => this.props.onOpenCommentComposer(line.position)}>
-              <span className={`pt-icon-standard pt-icon-comment ${AddCommentIcon}`} />
+              <span className={`pt-icon-standard pt-icon-comment ${addCommentIconClassName}`} />
             </AddCommentCell>}
           <LineNumberCell>{line.oldNumber || ''}</LineNumberCell>
           <LineNumberCell>{line.newNumber || ''}</LineNumberCell>
@@ -174,10 +175,12 @@ class Hunk extends React.Component {
                 {comments && <CommentThread
                   comments={comments}
                   isPending={false}
+                  deleteComment={deleteComment}
                 />}
                 {pendingComments && <CommentThread
                   comments={pendingComments}
                   isPending={true}
+                  deleteComment={deleteComment}
                 />}
                 {showComposer && <CommentComposer
                   file={file}
@@ -220,7 +223,7 @@ export default class Diff extends React.Component {
   }
 
   render() {
-    const { file, comments, pendingComments, canCreateComment } = this.props;
+    const { file, comments, pendingComments, canCreateComment, deleteComment } = this.props;
     const commentsByPosition = collectCommentsByPosition(comments);
     const pendingCommentsByPosition = collectCommentsByPosition(pendingComments);
 
@@ -250,6 +253,7 @@ export default class Diff extends React.Component {
           commentComposerPosition={this.state.commentComposerPosition}
           onOpenCommentComposer={this._openCommentComposer}
           onCloseCommentComposer={this._closeCommentComposer}
+          deleteComment={deleteComment}
         />
       );
     }

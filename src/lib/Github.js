@@ -213,3 +213,10 @@ export function addPullRequestReviewCommentOnReview(reviewId, commitId, body, pa
     }
   }).map(resp => resp.addPullRequestReviewComment.comment);
 }
+
+export function deletePullRequestReviewComment(pullRequest, commentId) {
+  return ajax({
+    url: `${pullRequest.base.repo.url}/pulls/comments/${commentId}`,
+    method: 'DELETE',
+  });
+}

@@ -1,7 +1,10 @@
 import React from 'react';
 import g from 'glamorous';
-import { Colors, Intent, Tag } from '@blueprintjs/core';
+import { Colors, Intent, Tag, Button, Classes } from '@blueprintjs/core';
 import marked from 'marked';
+import { getUserInfo } from '../lib/GithubAuth';
+
+const actionsClassName = 'CommentThread-Actions';
 
 const Comment = g.div({
   padding: '8px',
@@ -9,6 +12,13 @@ const Comment = g.div({
   border: `1px solid ${Colors.GRAY5}`,
   borderRadius: '3px',
   fontFamily: 'sans-serif',
+
+  [`& .${actionsClassName}`]: {
+    visibility: 'hidden'
+  },
+  [`&:hover .${actionsClassName}`]: {
+    visibility: 'visible'
+  },
 });
 
 const CommentMeta = g.div({
@@ -28,14 +38,34 @@ const CommentBody = g.div({
   }
 });
 
-function CommentThread({ comments, isPending }) {
+const Actions = g.div({
+  float: 'right',
+  marginRight: '-4px',
+  marginTop: '-4px',
+});
+
+function CommentThread({ comments, isPending, deleteComment }) {
+  const viewer = getUserInfo();
   return (
     <div>
       {comments.map((comment, i) =>
-        <Comment first={i === 0} key={comment.id}>
+        <Comment key={comment.id}>
           <CommentMeta>
             <CommentUser href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</CommentUser>
             {isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
+            {viewer && viewer.login === comment.user.login && (
+              <Actions className={actionsClassName}>
+                {!isPending && (
+                  // GitHub doesn't have an API for deleting pending comments
+                  <Button
+                    iconName="delete"
+                    className={Classes.MINIMAL}
+                    intent={Intent.DANGER}
+                    onClick={() => deleteComment(comment.id)}
+                  />
+                )}
+              </Actions>
+            )}
           </CommentMeta>
           <CommentBody dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
         </Comment>
