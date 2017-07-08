@@ -1,7 +1,7 @@
 import React from 'react';
 import g from 'glamorous';
 import { Link } from 'react-router-dom';
-import { AnchorButton, Button, Intent, Colors } from '@blueprintjs/core';
+import { AnchorButton, Button, Intent, Colors, Tooltip, Position } from '@blueprintjs/core';
 import { isAuthenticated, startAuth } from '../lib/GithubAuth';
 import Nav from '../ui/Nav';
 
@@ -17,7 +17,7 @@ const Title = g.h1({
 });
 
 const Cards = g.div({
-  marginTop: '30px',
+  marginTop: '20px',
 
   '& h5': {
     marginBottom: '20px'
@@ -80,14 +80,16 @@ export default class IndexRoute extends React.Component {
               <p>Drag the link to your bookmarks bar, then use it in GitHub pull request page.</p>
 
               <ButtonContainer>
-                <AnchorButton
-                  intent={Intent.PRIMARY}
-                  iconName="bookmark"
-                  text="Open in Diff Monster"
-                  href={bookmarkletUrl}
-                  onClick={this._showBookmarkletNotice}
-                  disabled={isFirefox}
-                />
+                <Tooltip content="Drag me" position={Position.BOTTOM}>
+                  <AnchorButton
+                    intent={Intent.PRIMARY}
+                    iconName="bookmark"
+                    text="Open in Diff Monster"
+                    href={bookmarkletUrl}
+                    onClick={this._showBookmarkletNotice}
+                    disabled={isFirefox}
+                  />
+                </Tooltip>
               </ButtonContainer>
 
               {isFirefox && (

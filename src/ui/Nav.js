@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Popover, Position, Intent, Button, Menu, MenuItem } from '@blueprintjs/core';
+import { Popover, Position, Intent, Button, Menu, MenuItem, Tooltip } from '@blueprintjs/core';
 import { css } from 'glamor';
 import g from 'glamorous';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
@@ -52,10 +52,12 @@ export default class Nav extends Component {
             isOpen={this.state.isInboxOpen}
             onInteraction={nextOpenState => Nav.isInboxOpen.next(nextOpenState)}
           >
-            <Button
-              className="pt-minimal"
-              iconName="inbox"
-            />
+            <Tooltip content="Inbox" position={Position.BOTTOM}>
+              <Button
+                className="pt-minimal"
+                iconName="inbox"
+              />
+            </Tooltip>
           </Popover>}
           {user && <Popover
             content={<Menu>

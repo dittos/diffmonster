@@ -42,6 +42,7 @@ const AddCommentCell = g.td({
   padding: '0 5px',
   cursor: 'pointer',
   color: Colors.GRAY1,
+  verticalAlign: 'top',
   '&:hover': {
     color: Colors.BLUE1,
   },
