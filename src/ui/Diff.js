@@ -126,6 +126,7 @@ class Hunk extends React.Component {
       hunk,
       file,
       commentsByPosition,
+      pendingCommentsByPosition,
       language,
       canCreateComment,
       commentComposerPosition,
@@ -163,15 +164,21 @@ class Hunk extends React.Component {
         </C.LineRow>
       );
       const comments = commentsByPosition[line.position];
+      const pendingComments = pendingCommentsByPosition[line.position];
       const showComposer = line.position === commentComposerPosition;
-      if (comments || showComposer) {
+      if (comments || pendingComments || showComposer) {
         lines.push(
           <tr key={'C' + line.position}>
             <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
               <CommentContainer>
-                <CommentThread
+                {comments && <CommentThread
                   comments={comments}
-                />
+                  isPending={false}
+                />}
+                {pendingComments && <CommentThread
+                  comments={pendingComments}
+                  isPending={true}
+                />}
                 {showComposer && <CommentComposer
                   file={file}
                   position={line.position}
@@ -189,6 +196,18 @@ class Hunk extends React.Component {
   }
 }
 
+function collectCommentsByPosition(comments) {
+  const commentsByPosition = {};
+  comments.forEach(comment => {
+    if (comment.position) {
+      if (!commentsByPosition[comment.position])
+        commentsByPosition[comment.position] = [];
+      commentsByPosition[comment.position].push(comment);
+    }
+  });
+  return commentsByPosition;
+}
+
 export default class Diff extends React.Component {
   state = {
     commentComposerPosition: -1,
@@ -201,17 +220,9 @@ export default class Diff extends React.Component {
   }
 
   render() {
-    const { file, comments, canCreateComment } = this.props;
-    const commentsByPosition = {};
-    if (comments) {
-      comments.forEach(comment => {
-        if (comment.position) {
-          if (!commentsByPosition[comment.position])
-            commentsByPosition[comment.position] = [];
-          commentsByPosition[comment.position].push(comment);
-        }
-      });
-    }
+    const { file, comments, pendingComments, canCreateComment } = this.props;
+    const commentsByPosition = collectCommentsByPosition(comments);
+    const pendingCommentsByPosition = collectCommentsByPosition(pendingComments);
 
     const colSpan = canCreateComment ? 4 : 3;
 
@@ -233,6 +244,7 @@ export default class Diff extends React.Component {
           file={file}
           hunk={hunk}
           commentsByPosition={commentsByPosition}
+          pendingCommentsByPosition={pendingCommentsByPosition}
           language={file.language && getLanguage(file.language) ? file.language : null}
           canCreateComment={canCreateComment}
           commentComposerPosition={this.state.commentComposerPosition}

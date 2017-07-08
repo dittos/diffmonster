@@ -28,14 +28,14 @@ const CommentBody = g.div({
   }
 });
 
-function CommentThread({ comments }) {
+function CommentThread({ comments, isPending }) {
   return (
     <div>
-      {comments && comments.map((comment, i) =>
+      {comments.map((comment, i) =>
         <Comment first={i === 0} key={comment.id}>
           <CommentMeta>
             <CommentUser href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</CommentUser>
-            {comment.isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
+            {isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
           </CommentMeta>
           <CommentBody dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
         </Comment>

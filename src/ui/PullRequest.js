@@ -50,6 +50,16 @@ const ContentPanel = g(Panel)({
   margin: '0 6px 6px 0',
 });
 
+function collectCommentCountByPath(comments, commentCountByPath) {
+  for (let comment of comments) {
+    if (!comment.position)
+      continue;
+    if (!commentCountByPath[comment.path])
+      commentCountByPath[comment.path] = 0;
+    commentCountByPath[comment.path]++;
+  }
+}
+
 class PullRequest extends Component {
   componentDidUpdate(prevProps) {
     if (prevProps.activePath !== this.props.activePath) {
@@ -86,6 +96,7 @@ class PullRequest extends Component {
     const {
       files,
       comments,
+      pendingComments,
       isLoadingReviewStates,
       reviewStates,
       activePath,
@@ -93,15 +104,8 @@ class PullRequest extends Component {
     } = this.props;
     
     const commentCountByPath = {};
-    if (comments) {
-      for (let comment of comments) {
-        if (!comment.position)
-          continue;
-        if (!commentCountByPath[comment.path])
-          commentCountByPath[comment.path] = 0;
-        commentCountByPath[comment.path]++;
-      }
-    }
+    collectCommentCountByPath(comments, commentCountByPath);
+    collectCommentCountByPath(pendingComments, commentCountByPath);
 
     return (
       <FileTreePanel>
@@ -134,6 +138,7 @@ class PullRequest extends Component {
       pullRequest,
       files,
       comments,
+      pendingComments,
       activePath,
       reviewStates,
     } = this.props;
@@ -163,7 +168,8 @@ class PullRequest extends Component {
             activeFile.blocks && activeFile.blocks.length > 0 ?
               <Diff
                 file={activeFile}
-                comments={comments && comments.filter(c => c.path === activePath)}
+                comments={comments.filter(c => c.path === activePath)}
+                pendingComments={pendingComments.filter(c => c.path === activePath)}
                 canCreateComment={isAuthenticated()}
               /> :
               <NoPreview>

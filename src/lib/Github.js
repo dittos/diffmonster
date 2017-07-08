@@ -25,7 +25,7 @@ export const PullRequestReviewEvent = {
   DISMISS: 'DISMISS',
 };
 
-const pullRequestReviewFragment = `
+export const pullRequestReviewFragment = `
   id
   state
   viewerDidAuthor

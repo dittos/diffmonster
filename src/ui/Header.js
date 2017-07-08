@@ -37,18 +37,13 @@ const Title = g.div({
 
 class Header extends React.Component {
   render() {
-    const { pullRequest, latestReview, comments, currentUser } = this.props;
+    const { pullRequest, latestReview, pendingComments, currentUser } = this.props;
     const latestReviewState = latestReview && latestReview.state;
     const canApprove = currentUser &&
       pullRequest.user.id !== currentUser.id &&
       latestReviewState !== PullRequestReviewState.PENDING &&
       latestReviewState !== PullRequestReviewState.APPROVED;
-    let pendingCommentCount = 0;
-    if (comments) {
-      for (const comment of comments)
-        if (comment.isPending)
-          pendingCommentCount++;
-    }
+    const pendingCommentCount = pendingComments.length;
 
     return <g.Div padding="8px">
       <Links>

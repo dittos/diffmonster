@@ -96,13 +96,8 @@ export default function reviewReducer(state, action) {
         ...state,
         latestReview: action.payload,
         isAddingReview: false,
-        comments: state.comments.map(c => {
-          if (c.isPending) {
-            return { ...c, isPending: false };
-          } else {
-            return c;
-          }
-        })
+        comments: state.comments.concat(state.pendingComments),
+        pendingComments: [],
       };
     
     default:

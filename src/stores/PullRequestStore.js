@@ -16,6 +16,7 @@ import {
   getPullRequestFromGraphQL,
   getPullRequestReviewComments,
   PullRequestReviewState,
+  pullRequestReviewFragment,
 } from '../lib/Github';
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
@@ -48,11 +49,7 @@ export const pullRequestEpic = action$ =>
           id
           reviews(last: 100) { # TODO: handle pagination
             nodes {
-              id
-              state
-              viewerDidAuthor
-              createdAt
-              databaseId
+              ${pullRequestReviewFragment}
             }
           }
         `).catch(error => {
@@ -83,8 +80,7 @@ export const pullRequestEpic = action$ =>
       let comments$ = getPullRequestComments(pullRequest)
         .map(comments => ({ type: COMMENTS_FETCHED, payload: comments }));
       if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
-        comments$ = Observable.concat(
-          comments$,
+        comments$ = comments$.merge(
           getPullRequestReviewComments(pullRequest, latestReview.databaseId)
             .map(pendingComments => ({ type: PENDING_COMMENTS_FETCHED, payload: pendingComments }))
         );

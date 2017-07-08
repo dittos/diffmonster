@@ -42,12 +42,12 @@ const addSingleCommentEpic = (action$, store) =>
       path,
     }])
       .do(action.meta.subject)
-      .mergeMap(review => Observable.of({
+      .mergeMap(({ comments, ...review }) => Observable.of({
         type: ADD_REVIEW_SUCCESS,
         payload: review,
       }, {
         type: ADD_SINGLE_COMMENT_SUCCESS,
-        payload: review.comments.nodes[0],
+        payload: comments.nodes[0],
       }))
       .catch(error => Observable.of({
         type: ADD_SINGLE_COMMENT_ERROR,
@@ -84,12 +84,12 @@ const addReviewCommentEpic = (action$, store) =>
         body,
       }])
         .do(action.meta.subject)
-        .mergeMap(review => Observable.of({
+        .mergeMap(({ comments, ...review }) => Observable.of({
           type: ADD_REVIEW_SUCCESS,
           payload: review,
         }, {
           type: ADD_REVIEW_COMMENT_SUCCESS,
-          payload: review.comments.nodes[0],
+          payload: comments.nodes[0],
         }))
         .catch(error => Observable.of({
           type: ADD_REVIEW_COMMENT_ERROR,
@@ -114,8 +114,7 @@ export default function commentsReducer(state, action) {
     case PENDING_COMMENTS_FETCHED:
       return {
         ...state,
-        comments: state.comments.filter(c => !c.isPending)
-          .concat(action.payload.map(c => ({ ...c, isPending: true })))
+        pendingComments: action.payload,
       };
       
     case ADD_SINGLE_COMMENT_SUCCESS:
@@ -133,7 +132,7 @@ export default function commentsReducer(state, action) {
     case ADD_REVIEW_COMMENT_SUCCESS:
       return {
         ...state,
-        comments: state.comments.concat({ ...action.payload, isPending: true }),
+        pendingComments: state.pendingComments.concat(action.payload),
         isAddingReview: false,
       };
     
