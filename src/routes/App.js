@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import { Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
 import { Colors } from '@blueprintjs/core';
 import g from 'glamorous';
 import PullRequestRoute from './PullRequestRoute';
 import IndexRoute from './IndexRoute';
 import * as GithubAuth from '../lib/GithubAuth';
+import { configureStore } from '../lib/Store';
 import Loading from '../ui/Loading';
 import Nav from '../ui/Nav';
 
@@ -21,6 +23,7 @@ const Viewport = g.div({
 });
 
 class App extends Component {
+  store = configureStore();
   state = {
     isLoading: true
   };
@@ -42,11 +45,13 @@ class App extends Component {
       );
     } else {
       return (
-        <Viewport>
-          <Nav />
-          <Route path="/:owner/:repo/pull/:id" component={PullRequestRoute} />
-          <Route exact path="/" component={IndexRoute} />
-        </Viewport>
+        <Provider store={this.store}>
+          <Viewport>
+            <Nav />
+            <Route path="/:owner/:repo/pull/:number" component={PullRequestRoute} />
+            <Route exact path="/" component={IndexRoute} />
+          </Viewport>
+        </Provider>
       );
     }
   }

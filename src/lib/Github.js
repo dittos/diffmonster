@@ -68,13 +68,13 @@ export function graphql(query, variables) {
       Observable.of(resp.response.data));
 }
 
-function pullRequestUrl(owner, repo, id) {
-  return `${BASE_URL}/repos/${owner}/${repo}/pulls/${id}`;
+function pullRequestUrl(owner, repo, number) {
+  return `${BASE_URL}/repos/${owner}/${repo}/pulls/${number}`;
 }
 
-export function getPullRequest(owner, repo, id) {
+export function getPullRequest(owner, repo, number) {
   return ajax({
-    url: pullRequestUrl(owner, repo, id),
+    url: pullRequestUrl(owner, repo, number),
     method: 'get',
   }).map(resp => resp.response);
 }
@@ -91,10 +91,10 @@ function paginated(obs) {
   });
 }
 
-export function getPullRequestAsDiff(owner, repo, id) {
+export function getPullRequestAsDiff(owner, repo, number) {
   return ajax({
     // Append query string to prevent interfering caches
-    url: `${pullRequestUrl(owner, repo, id)}?.diff`,
+    url: `${pullRequestUrl(owner, repo, number)}?.diff`,
     method: 'get',
     headers: {
       'Accept': 'application/vnd.github.v3.diff',
@@ -110,16 +110,16 @@ export function getPullRequestComments(pullRequest) {
   }));
 }
 
-export function getPullRequestFromGraphQL(owner, repo, id, fragment) {
+export function getPullRequestFromGraphQL(owner, repo, number, fragment) {
   return graphql(`
-    query($owner: String!, $repo: String!, $id: Int!) {
+    query($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
-        pullRequest(number: $id) {
+        pullRequest(number: $number) {
           ${fragment}
         }
       }
     }
-  `, { owner, repo, id })
+  `, { owner, repo, number })
     .map(resp => resp.repository.pullRequest);
 }
 

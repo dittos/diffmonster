@@ -10,6 +10,11 @@ import {
   addPullRequestReviewCommentOnReview,
   PullRequestReviewState
 } from '../lib/Github';
+import {
+  commentAdded,
+  pendingCommentsAdded,
+  reviewAdded,
+} from '../lib/Store';
 
 const Container = g.div({
   margin: '8px',
@@ -88,10 +93,7 @@ class CommentComposer extends React.Component {
         path: this.props.file.filename,
         commit_id: pullRequest.head.sha,
       }).subscribe(comment => {
-        this.props.dispatch({
-          type: 'COMMENT_ADDED',
-          payload: comment,
-        });
+        this.props.dispatch(commentAdded(comment));
         this.setState({ addingComment: false });
         this._closeComposer();
       })
@@ -116,10 +118,7 @@ class CommentComposer extends React.Component {
           this.props.file.filename,
           this.props.position
         ).subscribe(comment => {
-          this.props.dispatch({
-            type: 'PENDING_COMMENTS_ADDED',
-            payload: [comment],
-          });
+          this.props.dispatch(pendingCommentsAdded([ comment ]));
           this.setState({ addingComment: false });
           this._closeComposer();
         })
@@ -132,14 +131,8 @@ class CommentComposer extends React.Component {
           body: this._getBodyWithSig(),
         }])
         .subscribe(review => {
-          this.props.dispatch({
-            type: 'REVIEW_ADDED',
-            payload: review,
-          });
-          this.props.dispatch({
-            type: 'PENDING_COMMENTS_ADDED',
-            payload: review.comments.nodes,
-          });
+          this.props.dispatch(reviewAdded(review));
+          this.props.dispatch(pendingCommentsAdded(review.comments.nodes));
           this.setState({ addingComment: false });
           this._closeComposer();
         })

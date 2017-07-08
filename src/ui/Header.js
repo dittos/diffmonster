@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import g from 'glamorous';
 import { AnchorButton, Button, Classes, Colors, Tag, Intent } from '@blueprintjs/core';
 import { PullRequestReviewState } from '../lib/Github';
+import { submitReview, addReview } from '../lib/Store';
 
 const Meta = g.div({
   padding: '8px',
@@ -109,21 +110,11 @@ class Header extends React.Component {
   }
 
   _publishPendingComments = () => {
-    this.props.dispatch({
-      type: 'SUBMIT_REVIEW',
-      payload: {
-        event: 'COMMENT'
-      }
-    })
+    this.props.dispatch(submitReview({ event: 'COMMENT' }));
   };
 
   _approve = () => {
-    this.props.dispatch({
-      type: 'ADD_REVIEW',
-      payload: {
-        event: 'APPROVE'
-      }
-    })
+    this.props.dispatch(addReview({ event: 'APPROVE' }));
   };
 }
 

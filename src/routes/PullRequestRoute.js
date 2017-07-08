@@ -1,12 +1,10 @@
-import React, { Component } from 'react';
-import { Provider } from 'react-redux';
+import React from 'react';
+import { connect } from 'react-redux';
 import PullRequest from '../ui/PullRequest';
 import withQueryParams from '../lib/withQueryParams';
-import createStore from '../lib/createStore';
+import { fetch, fetchCancel } from '../lib/Store';
 
-class PullRequestRoute extends Component {
-  store = createStore();
-
+class PullRequestRoute extends React.Component {
   componentDidMount() {
     this._load(this.props.match.params);
   }
@@ -17,7 +15,7 @@ class PullRequestRoute extends Component {
     if (
       params.owner !== nextParams.owner ||
       params.repo !== nextParams.repo ||
-      params.id !== nextParams.id
+      params.number !== nextParams.number
     ) {
       this._load(nextProps.match.params);
     }
@@ -25,17 +23,20 @@ class PullRequestRoute extends Component {
 
   render() {
     return (
-      <Provider store={this.store}>
-        <PullRequest
-          activePath={this.props.queryParams.path}
-          onSelectFile={this._onSelectFile}
-        />
-      </Provider>
+      <PullRequest
+        activePath={this.props.queryParams.path}
+        onSelectFile={this._onSelectFile}
+      />
     );
   }
 
-  _load(params) {
-    this.store.dispatch({ type: 'FETCH', payload: params });
+  _load({ owner, repo, number }) {
+    this.props.dispatch(fetchCancel());
+    this.props.dispatch(fetch({
+      owner,
+      repo,
+      number: Number(number),
+    }));
   }
 
   _reload() {
@@ -50,4 +51,4 @@ class PullRequestRoute extends Component {
   };
 }
 
-export default withQueryParams(PullRequestRoute);
+export default withQueryParams(connect()(PullRequestRoute));
