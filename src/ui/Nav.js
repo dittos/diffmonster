@@ -40,7 +40,8 @@ export default class Nav extends Component {
       <nav className="pt-navbar pt-dark">
         <g.Div className="pt-navbar-group pt-align-left" marginLeft="-8px">
           <Link to="/" className="pt-navbar-heading pt-button pt-minimal">
-            Diff Monster
+            Diff Monster{' '}
+            <span className="pt-icon-standard pt-icon-help pt-align-right" />
           </Link>
         </g.Div>
         <div className="pt-navbar-group pt-align-right">

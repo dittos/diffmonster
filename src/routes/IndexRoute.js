@@ -132,6 +132,12 @@ export default class IndexRoute extends React.Component {
               </ButtonContainer>
             </div>
           </Cards>
+
+          <g.P paddingTop="20px" textAlign="center" className="pt-text-muted">
+            {window.BUILD_INFO || '(insert build info here)'}
+            {' · '}
+            <a href="https://github.com/dittos/diffmonster">Source code</a>
+          </g.P>
         </Container>
       </g.Div>
     );
