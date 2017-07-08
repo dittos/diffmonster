@@ -6,10 +6,10 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/do';
 import {
-  addPullRequestReviewComment,
   addPullRequestReviewCommentOnReview,
-  addPendingPullRequestReview,
+  addPullRequestReview,
   PullRequestReviewState,
+  PullRequestReviewEvent,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 
@@ -33,19 +33,21 @@ export function addReviewComment({ body, position, path }, subject) {
 
 const addSingleCommentEpic = (action$, store) =>
   action$.ofType(ADD_SINGLE_COMMENT).mergeMap(action => {
-    const state = store.getState();
+    const { pullRequest, pullRequestIdFromGraphQL } = store.getState();
     const { body, position, path } = action.payload;
 
-    return addPullRequestReviewComment(state.pullRequest, {
+    return addPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, PullRequestReviewEvent.COMMENT, [{
       body,
       position,
       path,
-      commit_id: state.pullRequest.head.sha,
-    })
+    }])
       .do(action.meta.subject)
-      .map(comment => ({
+      .mergeMap(review => Observable.of({
+        type: ADD_REVIEW_SUCCESS,
+        payload: review,
+      }, {
         type: ADD_SINGLE_COMMENT_SUCCESS,
-        payload: comment,
+        payload: review.comments.nodes[0],
       }))
       .catch(error => Observable.of({
         type: ADD_SINGLE_COMMENT_ERROR,
@@ -76,7 +78,7 @@ const addReviewCommentEpic = (action$, store) =>
           payload: error,
         }));
     } else {
-      return addPendingPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, [{
+      return addPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, PullRequestReviewEvent.PENDING, [{
         path,
         position,
         body,

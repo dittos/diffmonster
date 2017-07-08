@@ -17,6 +17,14 @@ export const PullRequestReviewState = {
   DISMISSED: 'DISMISSED',
 };
 
+export const PullRequestReviewEvent = {
+  PENDING: null,
+  COMMENT: 'COMMENT',
+  APPROVE: 'APPROVE',
+  REQUEST_CHANGES: 'REQUEST_CHANGES',
+  DISMISS: 'DISMISS',
+};
+
 const pullRequestReviewFragment = `
   id
   state
@@ -144,18 +152,7 @@ export function getPullRequestReviewComments(pullRequest, reviewId) {
   }));
 }
 
-export function addPullRequestReviewComment(pullRequest, data) {
-  return ajax({
-    url: `${pullRequest.url}/comments`,
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: data,
-  }).map(resp => resp.response);
-}
-
-export function addPendingPullRequestReview(pullRequestId, commitId, comments) {
+export function addPullRequestReview(pullRequestId, commitId, event, comments = []) {
   return graphql(`
     mutation($input: AddPullRequestReviewInput!, $commentCount: Int) {
       addPullRequestReview(input: $input) {
@@ -173,27 +170,10 @@ export function addPendingPullRequestReview(pullRequestId, commitId, comments) {
     input: {
       pullRequestId,
       commitOID: commitId,
+      event,
       comments,
     },
     commentCount: comments.length,
-  }).map(resp => resp.addPullRequestReview.pullRequestReview);
-}
-
-export function addPullRequestReview(pullRequestId, commitId, event) {
-  return graphql(`
-    mutation($input: AddPullRequestReviewInput!) {
-      addPullRequestReview(input: $input) {
-        pullRequestReview {
-          ${pullRequestReviewFragment}
-        }
-      }
-    }
-  `, {
-    input: {
-      pullRequestId,
-      commitOID: commitId,
-      event,
-    }
   }).map(resp => resp.addPullRequestReview.pullRequestReview);
 }
 
