@@ -8,7 +8,7 @@ import { PullRequestReviewState } from '../lib/Github';
 import {
   addSingleComment,
   addReviewComment,
-} from '../lib/store/CommentStore';
+} from '../stores/CommentStore';
 
 const Container = g.div({
   margin: '8px',

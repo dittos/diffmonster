@@ -8,7 +8,7 @@ import 'rxjs/add/operator/do';
 import {
   addPullRequestReview,
   submitPullRequestReview,
-} from '../Github';
+} from '../lib/Github';
 
 export const ADD_REVIEW_SUCCESS = 'REVIEW_ADDED';
 const ADD_REVIEW = 'ADD_REVIEW';

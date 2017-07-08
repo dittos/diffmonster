@@ -1,9 +1,9 @@
 import { createStore, applyMiddleware } from 'redux';
 import { combineEpics, createEpicMiddleware } from 'redux-observable';
-import getInitialState from './store/getInitialState';
-import pullRequestReducer, { pullRequestEpic } from './store/PullRequestStore';
-import commentReducer, { commentEpic } from './store/CommentStore';
-import reviewReducer, { reviewEpic } from './store/ReviewStore';
+import getInitialState from './getInitialState';
+import pullRequestReducer, { pullRequestEpic } from './PullRequestStore';
+import commentReducer, { commentEpic } from './CommentStore';
+import reviewReducer, { reviewEpic } from './ReviewStore';
 
 const rootEpic = combineEpics(
   pullRequestEpic,

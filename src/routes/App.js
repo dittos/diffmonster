@@ -6,7 +6,7 @@ import g from 'glamorous';
 import PullRequestRoute from './PullRequestRoute';
 import IndexRoute from './IndexRoute';
 import * as GithubAuth from '../lib/GithubAuth';
-import { configureStore } from '../lib/Store';
+import { configureStore } from '../stores';
 import Loading from '../ui/Loading';
 import Nav from '../ui/Nav';
 

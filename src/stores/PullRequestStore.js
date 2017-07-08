@@ -16,10 +16,10 @@ import {
   getPullRequestFromGraphQL,
   getPullRequestReviewComments,
   PullRequestReviewState,
-} from '../Github';
-import { isAuthenticated, getUserInfo } from '../GithubAuth';
-import { observeReviewStates } from '../Database';
-import { parseDiff } from '../DiffParser';
+} from '../lib/Github';
+import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
+import { observeReviewStates } from '../lib/Database';
+import { parseDiff } from '../lib/DiffParser';
 import getInitialState from './getInitialState';
 import { COMMENTS_FETCHED, PENDING_COMMENTS_FETCHED } from './CommentStore';
 

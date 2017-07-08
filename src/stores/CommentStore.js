@@ -10,7 +10,7 @@ import {
   addPullRequestReviewCommentOnReview,
   addPendingPullRequestReview,
   PullRequestReviewState,
-} from '../Github';
+} from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';

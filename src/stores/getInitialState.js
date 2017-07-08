@@ -1,4 +1,4 @@
-import { getUserInfo } from '../GithubAuth';
+import { getUserInfo } from '../lib/GithubAuth';
 
 export default function getInitialState() {
   return {
