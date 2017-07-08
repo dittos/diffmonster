@@ -134,9 +134,12 @@ export default class IndexRoute extends React.Component {
           </Cards>
 
           <g.P paddingTop="20px" textAlign="center" className="pt-text-muted">
-            {window.BUILD_INFO || '(insert build info here)'}
-            {' · '}
-            <a href="https://github.com/dittos/diffmonster">Source code</a>
+            <p>
+              Built by <a href="https://github.com/dittos">@dittos</a>
+              {' · '}
+              <a href="https://github.com/dittos/diffmonster">Project page</a>
+            </p>
+            <code>{window.BUILD_INFO || 'dev mode'}</code>
           </g.P>
         </Container>
       </g.Div>
