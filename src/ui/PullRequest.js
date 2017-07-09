@@ -11,6 +11,7 @@ import Summary from './Summary';
 import Loading from './Loading';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
+import * as Settings from '../lib/Settings';
 import { deleteComment } from '../stores/CommentStore';
 
 const NoPreview = g.div({
@@ -36,11 +37,16 @@ const PanelHeader = g.div({
 });
 
 const FileTreePanel = g(Panel)({
-  flex: '0 0 30%',
+  flex: '0 0 auto',
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
-  margin: '0 6px 6px 6px',
+  margin: '0 0 6px 6px',
+});
+
+const ResizeHandle = g.div({
+  cursor: 'ew-resize',
+  width: '6px',
 });
 
 const ContentPanel = g(Panel)({
@@ -62,6 +68,8 @@ function collectCommentCountByPath(comments, commentCountByPath) {
 }
 
 class PullRequest extends Component {
+  _fileTreeWidth = Settings.getFileTreeWidth();
+
   componentDidUpdate(prevProps) {
     if (prevProps.activePath !== this.props.activePath) {
       if (this._scrollEl)
@@ -86,6 +94,7 @@ class PullRequest extends Component {
           </g.Div>
           <g.Div flex="1" display="flex" overflow="auto">
             {this._renderFileTree()}
+            <ResizeHandle onMouseDown={this._beginResize} />
             {this._renderContent()}
           </g.Div>
         </g.Div>
@@ -109,7 +118,7 @@ class PullRequest extends Component {
     collectCommentCountByPath(pendingComments, commentCountByPath);
 
     return (
-      <FileTreePanel>
+      <FileTreePanel innerRef={el => this._fileTreeEl = el} style={{width: this._fileTreeWidth + 'px'}}>
         <PanelHeader>
           <g.Div flex="1">
             Files
@@ -228,6 +237,34 @@ class PullRequest extends Component {
     if (window.confirm('Are you sure?')) {
       this.props.dispatch(deleteComment(commentId));
     }
+  };
+
+  // Resizing - directly manipulates DOM to bypass React rendering
+
+  _beginResize = event => {
+    event.preventDefault(); // prevent text selection
+
+    document.addEventListener('mouseup', this._endResize, false);
+    document.addEventListener('mousemove', this._resize, false);
+  };
+
+  _resize = event => {
+    event.preventDefault(); // prevent text selection
+
+    // FIXME: 6px is left margin but hardcoded
+    const minWidth = 200;
+    const maxWidth = 800;
+    this._fileTreeWidth = Math.min(Math.max(minWidth, event.clientX - 6), maxWidth);
+    this._fileTreeEl.style.width = this._fileTreeWidth + 'px';
+  };
+
+  _endResize = event => {
+    event.preventDefault(); // prevent text selection
+
+    document.removeEventListener('mouseup', this._beginResize);
+    document.removeEventListener('mousemove', this._resize);
+
+    Settings.setFileTreeWidth(this._fileTreeWidth);
   };
 }
 
