@@ -9,6 +9,10 @@ Diff Monster is a web app for reviewing GitHub pull requests.
 
 NOTE: We never send or store your GitHub access token to server! [It's stored in `localStorage`.](https://github.com/dittos/diffmonster/blob/716396c/src/lib/GithubAuth.js#L47)
 
+## What it looks like
+
+![Screenshot](http://blog.sapzil.org/public/img/2017-07-diffmonster.png)
+
 ## Features
 
 * Basic stuff: view diff, comment on diff, approve, etc.
