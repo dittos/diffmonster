@@ -39,10 +39,6 @@ class PullRequestRoute extends React.Component {
     }));
   }
 
-  _reload() {
-    this._load(this.props.match.params);
-  }
-
   _onSelectFile = path => {
     this.props.history.push({
       ...this.props.location,

@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { findDOMNode } from 'react-dom';
 import { connect } from 'react-redux';
 import DocumentTitle from 'react-document-title';
 import g from 'glamorous';
@@ -9,6 +8,7 @@ import Diff from './Diff';
 import Header from './Header';
 import Summary from './Summary';
 import Loading from './Loading';
+import SplitPane from './SplitPane';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
 import * as Settings from '../lib/Settings';
@@ -16,12 +16,6 @@ import { deleteComment } from '../stores/CommentStore';
 
 const NoPreview = g.div({
   padding: '16px',
-});
-
-const Panel = g.div({
-  background: Colors.WHITE,
-  borderRadius: '3px',
-  boxShadow: '0 0 1px rgba(0, 0, 0, 0.2)',
 });
 
 const PanelHeader = g.div({
@@ -36,27 +30,6 @@ const PanelHeader = g.div({
   borderBottom: `1px solid ${Colors.GRAY5}`,
 });
 
-const FileTreePanel = g(Panel)({
-  flex: '0 0 auto',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-  margin: '0 0 6px 6px',
-});
-
-const ResizeHandle = g.div({
-  cursor: 'ew-resize',
-  width: '6px',
-});
-
-const ContentPanel = g(Panel)({
-  flex: '1',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-  margin: '0 6px 6px 0',
-});
-
 function collectCommentCountByPath(comments, commentCountByPath) {
   for (let comment of comments) {
     if (!comment.position)
@@ -68,12 +41,14 @@ function collectCommentCountByPath(comments, commentCountByPath) {
 }
 
 class PullRequest extends Component {
-  _fileTreeWidth = Settings.getFileTreeWidth();
+  state = {
+    fileTreeWidth: Settings.getFileTreeWidth(),
+  };
 
   componentDidUpdate(prevProps) {
     if (prevProps.activePath !== this.props.activePath) {
       if (this._scrollEl)
-        findDOMNode(this._scrollEl).scrollTop = 0;
+        this._scrollEl.scrollTop = 0;
     }
   }
 
@@ -92,11 +67,12 @@ class PullRequest extends Component {
           <g.Div flex="0" className={Classes.DARK}>
             <Header />
           </g.Div>
-          <g.Div flex="1" display="flex" overflow="auto">
-            {this._renderFileTree()}
-            <ResizeHandle onMouseDown={this._beginResize} />
-            {this._renderContent()}
-          </g.Div>
+          <SplitPane
+            sideWidth={this.state.fileTreeWidth}
+            side={this._renderFileTree()}
+            main={this._renderContent()}
+            onResizeEnd={this._onResizeEnd}
+          />
         </g.Div>
       </DocumentTitle>
     );
@@ -117,30 +93,34 @@ class PullRequest extends Component {
     collectCommentCountByPath(comments, commentCountByPath);
     collectCommentCountByPath(pendingComments, commentCountByPath);
 
-    return (
-      <FileTreePanel innerRef={el => this._fileTreeEl = el} style={{width: this._fileTreeWidth + 'px'}}>
-        <PanelHeader>
-          <g.Div flex="1">
-            Files
-          </g.Div>
-          <g.Div flex="initial">
-            {reviewStates ?
-              <g.Span color={Colors.GRAY1}>{this._getReviewedFileCount()} of {files.length} reviewed</g.Span> :
-              isLoadingReviewStates &&
-                <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
-          </g.Div>
-        </PanelHeader>
-        <FileTree
-          files={files.map(file => ({
-            ...file,
-            commentCount: commentCountByPath[file.filename],
-            isReviewed: reviewStates && reviewStates[file.sha],
-          }))}
-          activePath={activePath}
-          onSelectFile={onSelectFile}
-        />
-      </FileTreePanel>
+    const header = (
+      <PanelHeader key="header">
+        <g.Div flex="1">
+          Files
+        </g.Div>
+        <g.Div flex="initial">
+          {reviewStates ?
+            <g.Span color={Colors.GRAY1}>{this._getReviewedFileCount()} of {files.length} reviewed</g.Span> :
+            isLoadingReviewStates &&
+              <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
+        </g.Div>
+      </PanelHeader>
     );
+
+    const tree = (
+      <FileTree
+        key="tree"
+        files={files.map(file => ({
+          ...file,
+          commentCount: commentCountByPath[file.filename],
+          isReviewed: reviewStates && reviewStates[file.sha],
+        }))}
+        activePath={activePath}
+        onSelectFile={onSelectFile}
+      />
+    );
+
+    return [header, tree];
   }
 
   _renderContent() {
@@ -154,43 +134,45 @@ class PullRequest extends Component {
     } = this.props;
     const activeFile = activePath && files.filter(file => file.filename === activePath)[0];
 
-    return (
-      <ContentPanel>
-        {activeFile &&
-          <PanelHeader>
-            <g.Div flex="1">
-              {activeFile.filename}
-              {activeFile.previous_filename &&
-                <g.Span color={Colors.GRAY1}> (was: {activeFile.previous_filename})</g.Span>}
-            </g.Div>
-            <g.Div flex="initial">
-              {reviewStates && <Switch
-                className="pt-inline"
-                checked={reviewStates[activeFile.sha] || false}
-                label="Done"
-                onChange={this._onReviewStateChange}
-              />}
-              <a href={getBlobUrl(pullRequest, activeFile)} target="_blank" rel="noopener noreferrer">View</a>
-            </g.Div>
-          </PanelHeader>}
-        <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
-          {activeFile ?
-            activeFile.blocks && activeFile.blocks.length > 0 ?
-              <Diff
-                file={activeFile}
-                comments={comments.filter(c => c.path === activePath)}
-                pendingComments={pendingComments.filter(c => c.path === activePath)}
-                canCreateComment={isAuthenticated()}
-                deleteComment={this._deleteComment}
-              /> :
-              <NoPreview>
-                No change
-              </NoPreview> :
-            <Summary pullRequest={pullRequest} />
-          }
+    const header = activeFile && (
+      <PanelHeader key="header">
+        <g.Div flex="1">
+          {activeFile.filename}
+          {activeFile.previous_filename &&
+            <g.Span color={Colors.GRAY1}> (was: {activeFile.previous_filename})</g.Span>}
         </g.Div>
-      </ContentPanel>
+        <g.Div flex="initial">
+          {reviewStates && <Switch
+            className="pt-inline"
+            checked={reviewStates[activeFile.sha] || false}
+            label="Done"
+            onChange={this._onReviewStateChange}
+          />}
+          <a href={getBlobUrl(pullRequest, activeFile)} target="_blank" rel="noopener noreferrer">View</a>
+        </g.Div>
+      </PanelHeader>
     );
+
+    const content = (
+      <g.Div key="content" flex="1" overflowY="auto" innerRef={el => this._scrollEl = el}>
+        {activeFile ?
+          activeFile.blocks && activeFile.blocks.length > 0 ?
+            <Diff
+              file={activeFile}
+              comments={comments.filter(c => c.path === activePath)}
+              pendingComments={pendingComments.filter(c => c.path === activePath)}
+              canCreateComment={isAuthenticated()}
+              deleteComment={this._deleteComment}
+            /> :
+            <NoPreview>
+              No change
+            </NoPreview> :
+          <Summary pullRequest={pullRequest} />
+        }
+      </g.Div>
+    );
+
+    return [header, content];
   }
 
   _renderNotFound() {
@@ -239,32 +221,9 @@ class PullRequest extends Component {
     }
   };
 
-  // Resizing - directly manipulates DOM to bypass React rendering
-
-  _beginResize = event => {
-    event.preventDefault(); // prevent text selection
-
-    document.addEventListener('mouseup', this._endResize, false);
-    document.addEventListener('mousemove', this._resize, false);
-  };
-
-  _resize = event => {
-    event.preventDefault(); // prevent text selection
-
-    // FIXME: 6px is left margin but hardcoded
-    const minWidth = 200;
-    const maxWidth = 800;
-    this._fileTreeWidth = Math.min(Math.max(minWidth, event.clientX - 6), maxWidth);
-    this._fileTreeEl.style.width = this._fileTreeWidth + 'px';
-  };
-
-  _endResize = event => {
-    event.preventDefault(); // prevent text selection
-
-    document.removeEventListener('mouseup', this._beginResize);
-    document.removeEventListener('mousemove', this._resize);
-
-    Settings.setFileTreeWidth(this._fileTreeWidth);
+  _onResizeEnd = fileTreeWidth => {
+    Settings.setFileTreeWidth(fileTreeWidth);
+    this.setState({ fileTreeWidth });
   };
 }
 

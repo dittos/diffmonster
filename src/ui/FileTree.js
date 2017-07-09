@@ -1,5 +1,4 @@
 import React from 'react';
-import { findDOMNode } from 'react-dom';
 import { css } from 'glamor';
 import g from 'glamorous';
 import { InputGroup, Colors, Classes } from '@blueprintjs/core';
@@ -48,7 +47,7 @@ class FileTree extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (prevState.query !== this.state.query) {
-      findDOMNode(this._scrollEl).scrollTop = 0;
+      this._scrollEl.scrollTop = 0;
     }
   }
 
@@ -65,7 +64,7 @@ class FileTree extends React.Component {
             onChange={this._search}
           />
         </SearchWrapper>
-        <g.Div flex="1" overflowY="auto" ref={el => this._scrollEl = el}>
+        <g.Div flex="1" overflowY="auto" innerRef={el => this._scrollEl = el}>
           <Tree
             contents={this.state.query ?
               this._renderFilteredTree(this.state.tree) :

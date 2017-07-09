@@ -31,7 +31,7 @@ const Cards = g.div({
 
 const ButtonContainer = g.div({
   textAlign: 'center',
-  padding: '10px 0',
+  paddingTop: '10px',
 });
 
 // eslint-disable-next-line
@@ -90,15 +90,15 @@ export default class IndexRoute extends React.Component {
                     disabled={isFirefox}
                   />
                 </Tooltip>
+                
+                {isFirefox && (
+                  <p className="pt-text-muted">
+                    <span className="pt-icon-standard pt-icon-warning-sign" />{' '}
+                    The bookmarklet won't work on Firefox due to CSP of github.com.{' '}
+                    <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=866522" target="_blank" rel="noopener noreferrer">Learn more...</a>
+                  </p>
+                )}
               </ButtonContainer>
-
-              {isFirefox && (
-                <p className="pt-text-muted">
-                  <span className="pt-icon-standard pt-icon-warning-sign" />{' '}
-                  The bookmarklet won't work on Firefox due to CSP of github.com.{' '}
-                  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=866522" target="_blank" rel="noopener noreferrer">Learn more...</a>
-                </p>
-              )}
             </div>
           </Cards>
 
@@ -133,14 +133,14 @@ export default class IndexRoute extends React.Component {
             </div>
           </Cards>
 
-          <g.P paddingTop="20px" textAlign="center" className="pt-text-muted">
+          <g.Div paddingTop="20px" textAlign="center" className="pt-text-muted">
             <p>
               Built by <a href="https://github.com/dittos">@dittos</a>
               {' · '}
               <a href="https://github.com/dittos/diffmonster">Project page</a>
             </p>
             <code>{window.BUILD_INFO || 'dev mode'}</code>
-          </g.P>
+          </g.Div>
         </Container>
       </g.Div>
     );
