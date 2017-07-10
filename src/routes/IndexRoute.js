@@ -35,7 +35,7 @@ const ButtonContainer = g.div({
 });
 
 // eslint-disable-next-line
-const bookmarkletUrl = "javascript:location.href='https://diff.sapzil.org/#'+(location.host==='github.com'?location.pathname:'/')";
+const bookmarkletUrl = "javascript:void(location.href='https://diff.sapzil.org/#'+(location.host==='github.com'?location.pathname:'/'))";
 
 const isFirefox = /Firefox/.exec(navigator.userAgent);
 
