@@ -26,4 +26,22 @@ NOTE: We never send or store your GitHub access token to server! [It's stored in
 
 ## Contributing
 
-TBA
+### Install tools
+
+* Node.js (recommend LTS - 6.x at July 2017)
+* [Yarn](https://yarnpkg.com/en/docs/install)
+
+### Prepare
+
+1. Clone repo and `cd`: `git clone https://github.com/dittos/diffmonster.git; cd diffmonster`
+2. Copy `src/config.js.sample` to `src/config.js`.
+3. Install NPM dependencies: `yarn`
+
+By default it will use the official Firebase project and GitHub app owned by @dittos. If you want to use your own please read [Deployment](https://github.com/dittos/diffmonster/wiki/Deployment#prepare) wiki page and edit `src/config.js` accordingly.
+
+### Run the app locally
+
+```bash
+yarn start
+# Browser will be opened automatically
+```
