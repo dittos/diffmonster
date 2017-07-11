@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Intent, Colors, Tooltip, Position } from '@blueprintjs/core';
 import { isAuthenticated, startAuth } from '../lib/GithubAuth';
 import Nav from '../ui/Nav';
+import config from '../config';
 
 const Container = g.div({
   maxWidth: '50em',
@@ -35,7 +36,7 @@ const ButtonContainer = g.div({
 });
 
 // eslint-disable-next-line
-const bookmarkletUrl = "javascript:void(location.href='https://diff.sapzil.org/#'+(location.host==='github.com'?location.pathname:'/'))";
+const bookmarkletUrl = `javascript:void(location.href='${config.url}#'+(location.host==='github.com'?location.pathname:'/'))`;
 
 const isFirefox = /Firefox/.exec(navigator.userAgent);
 

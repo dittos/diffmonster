@@ -9,6 +9,7 @@ import {
   addSingleComment,
   addReviewComment,
 } from '../stores/CommentStore';
+import config from '../config';
 
 const Container = g.div({
   margin: '8px',
@@ -70,8 +71,10 @@ class CommentComposer extends React.Component {
   }
 
   _getBodyWithSig() {
-    // TODO: fix hardcoding
-    const url = this.props.pullRequest.html_url.replace('github.com/', 'diff.sapzil.org/#/') +
+    if (!config.enableCommentSignature)
+      return this.state.commentBody;
+    
+    const url = this.props.pullRequest.html_url.replace(/https?:\/\/github.com\//, config.url + '#/') +
       '?path=' + encodeURIComponent(this.props.file.filename);
     return `${this.state.commentBody}\n\n<sub>_commented via [Diff Monster](${url})_</sub>`;
   }

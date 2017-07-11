@@ -1,0 +1,20 @@
+module.exports = {
+  // Public URL of your installation
+  url: 'https://diff.sapzil.org/',
+  
+  // Firebase SDK setup configuration
+  // https://firebase.google.com/docs/web/setup#add_firebase_to_your_app
+  firebase: {
+    apiKey: "AIzaSyBovmje_t2kOCWvlSOTLJz5z40zHSduEKo",
+    // Customize if you are using custom domain
+    // (otherwise unable to login from browsers not allowing 3rd-party cookies)
+    authDomain: "diff.sapzil.org",
+    databaseURL: "https://diffmonster-8550b.firebaseio.com",
+    projectId: "diffmonster-8550b",
+    storageBucket: "diffmonster-8550b.appspot.com",
+    messagingSenderId: "518719670623"
+  },
+
+  // Toggle signature attached at the end of comments
+  enableCommentSignature: true,
+};
