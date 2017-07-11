@@ -181,7 +181,7 @@ class PullRequest extends Component {
         title="Not Found"
         visual="warning-sign"
         description={
-          <p>
+          !isAuthenticated() && <p>
             <a href="" onClick={this._login}>Login with GitHub</a> to view private repos.
           </p>
         }
