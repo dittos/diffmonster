@@ -12,7 +12,7 @@ export default function Summary({ pullRequest }) {
   return (
     <PullRequestBody
       className="pt-running-text"
-      dangerouslySetInnerHTML={{__html: marked(pullRequest.body, { gfm: true })}}
+      dangerouslySetInnerHTML={{__html: marked(pullRequest.body, { gfm: true, sanitize: true })}}
     />
   );
 }

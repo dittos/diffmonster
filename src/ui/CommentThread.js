@@ -67,7 +67,7 @@ function CommentThread({ comments, isPending, deleteComment }) {
               </Actions>
             )}
           </CommentMeta>
-          <CommentBody dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true })}} />
+          <CommentBody dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true, sanitize: true })}} />
         </Comment>
       )}
     </div>
