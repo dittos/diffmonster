@@ -44,6 +44,11 @@ const Actions = g.div({
   marginTop: '-4px',
 });
 
+function renderMarkdown(body) {
+  const rendered = marked(body, { gfm: true, sanitize: true });
+  return rendered.replace(/&lt;(\/?sub)&gt;/g, '<$1>'); // TODO: is it okay?
+}
+
 function CommentThread({ comments, isPending, deleteComment }) {
   const viewer = getUserInfo();
   return (
@@ -67,7 +72,7 @@ function CommentThread({ comments, isPending, deleteComment }) {
               </Actions>
             )}
           </CommentMeta>
-          <CommentBody dangerouslySetInnerHTML={{__html: marked(comment.body, { gfm: true, sanitize: true })}} />
+          <CommentBody dangerouslySetInnerHTML={{__html: renderMarkdown(comment.body)}} />
         </Comment>
       )}
     </div>
