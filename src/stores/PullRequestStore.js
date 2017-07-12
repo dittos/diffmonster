@@ -9,6 +9,7 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/takeUntil';
+import marked from 'marked';
 import {
   getPullRequest,
   getPullRequestAsDiff,
@@ -47,6 +48,7 @@ export const pullRequestEpic = action$ =>
       getUserInfo() ?
         getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number, `
           id
+          bodyHTML
           reviews(last: 100) { # TODO: handle pagination
             nodes {
               ${pullRequestReviewFragment}
@@ -63,14 +65,19 @@ export const pullRequestEpic = action$ =>
     .switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
       const authenticated = isAuthenticated();
       let latestReview = null;
+      let pullRequestBodyRendered;
       if (pullRequestFromGraphQL) {
         latestReview = getLatestReview(pullRequestFromGraphQL.reviews.nodes);
+        pullRequestBodyRendered = pullRequestFromGraphQL.bodyHTML;
+      } else {
+        pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
       }
       const success$ = Observable.of(({
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
           pullRequestIdFromGraphQL: pullRequestFromGraphQL && pullRequestFromGraphQL.id,
+          pullRequestBodyRendered,
           files: parseDiff(diff),
           latestReview,
           isLoadingReviewStates: authenticated,

@@ -6,7 +6,6 @@ import { Colors, Classes, Switch, NonIdealState } from '@blueprintjs/core';
 import FileTree from './FileTree';
 import Diff from './Diff';
 import Header from './Header';
-import Summary from './Summary';
 import Loading from './Loading';
 import SplitPane from './SplitPane';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
@@ -28,6 +27,12 @@ const PanelHeader = g.div({
   color: Colors.DARK_GRAY1,
   background: Colors.LIGHT_GRAY5,
   borderBottom: `1px solid ${Colors.GRAY5}`,
+});
+
+const Summary = g.div({
+  maxWidth: '50em',
+  margin: '16px auto',
+  padding: '0 2em',
 });
 
 function collectCommentCountByPath(comments, commentCountByPath) {
@@ -126,6 +131,7 @@ class PullRequest extends Component {
   _renderContent() {
     const {
       pullRequest,
+      pullRequestBodyRendered,
       files,
       comments,
       pendingComments,
@@ -167,7 +173,10 @@ class PullRequest extends Component {
             <NoPreview>
               No change
             </NoPreview> :
-          <Summary pullRequest={pullRequest} />
+          <Summary
+            className="pt-running-text"
+            dangerouslySetInnerHTML={{__html: pullRequestBodyRendered}}
+          />
         }
       </g.Div>
     );
