@@ -46,10 +46,11 @@ export const pullRequestEpic = action$ =>
       getPullRequest(action.payload.owner, action.payload.repo, action.payload.number),
       getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
       getUserInfo() ?
-        getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number, `
+        getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
+          getUserInfo().login, `
           id
           bodyHTML
-          reviews(last: 100) { # TODO: handle pagination
+          reviews(last: 1, author: $author) {
             nodes {
               ${pullRequestReviewFragment}
             }
@@ -67,7 +68,7 @@ export const pullRequestEpic = action$ =>
       let latestReview = null;
       let pullRequestBodyRendered;
       if (pullRequestFromGraphQL) {
-        latestReview = getLatestReview(pullRequestFromGraphQL.reviews.nodes);
+        latestReview = pullRequestFromGraphQL.reviews.nodes[0];
         pullRequestBodyRendered = pullRequestFromGraphQL.bodyHTML;
       } else {
         pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
@@ -107,17 +108,6 @@ export const pullRequestEpic = action$ =>
     })
     .takeUntil(action$.ofType(FETCH_CANCEL)
   ));
-
-function getLatestReview(reviews) {
-  let latestReview = null;
-  for (const review of reviews) {
-    if (!review.viewerDidAuthor)
-      continue;
-    if (!latestReview || new Date(latestReview.createdAt) < new Date(review.createdAt))
-      latestReview = review;
-  }
-  return latestReview;
-}
 
 export default function pullRequestReducer(state, action) {
   switch (action.type) {

@@ -118,16 +118,16 @@ export function getPullRequestComments(pullRequest) {
   }));
 }
 
-export function getPullRequestFromGraphQL(owner, repo, number, fragment) {
+export function getPullRequestFromGraphQL(owner, repo, number, author, fragment) {
   return graphql(`
-    query($owner: String!, $repo: String!, $number: Int!) {
+    query($owner: String!, $repo: String!, $number: Int!, $author: String!) {
       repository(owner: $owner, name: $repo) {
         pullRequest(number: $number) {
           ${fragment}
         }
       }
     }
-  `, { owner, repo, number })
+  `, { owner, repo, number, author })
     .map(resp => resp.repository.pullRequest);
 }
 
