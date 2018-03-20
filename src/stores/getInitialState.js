@@ -5,7 +5,6 @@ export default function getInitialState() {
     currentUser: getUserInfo(),
     status: 'loading',
     pullRequest: null,
-    pullRequestIdFromGraphQL: null,
     files: null,
     comments: [],
     pendingComments: [],

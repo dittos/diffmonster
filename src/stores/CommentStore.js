@@ -41,10 +41,10 @@ export function deleteComment(commentId) {
 
 const addSingleCommentEpic = (action$, store) =>
   action$.ofType(ADD_SINGLE_COMMENT).mergeMap(action => {
-    const { pullRequest, pullRequestIdFromGraphQL } = store.getState();
+    const { pullRequest } = store.getState();
     const { body, position, path } = action.payload;
 
-    return addPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, PullRequestReviewEvent.COMMENT, [{
+    return addPullRequestReview(pullRequest.node_id, pullRequest.head.sha, PullRequestReviewEvent.COMMENT, [{
       body,
       position,
       path,
@@ -65,7 +65,7 @@ const addSingleCommentEpic = (action$, store) =>
 
 const addReviewCommentEpic = (action$, store) =>
   action$.ofType(ADD_REVIEW_COMMENT).mergeMap(action => {
-    const { latestReview, pullRequest, pullRequestIdFromGraphQL } = store.getState();
+    const { latestReview, pullRequest } = store.getState();
     const { body, position, path } = action.payload;
 
     if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
@@ -86,7 +86,7 @@ const addReviewCommentEpic = (action$, store) =>
           payload: error,
         }));
     } else {
-      return addPullRequestReview(pullRequestIdFromGraphQL, pullRequest.head.sha, PullRequestReviewEvent.PENDING, [{
+      return addPullRequestReview(pullRequest.node_id, pullRequest.head.sha, PullRequestReviewEvent.PENDING, [{
         path,
         position,
         body,

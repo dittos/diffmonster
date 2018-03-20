@@ -28,7 +28,7 @@ export function addReview({ event }) {
 const addReviewEpic = (action$, store) =>
   action$.ofType(ADD_REVIEW).mergeMap(action => {
     const state = store.getState();
-    return addPullRequestReview(state.pullRequestIdFromGraphQL, state.pullRequest.head.sha, action.payload.event)
+    return addPullRequestReview(state.pullRequest.node_id, state.pullRequest.head.sha, action.payload.event)
       .map(review => ({
         type: ADD_REVIEW_SUCCESS,
         payload: review,

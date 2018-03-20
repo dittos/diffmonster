@@ -35,6 +35,7 @@ export const pullRequestReviewFragment = `
 
 const pullRequestReviewCommentRestLikeFragment = `
   id: databaseId
+  node_id: id
   user: author {
     html_url: url
     login
@@ -49,6 +50,9 @@ function ajax(request) {
     request.responseType = 'json'; 
   if (!request.headers)
     request.headers = {};
+  // https://developer.github.com/v3/#graphql-global-relay-ids
+  if (!request.headers['Accept'])
+    request.headers['Accept'] = 'application/vnd.github.jean-grey-preview+json';
   
   const token = getAccessToken();
   if (token)

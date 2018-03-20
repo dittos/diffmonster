@@ -48,7 +48,6 @@ export const pullRequestEpic = action$ =>
       getUserInfo() ?
         getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
           getUserInfo().login, `
-          id
           bodyHTML
           reviews(last: 1, author: $author) {
             nodes {
@@ -77,7 +76,6 @@ export const pullRequestEpic = action$ =>
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
-          pullRequestIdFromGraphQL: pullRequestFromGraphQL && pullRequestFromGraphQL.id,
           pullRequestBodyRendered,
           files: parseDiff(diff),
           latestReview,
