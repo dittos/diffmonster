@@ -11,6 +11,8 @@ import {
   deletePullRequestReviewComment,
   PullRequestReviewState,
   PullRequestReviewEvent,
+  editPullRequestReviewComment,
+  editPullRequestReviewCommentViaGraphQL,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 
@@ -26,6 +28,9 @@ const ADD_REVIEW_COMMENT_ERROR = 'ADD_REVIEW_COMMENT_ERROR';
 const DELETE_COMMENT = 'DELETE_COMMENT';
 const DELETE_COMMENT_SUCCESS = 'DELETE_COMMENT_SUCCESS';
 const DELETE_COMMENT_ERROR = 'DELETE_COMMENT_ERROR';
+const EDIT_COMMENT = 'EDIT_COMMENT';
+const EDIT_COMMENT_SUCCESS = 'EDIT_COMMENT_SUCCESS';
+const EDIT_COMMENT_ERROR = 'EDIT_COMMENT_ERROR';
 
 export function addSingleComment({ body, position, path }, subject) {
   return { type: ADD_SINGLE_COMMENT, payload: { body, position, path }, meta: { subject } };
@@ -37,6 +42,10 @@ export function addReviewComment({ body, position, path }, subject) {
 
 export function deleteComment(commentId) {
   return { type: DELETE_COMMENT, payload: commentId };
+}
+
+export function editComment(comment, body, subject) {
+  return { type: EDIT_COMMENT, payload: { comment, body }, meta: { subject } };
 }
 
 const addSingleCommentEpic = (action$, store) =>
@@ -121,10 +130,28 @@ const deleteCommentEpic = (action$, store) =>
       }));
   });
 
+const editCommentEpic = (action$, store) =>
+  action$.ofType(EDIT_COMMENT).mergeMap(action => {
+    const { comment, body } = action.payload;
+    const call$ = comment.node_id ?
+      editPullRequestReviewCommentViaGraphQL(comment.node_id, { body }) :
+      editPullRequestReviewComment(store.getState().pullRequest, comment.id, { body });
+    return call$.do(action.meta.subject)
+      .map(updatedComment => ({
+        type: EDIT_COMMENT_SUCCESS,
+        payload: updatedComment,
+      }))
+      .catch(error => Observable.of({
+        type: EDIT_COMMENT_ERROR,
+        payload: error,
+      }));
+  });
+
 export const commentEpic = combineEpics(
   addSingleCommentEpic,
   addReviewCommentEpic,
   deleteCommentEpic,
+  editCommentEpic,
 );
 
 export default function commentsReducer(state, action) {
@@ -171,6 +198,13 @@ export default function commentsReducer(state, action) {
         ...state,
         comments: state.comments.filter(c => c.id !== action.payload),
         pendingComments: state.pendingComments.filter(c => c.id !== action.payload),
+      };
+    
+    case EDIT_COMMENT_SUCCESS:
+      return {
+        ...state,
+        comments: state.comments.map(c => c.id === action.payload.id ? action.payload : c),
+        pendingComments: state.pendingComments.map(c => c.id === action.payload.id ? action.payload : c),
       };
 
     default:

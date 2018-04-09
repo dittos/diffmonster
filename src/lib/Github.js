@@ -245,3 +245,31 @@ export function deletePullRequestReviewComment(pullRequest, commentId) {
     method: 'DELETE',
   });
 }
+
+export function editPullRequestReviewComment(pullRequest, commentId, { body }) {
+  return ajax({
+    url: `${pullRequest.base.repo.url}/pulls/comments/${commentId}`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body }),
+  }).map(resp => resp.response);
+}
+
+export function editPullRequestReviewCommentViaGraphQL(commentNodeId, { body }) {
+  return graphql(`
+    mutation($input: UpdatePullRequestReviewCommentInput!) {
+      updatePullRequestReviewComment(input: $input) {
+        pullRequestReviewComment {
+          ${pullRequestReviewCommentRestLikeFragment}
+        }
+      }
+    }
+  `, {
+    input: {
+      pullRequestReviewCommentId: commentNodeId,
+      body,
+    }
+  }).map(resp => resp.updatePullRequestReviewComment.pullRequestReviewComment);
+}
