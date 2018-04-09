@@ -54,6 +54,11 @@ export const pullRequestEpic = action$ =>
               ${pullRequestReviewFragment}
             }
           }
+          pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
+            nodes {
+              ${pullRequestReviewFragment}
+            }
+          }
         `).catch(error => {
           if (error.some(e => e.type === 'NOT_FOUND')) {
             error = { status: 404 }; // XXX
@@ -67,7 +72,8 @@ export const pullRequestEpic = action$ =>
       let latestReview = null;
       let pullRequestBodyRendered;
       if (pullRequestFromGraphQL) {
-        latestReview = pullRequestFromGraphQL.reviews.nodes[0];
+        // FIXME: Pending review is always on the first of reviews connection
+        latestReview = pullRequestFromGraphQL.pendingReviews.nodes[0] || pullRequestFromGraphQL.reviews.nodes[0];
         pullRequestBodyRendered = pullRequestFromGraphQL.bodyHTML;
       } else {
         pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
