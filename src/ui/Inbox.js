@@ -2,11 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import g from 'glamorous';
 import { Colors, Tab2, Tabs2, NonIdealState } from '@blueprintjs/core';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/zip';
-import 'rxjs/add/operator/switchMap';
 import Loading from '../ui/Loading';
-import { searchIssues } from '../lib/Github';
+import { graphql } from '../lib/Github';
 import { getUserInfo } from '../lib/GithubAuth';
 
 const Container = g.div({
@@ -28,6 +25,13 @@ const ResultItem = g.div({
   textOverflow: 'ellipsis',
 });
 
+const ResultFooter = g.div({
+  color: Colors.GRAY3,
+  paddingBottom: '16px',
+  textAlign: 'center',
+  fontStyle: 'italic',
+});
+
 const Repo = g.span({
   marginRight: '8px',
   color: Colors.GRAY1,
@@ -39,17 +43,6 @@ const Title = g(Link, {
 })({
 });
 
-function parsePullRequestHtmlUrl(htmlUrl) {
-  // FIXME: this is so hacky
-  const path = htmlUrl.replace('https://github.com/', '');
-  const [ owner, repo, , pullRequestId ] = path.split('/');
-  return {
-    owner,
-    repo,
-    pullRequestId,
-  };
-}
-
 export default class Inbox extends React.Component {
   state = {
     data: null,
@@ -57,13 +50,33 @@ export default class Inbox extends React.Component {
 
   componentDidMount() {
     const user = getUserInfo();
-    this.subscription = Observable.zip(
-      searchIssues(`type:pr is:open reviewed-by:${user.login}`),
-      searchIssues(`type:pr is:open review-requested:${user.login}`),
-      searchIssues(`type:pr is:open author:${user.login}`),
-      (reviewed, reviewRequested, created) =>
-        ({ reviewed, reviewRequested, created })
-    )
+    this.subscription = graphql(`
+      fragment frag on SearchResultItemConnection {
+        nodes {
+          ... on PullRequest {
+            repository {
+              nameWithOwner
+            }
+            number
+            title
+            resourcePath
+          }
+        }
+        issueCount
+        pageInfo {
+          hasNextPage
+        }
+      }
+      query($q1: String!, $q2: String!, $q3: String!) {
+        reviewed: search(query: $q1, first: 100, type: ISSUE) { ...frag }
+        reviewRequested: search(query: $q2, first: 100, type: ISSUE) { ...frag }
+        created: search(query: $q3, first: 100, type: ISSUE) { ...frag }
+      }
+    `, {
+      q1: `type:pr is:open reviewed-by:${user.login}`,
+      q2: `type:pr is:open review-requested:${user.login}`,
+      q3: `type:pr is:open author:${user.login}`,
+    })
       .subscribe(data => this.setState({ data }), err => console.error(err));
   }
 
@@ -104,30 +117,31 @@ export default class Inbox extends React.Component {
   _renderTab({ id, title, result }) {
     let panel;
 
-    if (result.items.length === 0) {
+    if (result.nodes.length === 0) {
       panel = <Empty><NonIdealState title="Hooray!" visual="tick" /></Empty>;
     } else {
       panel = (
         <ResultList>
-          {result.items.map(item => {
-            const { owner, repo, pullRequestId } = parsePullRequestHtmlUrl(item.html_url);
+          {result.nodes.map(item => {
             return (
               <ResultItem key={item.id}>
-                <Repo>{owner}/{repo}</Repo>
+                <Repo>{item.repository.nameWithOwner}</Repo>
                 <Title
-                  to={`/${owner}/${repo}/pull/${pullRequestId}`}
+                  to={item.resourcePath}
                   className="pt-popover-dismiss"
                 >{item.title}</Title>
               </ResultItem>
             );
           })}
+          {result.pageInfo.hasNextPage &&
+            <ResultFooter>Truncated search result</ResultFooter>}
         </ResultList>
       );
     }
 
     return <Tab2
       id={id}
-      title={`${title} (${result.items.length}${result.incomplete_results ? '+' : ''})`}
+      title={`${title} (${result.issueCount})`}
       panel={panel}
     />;
   }

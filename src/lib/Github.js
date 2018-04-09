@@ -142,13 +142,6 @@ export function getAuthenticatedUser() {
   }).map(resp => resp.response);
 }
 
-export function searchIssues(q) {
-  return ajax({
-    url: `${BASE_URL}/search/issues?q=${encodeURIComponent(q)}`,
-    method: 'get',
-  }).map(resp => resp.response);
-}
-
 export function getPullRequestReviewComments(pullRequest, reviewId, startCursor) {
   return graphql(`
     query($reviewId: ID!, $startCursor: String) {
