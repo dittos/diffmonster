@@ -18,6 +18,7 @@ import {
   getPullRequestReviewComments,
   PullRequestReviewState,
   pullRequestReviewFragment,
+  pullRequestReviewCommentRestLikeFragment,
 } from '../lib/Github';
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
@@ -57,6 +58,15 @@ export const pullRequestEpic = action$ =>
           pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
             nodes {
               ${pullRequestReviewFragment}
+              comments(last: 100) {
+                nodes {
+                  ${pullRequestReviewCommentRestLikeFragment}
+                }
+                pageInfo {
+                  hasPreviousPage
+                  startCursor
+                }
+              }
             }
           }
         `).catch(error => {
@@ -92,9 +102,15 @@ export const pullRequestEpic = action$ =>
       let comments$ = getPullRequestComments(pullRequest)
         .map(comments => ({ type: COMMENTS_FETCHED, payload: comments }));
       if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
+        const pendingComments$ = latestReview.comments.pageInfo.hasPreviousPage ?
+          getPullRequestReviewComments(pullRequest, latestReview.id, latestReview.comments.pageInfo.startCursor)
+            .map(morePendingComments => morePendingComments.concat(latestReview.comments.nodes)) :
+          Observable.of(latestReview.comments.nodes);
         comments$ = comments$.merge(
-          getPullRequestReviewComments(pullRequest, latestReview.databaseId)
-            .map(pendingComments => ({ type: PENDING_COMMENTS_FETCHED, payload: pendingComments }))
+          pendingComments$.map(pendingComments => ({
+            type: PENDING_COMMENTS_FETCHED,
+            payload: pendingComments,
+          }))
         );
       }
 

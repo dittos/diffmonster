@@ -33,7 +33,7 @@ export const pullRequestReviewFragment = `
   databaseId
 `;
 
-const pullRequestReviewCommentRestLikeFragment = `
+export const pullRequestReviewCommentRestLikeFragment = `
   id: databaseId
   node_id: id
   user: author {
@@ -149,11 +149,32 @@ export function searchIssues(q) {
   }).map(resp => resp.response);
 }
 
-export function getPullRequestReviewComments(pullRequest, reviewId) {
-  return paginated(ajax({
-    url: `${pullRequest.url}/reviews/${reviewId}/comments`,
-    method: 'get',
-  }));
+export function getPullRequestReviewComments(pullRequest, reviewId, startCursor) {
+  return graphql(`
+    query($reviewId: ID!, $startCursor: String) {
+      node(id: $reviewId) {
+        ... on PullRequestReview {
+          comments(last: 100, before: $startCursor) {
+            nodes {
+              ${pullRequestReviewCommentRestLikeFragment}
+            }
+            pageInfo {
+              hasPreviousPage
+              startCursor
+            }
+          }
+        }
+      }
+    }
+  `, { reviewId, startCursor })
+    .exhaustMap(resp => {
+      const comments = resp.node.comments;
+      if (comments.pageInfo.hasPreviousPage) {
+        return getPullRequestReviewComments(pullRequest, reviewId, comments.pageInfo.startCursor)
+          .map(result => result.concat(comments.nodes));
+      }
+      return Observable.of(comments.nodes);
+    });
 }
 
 export function addPullRequestReview(pullRequestId, commitId, event, comments = []) {
