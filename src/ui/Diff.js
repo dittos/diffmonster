@@ -9,6 +9,11 @@ import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
 
+const CUSTOM_LANGUAGE_ALIASES = {
+  // https://github.com/isagalaev/highlight.js/pull/1651
+  kt: 'kotlin',
+};
+
 const DiffTable = g.table({
   lineHeight: '20px',
   fontSize: '12px',
@@ -118,6 +123,14 @@ class Highlighter {
     }
     return result.value;
   }
+}
+
+function detectFileLanguage(file) {
+  let lang = CUSTOM_LANGUAGE_ALIASES[file.language] || file.language;
+  if (getLanguage(lang)) {
+    return lang;
+  }
+  return null;
 }
 
 class Hunk extends React.Component {
@@ -230,6 +243,7 @@ export default class Diff extends React.Component {
     const colSpan = canCreateComment ? 4 : 3;
 
     const items = [];
+    const language = detectFileLanguage(file);
     for (var i = 0; i < file.blocks.length; i++) {
       const hunk = file.blocks[i];
       items.push(
@@ -248,7 +262,7 @@ export default class Diff extends React.Component {
           hunk={hunk}
           commentsByPosition={commentsByPosition}
           pendingCommentsByPosition={pendingCommentsByPosition}
-          language={file.language && getLanguage(file.language) ? file.language : null}
+          language={language}
           canCreateComment={canCreateComment}
           commentComposerPosition={this.state.commentComposerPosition}
           onOpenCommentComposer={this._openCommentComposer}
