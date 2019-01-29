@@ -224,9 +224,9 @@ class PullRequest extends Component {
     startAuth();
   };
 
-  _deleteComment = commentId => {
+  _deleteComment = comment => {
     if (window.confirm('Are you sure?')) {
-      this.props.dispatch(deleteComment(commentId));
+      this.props.dispatch(deleteComment(comment));
     }
   };
 

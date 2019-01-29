@@ -117,12 +117,12 @@ const addReviewCommentEpic = (action$, store) =>
 
 const deleteCommentEpic = (action$, store) =>
   action$.ofType(DELETE_COMMENT).mergeMap(action => {
-    const commentId = action.payload;
+    const comment = action.payload;
     const { pullRequest } = store.getState();
-    return deletePullRequestReviewComment(pullRequest, commentId)
+    return deletePullRequestReviewComment(pullRequest, comment.id)
       .map(() => ({
         type: DELETE_COMMENT_SUCCESS,
-        payload: commentId,
+        payload: comment.id,
       }))
       .catch(error => Observable.of({
         type: DELETE_COMMENT_ERROR,
@@ -193,12 +193,16 @@ export default function commentsReducer(state, action) {
         isAddingReview: false,
       };
     
-    case DELETE_COMMENT_SUCCESS:
+    case DELETE_COMMENT_SUCCESS: {
+      const pendingComments = state.pendingComments.filter(c => c.id !== action.payload);
       return {
         ...state,
         comments: state.comments.filter(c => c.id !== action.payload),
-        pendingComments: state.pendingComments.filter(c => c.id !== action.payload),
+        pendingComments,
+        // FIXME: should go into ReviewStore?
+        latestReview: pendingComments.length === 0 ? null : state.latestReview,
       };
+    }
     
     case EDIT_COMMENT_SUCCESS:
       return {

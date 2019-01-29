@@ -145,15 +145,12 @@ class Comment extends React.Component {
                   className={Classes.MINIMAL}
                   onClick={this._startEditing}
                 />
-                {!isPending && (
-                  // GitHub doesn't have an API for deleting pending comments
-                  <Button
-                    iconName="delete"
-                    className={Classes.MINIMAL}
-                    intent={Intent.DANGER}
-                    onClick={() => deleteComment(comment.id)}
-                  />
-                )}
+                <Button
+                  iconName="delete"
+                  className={Classes.MINIMAL}
+                  intent={Intent.DANGER}
+                  onClick={() => deleteComment(comment)}
+                />
               </Actions>
             )}
           </CommentMeta>
