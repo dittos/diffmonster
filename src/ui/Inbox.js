@@ -56,7 +56,7 @@ export default class Inbox extends React.Component {
 
     return (
       <div className={Styles.Container}>
-        <Tabs2 id="inboxTabs">
+        <Tabs2 id="inboxTabs" animate={false}>
           {this._renderTab({
             id: 'reviewRequested',
             title: 'Review Requested',
