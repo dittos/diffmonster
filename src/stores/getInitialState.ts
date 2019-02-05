@@ -1,11 +1,15 @@
 import { getUserInfo } from '../lib/GithubAuth';
 import { PullRequestCommentDTO, PullRequestReviewDTO, PullRequestDTO } from '../lib/Github';
+import { DiffFile } from '../lib/DiffParser';
 
-export interface State {
+export type AppStatus = 'loading' | 'notFound' | 'success';
+
+export interface AppState {
   currentUser: any;
-  status: 'loading' | 'notFound' | 'success';
+  status: AppStatus;
   pullRequest: PullRequestDTO | null;
-  files: any[] | null;
+  pullRequestBodyRendered: string | undefined;
+  files: DiffFile[] | null;
   comments: PullRequestCommentDTO[];
   pendingComments: PullRequestCommentDTO[];
   isLoadingReviewStates: boolean;
@@ -14,15 +18,16 @@ export interface State {
   isAddingReview: boolean;
 }
 
-export type PullRequestLoadedState = State & {
+export type PullRequestLoadedState = AppState & {
   pullRequest: PullRequestDTO;
 };
 
-export default function getInitialState(): State {
+export default function getInitialState(): AppState {
   return {
     currentUser: getUserInfo(),
     status: 'loading',
     pullRequest: null,
+    pullRequestBodyRendered: undefined,
     files: null,
     comments: [],
     pendingComments: [],

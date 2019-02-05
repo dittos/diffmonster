@@ -53,20 +53,27 @@ export const pullRequestReviewCommentRestLikeFragment = `
 export interface PullRequestDTO {
   id: number;
   node_id: string;
+  number: number;
   url: string;
+  html_url: string;
+  title: string;
+  body: string;
   base: {
     sha: string;
     repo: {
       url: string;
+      html_url: string;
+      full_name: string;
     };
   };
   head: {
     sha: string;
     repo: {
       url: string;
+      html_url: string;
+      full_name: string;
     };
   };
-  body: string;
 }
 
 export interface PullRequestCommentDTO {

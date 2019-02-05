@@ -1,13 +1,14 @@
-import React from 'react';
-import { highlight, getLanguage } from "highlight.js";
+import React, { ReactNode } from 'react';
+import { highlight, getLanguage, ICompiledMode } from "highlight.js";
 import "highlight.js/styles/default.css";
-import { LineType } from '../lib/DiffParser';
+import { LineType, DiffFile } from '../lib/DiffParser';
 import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
 import Styles from './Diff.module.css';
+import { PullRequestCommentDTO } from '../lib/Github';
 
-const CUSTOM_LANGUAGE_ALIASES = {
+const CUSTOM_LANGUAGE_ALIASES: {[key: string]: string} = {
   // https://github.com/isagalaev/highlight.js/pull/1651
   kt: 'kotlin',
 };
@@ -30,13 +31,15 @@ const LineTypeComponents = {
 };
 
 class Highlighter {
-  constructor(lang) {
-    this.lang = lang;
-    this.oldStack = null;
-    this.newStack = null;
+  private oldStack: ICompiledMode | undefined;
+  private newStack: ICompiledMode | undefined;
+
+  constructor(private lang: string) {
+    this.oldStack = undefined;
+    this.newStack = undefined;
   }
 
-  highlight(code, lineType) {
+  highlight(code: string, lineType: string) {
     const stack = lineType === LineType.DELETION ? this.oldStack : this.newStack;
     const result = highlight(this.lang, code, false, stack);
     if (lineType === LineType.DELETION) {
@@ -50,7 +53,7 @@ class Highlighter {
   }
 }
 
-function detectFileLanguage(file) {
+function detectFileLanguage(file: DiffFile) {
   let lang = CUSTOM_LANGUAGE_ALIASES[file.language] || file.language;
   if (getLanguage(lang)) {
     return lang;
@@ -58,7 +61,20 @@ function detectFileLanguage(file) {
   return null;
 }
 
-class Hunk extends React.Component {
+interface HunkProps {
+  hunk: any;
+  file: any;
+  commentsByPosition: {[key: number]: PullRequestCommentDTO[]};
+  pendingCommentsByPosition: {[key: number]: PullRequestCommentDTO[]};
+  language: string | null;
+  canCreateComment: boolean;
+  commentComposerPosition: number;
+  onOpenCommentComposer(position: number): void;
+  onCloseCommentComposer(): void;
+  deleteComment(comment: PullRequestCommentDTO): void;
+}
+
+class Hunk extends React.Component<HunkProps> {
   render() {
     const {
       hunk,
@@ -71,7 +87,7 @@ class Hunk extends React.Component {
       onCloseCommentComposer,
       deleteComment,
     } = this.props;
-    const lines = [];
+    const lines: ReactNode[] = [];
     const highlighter = language ? new Highlighter(language) : null;
     highlightDiff(hunk).forEach(line => {
       const C = LineTypeComponents[line.type];
@@ -85,7 +101,7 @@ class Hunk extends React.Component {
           <td className={Styles.LineNumberCell}>{line.newNumber || ''}</td>
           <td className={C.ContentCell}>
           {line.content.map((span, spanIndex) => {
-            const props = {
+            const props: any = {
               key: spanIndex,
             };
             let content = span.content;
@@ -137,8 +153,8 @@ class Hunk extends React.Component {
   }
 }
 
-function collectCommentsByPosition(comments) {
-  const commentsByPosition = {};
+function collectCommentsByPosition(comments: PullRequestCommentDTO[]) {
+  const commentsByPosition: {[key: number]: PullRequestCommentDTO[]} = {};
   comments.forEach(comment => {
     if (comment.position) {
       if (!commentsByPosition[comment.position])
@@ -149,12 +165,20 @@ function collectCommentsByPosition(comments) {
   return commentsByPosition;
 }
 
-export default class Diff extends React.Component {
+export interface DiffProps {
+  file: any;
+  comments: PullRequestCommentDTO[];
+  pendingComments: PullRequestCommentDTO[];
+  canCreateComment: boolean;
+  deleteComment(comment: PullRequestCommentDTO): void;
+}
+
+export default class Diff extends React.Component<DiffProps> {
   state = {
     commentComposerPosition: -1,
   };
 
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps: DiffProps) {
     if (this.props.file.sha !== nextProps.file.sha) {
       this._closeCommentComposer();
     }
@@ -202,7 +226,7 @@ export default class Diff extends React.Component {
     );
   }
 
-  _openCommentComposer = position => {
+  _openCommentComposer = (position: number) => {
     this.setState({ commentComposerPosition: position });
   };
 

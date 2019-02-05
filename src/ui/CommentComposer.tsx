@@ -1,17 +1,28 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import { Button, Intent } from '@blueprintjs/core';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
-import { PullRequestReviewState } from '../lib/Github';
+import { PullRequestReviewState, PullRequestReviewDTO, PullRequestDTO } from '../lib/Github';
 import {
   addSingleComment,
   addReviewComment,
+  AddCommentActionPayload,
+  AddCommentAction,
 } from '../stores/CommentStore';
 import config from '../config';
 import Styles from './CommentComposer.module.css';
+import { PullRequestLoadedState } from '../stores/getInitialState';
 
-class CommentComposer extends React.Component {
+interface Props extends DispatchProp {
+  latestReview: PullRequestReviewDTO | null;
+  pullRequest: PullRequestDTO;
+  file: any;
+  position: number;
+  onCloseComposer(): void;
+}
+
+class CommentComposer extends React.Component<Props> {
   state = {
     commentBody: '',
     addingComment: false,
@@ -66,9 +77,9 @@ class CommentComposer extends React.Component {
     return `${this.state.commentBody}\n\n<sub>_commented via [Diff Monster](${url})_</sub>`;
   }
 
-  _addComment(actionCreator) {
+  _addComment(actionCreator: (payload: AddCommentActionPayload, subject: Subject<void>) => AddCommentAction) {
     this.setState({ addingComment: true });
-    const subject = new Subject();
+    const subject = new Subject<void>();
     // TODO: error handling
     this.subscription.add(
       subject.subscribe(() => {
@@ -98,7 +109,7 @@ class CommentComposer extends React.Component {
   };
 }
 
-export default connect(state => ({
+export default connect((state: PullRequestLoadedState) => ({
   pullRequest: state.pullRequest,
   latestReview: state.latestReview,
 }))(CommentComposer);

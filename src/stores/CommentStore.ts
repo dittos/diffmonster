@@ -36,17 +36,25 @@ const EDIT_COMMENT = 'EDIT_COMMENT';
 const EDIT_COMMENT_SUCCESS = 'EDIT_COMMENT_SUCCESS';
 const EDIT_COMMENT_ERROR = 'EDIT_COMMENT_ERROR';
 
+export interface AddCommentActionPayload {
+  body: string;
+  position: number;
+  path: string;
+}
+
 type AddSingleCommentAction = {
   type: 'ADD_SINGLE_COMMENT';
-  payload: { body: string; position: number; path: string; };
+  payload: AddCommentActionPayload;
   meta: { subject: Subject<any>; };
 };
 
 type AddReviewCommentAction = {
   type: 'ADD_REVIEW_COMMENT';
-  payload: { body: string; position: number; path: string; };
+  payload: AddCommentActionPayload;
   meta: { subject: Subject<any>; };
 };
+
+export type AddCommentAction = AddSingleCommentAction | AddReviewCommentAction;
 
 type DeleteCommentAction = {
   type: 'DELETE_COMMENT';
@@ -76,11 +84,11 @@ export type CommentAction =
   { type: 'EDIT_COMMENT_ERROR'; }
   ;
 
-export function addSingleComment({ body, position, path }: AddSingleCommentAction['payload'], subject: Subject<any>): AddSingleCommentAction {
+export function addSingleComment({ body, position, path }: AddSingleCommentAction['payload'], subject: Subject<void>): AddSingleCommentAction {
   return { type: ADD_SINGLE_COMMENT, payload: { body, position, path }, meta: { subject } };
 }
 
-export function addReviewComment({ body, position, path }: AddReviewCommentAction['payload'], subject: Subject<any>): AddReviewCommentAction {
+export function addReviewComment({ body, position, path }: AddReviewCommentAction['payload'], subject: Subject<void>): AddReviewCommentAction {
   return { type: ADD_REVIEW_COMMENT, payload: { body, position, path }, meta: { subject } };
 }
 

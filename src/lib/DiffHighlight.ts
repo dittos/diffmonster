@@ -1,10 +1,18 @@
 // JavaScript port of diff-highlight script in Git
 // https://github.com/git/git/blob/3dbfe2b8ae94cbdae5f3d32581aedaa5510fdc87/contrib/diff-highlight/diff-highlight
 
-import { LineType } from './DiffParser';
+import { LineType, DiffBlock, DiffLine } from './DiffParser';
 
-export function highlightDiff(hunk) {
-  const lines = [];
+export interface HighlightedDiffLine {
+  type: string;
+  position: number;
+  oldNumber: number;
+  newNumber: number;
+  content: { highlight: boolean; content: string; }[];
+};
+
+export function highlightDiff(hunk: DiffBlock): HighlightedDiffLine[] {
+  const lines: HighlightedDiffLine[] = [];
   let removed = [];
   let added = [];
   for (let line of hunk.lines) {
@@ -28,14 +36,14 @@ export function highlightDiff(hunk) {
   return lines;
 }
 
-function unhighlight(line) {
+function unhighlight(line: DiffLine): HighlightedDiffLine {
   return {
     ...line,
     content: [{ highlight: false, content: line.content }]
   };
 }
 
-function showHunk(a, b, out) {
+function showHunk(a: DiffLine[], b: DiffLine[], out: HighlightedDiffLine[]) {
   if (
     // If one side is empty, then there is nothing to compare or highlight.
     (!a.length || !b.length)
@@ -65,7 +73,7 @@ function showHunk(a, b, out) {
     out.push(line);
 }
 
-function highlightPair(lineA, lineB) {
+function highlightPair(lineA: DiffLine, lineB: DiffLine): HighlightedDiffLine[] {
   // FIXME: for some strings containing Emoji, length/charAt is not accurate
   const a = lineA.content, b = lineB.content;
 
@@ -100,7 +108,7 @@ function highlightPair(lineA, lineB) {
   }
 }
 
-function highlightLine(line, prefix, suffix) {
+function highlightLine(line: DiffLine, prefix: number, suffix: number): HighlightedDiffLine {
   const content = line.content;
   const start = content.substring(0, prefix);
   const mid = content.substring(prefix, suffix + 1);
@@ -124,7 +132,7 @@ const BORING = /^\s*$/;
  * is just useless noise. We can detect this by finding either a matching prefix
  * or suffix (disregarding boring bits like whitespace and colorization).
  */
-function isPairInteresting(a, pa, sa, b, pb, sb) {
+function isPairInteresting(a: string, pa: number, sa: number, b: string, pb: number, sb: number): boolean {
   const prefixA = a.substring(0, pa);
   const prefixB = b.substring(0, pb);
   const suffixA = a.substring(sa + 1);

@@ -26,7 +26,7 @@ import {
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff } from '../lib/DiffParser';
-import getInitialState, { State } from './getInitialState';
+import getInitialState, { AppState } from './getInitialState';
 import { COMMENTS_FETCHED, PENDING_COMMENTS_FETCHED } from './CommentStore';
 import { ActionsObservable } from 'redux-observable';
 
@@ -155,7 +155,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
     .takeUntil(action$.ofType(FETCH_CANCEL)
   ));
 
-export default function pullRequestReducer(state: State, action: PullRequestAction): State {
+export default function pullRequestReducer(state: AppState, action: PullRequestAction): AppState {
   switch (action.type) {
     case FETCH:
       return getInitialState();
