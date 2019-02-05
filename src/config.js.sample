@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   // Public URL of your installation
   url: 'https://diff.sapzil.org/',
   

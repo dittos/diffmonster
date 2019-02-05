@@ -4,6 +4,10 @@
   "private": true,
   "dependencies": {
     "@blueprintjs/core": "^1.35.7",
+    "@types/jest": "^24.0.0",
+    "@types/node": "^10.12.21",
+    "@types/react": "^16.8.1",
+    "@types/react-dom": "^16.0.11",
     "diff2html": "^2.3.3",
     "firebase": "^4.11.0",
     "fuzzaldrin-plus": "^0.6.0",
@@ -19,7 +23,8 @@
     "react-router-dom": "^4.2.2",
     "redux": "^3.7.2",
     "redux-observable": "^0.18.0",
-    "rxjs": "^5.5.7"
+    "rxjs": "^5.5.7",
+    "typescript": "3.3.1"
   },
   "devDependencies": {
     "react-scripts": "2.1.3",

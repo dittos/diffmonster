@@ -1,4 +1,4 @@
-import { combineEpics } from 'redux-observable';
+import { combineEpics, ActionsObservable } from 'redux-observable';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/mergeMap';
@@ -13,8 +13,12 @@ import {
   PullRequestReviewEvent,
   editPullRequestReviewComment,
   editPullRequestReviewCommentViaGraphQL,
+  PullRequestCommentDTO,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
+import { Subject } from 'rxjs/Subject';
+import { Store } from 'redux';
+import { PullRequestLoadedState } from './getInitialState';
 
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
 export const PENDING_COMMENTS_FETCHED = 'PENDING_COMMENTS_FETCHED';
@@ -32,24 +36,64 @@ const EDIT_COMMENT = 'EDIT_COMMENT';
 const EDIT_COMMENT_SUCCESS = 'EDIT_COMMENT_SUCCESS';
 const EDIT_COMMENT_ERROR = 'EDIT_COMMENT_ERROR';
 
-export function addSingleComment({ body, position, path }, subject) {
+type AddSingleCommentAction = {
+  type: 'ADD_SINGLE_COMMENT';
+  payload: { body: string; position: number; path: string; };
+  meta: { subject: Subject<any>; };
+};
+
+type AddReviewCommentAction = {
+  type: 'ADD_REVIEW_COMMENT';
+  payload: { body: string; position: number; path: string; };
+  meta: { subject: Subject<any>; };
+};
+
+type DeleteCommentAction = {
+  type: 'DELETE_COMMENT';
+  payload: PullRequestCommentDTO;
+};
+
+type EditCommentAction = {
+  type: 'EDIT_COMMENT';
+  payload: { comment: PullRequestCommentDTO; body: string; };
+  meta: { subject: Subject<any>; };
+};
+
+export type CommentAction =
+  { type: 'COMMENTS_FETCHED'; payload: PullRequestCommentDTO[]; } |
+  { type: 'PENDING_COMMENTS_FETCHED'; payload: PullRequestCommentDTO[]; } |
+  AddSingleCommentAction |
+  { type: 'ADD_SINGLE_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
+  { type: 'ADD_SINGLE_COMMENT_ERROR'; } |
+  AddReviewCommentAction |
+  { type: 'ADD_REVIEW_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
+  { type: 'ADD_REVIEW_COMMENT_ERROR'; } |
+  DeleteCommentAction |
+  { type: 'DELETE_COMMENT_SUCCESS'; payload: number; } |
+  { type: 'DELETE_COMMENT_ERROR'; } |
+  EditCommentAction |
+  { type: 'EDIT_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
+  { type: 'EDIT_COMMENT_ERROR'; }
+  ;
+
+export function addSingleComment({ body, position, path }: AddSingleCommentAction['payload'], subject: Subject<any>): AddSingleCommentAction {
   return { type: ADD_SINGLE_COMMENT, payload: { body, position, path }, meta: { subject } };
 }
 
-export function addReviewComment({ body, position, path }, subject) {
+export function addReviewComment({ body, position, path }: AddReviewCommentAction['payload'], subject: Subject<any>): AddReviewCommentAction {
   return { type: ADD_REVIEW_COMMENT, payload: { body, position, path }, meta: { subject } };
 }
 
-export function deleteComment(commentId) {
-  return { type: DELETE_COMMENT, payload: commentId };
+export function deleteComment(comment: DeleteCommentAction['payload']): DeleteCommentAction {
+  return { type: DELETE_COMMENT, payload: comment };
 }
 
-export function editComment(comment, body, subject) {
+export function editComment(comment: PullRequestCommentDTO, body: string, subject: Subject<any>): EditCommentAction {
   return { type: EDIT_COMMENT, payload: { comment, body }, meta: { subject } };
 }
 
-const addSingleCommentEpic = (action$, store) =>
-  action$.ofType(ADD_SINGLE_COMMENT).mergeMap(action => {
+const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
+  action$.ofType<AddSingleCommentAction>('ADD_SINGLE_COMMENT').mergeMap(action => {
     const { pullRequest } = store.getState();
     const { body, position, path } = action.payload;
 
@@ -64,7 +108,7 @@ const addSingleCommentEpic = (action$, store) =>
         payload: review,
       }, {
         type: ADD_SINGLE_COMMENT_SUCCESS,
-        payload: comments.nodes[0],
+        payload: comments!.nodes[0],
       }))
       .catch(error => Observable.of({
         type: ADD_SINGLE_COMMENT_ERROR,
@@ -72,15 +116,15 @@ const addSingleCommentEpic = (action$, store) =>
       }));
   });
 
-const addReviewCommentEpic = (action$, store) =>
-  action$.ofType(ADD_REVIEW_COMMENT).mergeMap(action => {
+const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
+  action$.ofType<AddReviewCommentAction>('ADD_REVIEW_COMMENT').mergeMap(action => {
     const { latestReview, pullRequest } = store.getState();
     const { body, position, path } = action.payload;
 
     if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
       return addPullRequestReviewCommentOnReview(
         latestReview.id,
-        pullRequest.head.sha,
+        pullRequest!.head.sha,
         body,
         path,
         position
@@ -106,7 +150,7 @@ const addReviewCommentEpic = (action$, store) =>
           payload: review,
         }, {
           type: ADD_REVIEW_COMMENT_SUCCESS,
-          payload: comments.nodes[0],
+          payload: comments!.nodes[0],
         }))
         .catch(error => Observable.of({
           type: ADD_REVIEW_COMMENT_ERROR,
@@ -115,8 +159,8 @@ const addReviewCommentEpic = (action$, store) =>
     }
   });
 
-const deleteCommentEpic = (action$, store) =>
-  action$.ofType(DELETE_COMMENT).mergeMap(action => {
+const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
+  action$.ofType<DeleteCommentAction>('DELETE_COMMENT').mergeMap(action => {
     const comment = action.payload;
     const { pullRequest } = store.getState();
     return deletePullRequestReviewComment(pullRequest, comment.id)
@@ -130,8 +174,8 @@ const deleteCommentEpic = (action$, store) =>
       }));
   });
 
-const editCommentEpic = (action$, store) =>
-  action$.ofType(EDIT_COMMENT).mergeMap(action => {
+const editCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
+  action$.ofType<EditCommentAction>('EDIT_COMMENT').mergeMap(action => {
     const { comment, body } = action.payload;
     const call$ = comment.node_id ?
       editPullRequestReviewCommentViaGraphQL(comment.node_id, { body }) :
@@ -154,7 +198,7 @@ export const commentEpic = combineEpics(
   editCommentEpic,
 );
 
-export default function commentsReducer(state, action) {
+export default function commentsReducer(state: PullRequestLoadedState, action: CommentAction): PullRequestLoadedState {
   switch (action.type) {
     case COMMENTS_FETCHED:
       return {

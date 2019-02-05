@@ -6,6 +6,7 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/exhaustMap';
 import LinkHeader from 'http-link-header';
 import { getAccessToken } from './GithubAuth';
+import { AjaxRequest, AjaxResponse } from 'rxjs/observable/dom/AjaxObservable';
 
 const BASE_URL = 'https://api.github.com';
 
@@ -17,13 +18,17 @@ export const PullRequestReviewState = {
   DISMISSED: 'DISMISSED',
 };
 
+export type PullRequestReviewStateType = keyof (typeof PullRequestReviewState);
+
 export const PullRequestReviewEvent = {
   PENDING: null,
-  COMMENT: 'COMMENT',
-  APPROVE: 'APPROVE',
-  REQUEST_CHANGES: 'REQUEST_CHANGES',
+  COMMENT: 'COMMENT' as PullRequestReviewEventInput,
+  APPROVE: 'APPROVE' as PullRequestReviewEventInput,
+  REQUEST_CHANGES: 'REQUEST_CHANGES' as PullRequestReviewEventInput,
   DISMISS: 'DISMISS',
 };
+
+export type PullRequestReviewEventInput = null | 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES';
 
 export const pullRequestReviewFragment = `
   id
@@ -45,26 +50,76 @@ export const pullRequestReviewCommentRestLikeFragment = `
   position
 `;
 
-function ajax(request) {
+export interface PullRequestDTO {
+  id: number;
+  node_id: string;
+  url: string;
+  base: {
+    sha: string;
+    repo: {
+      url: string;
+    };
+  };
+  head: {
+    sha: string;
+    repo: {
+      url: string;
+    };
+  };
+  body: string;
+}
+
+export interface PullRequestCommentDTO {
+  id: number;
+  node_id: string;
+  user: {
+    html_url: string;
+    login: string;
+  };
+  body: string;
+  path: string;
+  position: number;
+}
+
+export interface PullRequestReviewCommentsConnection {
+  nodes: PullRequestCommentDTO[];
+  pageInfo: {
+    hasPreviousPage: boolean;
+    startCursor: string;
+  };
+}
+
+export interface PullRequestReviewDTO {
+  id: string;
+  state: PullRequestReviewStateType;
+  comments?: PullRequestReviewCommentsConnection;
+}
+
+function ajax(request: AjaxRequest): Observable<AjaxResponse> {
   if (!request.responseType)
     request.responseType = 'json'; 
   if (!request.headers)
     request.headers = {};
+  const headers: any = request.headers;
   // https://developer.github.com/v3/#graphql-global-relay-ids
-  if (!request.headers['Accept'])
-    request.headers['Accept'] = 'application/vnd.github.jean-grey-preview+json';
+  if (!headers['Accept'])
+    headers['Accept'] = 'application/vnd.github.jean-grey-preview+json';
   
   const token = getAccessToken();
   if (token)
-    request.headers['Authorization'] = `token ${token}`;
+    headers['Authorization'] = `token ${token}`;
   return Observable.ajax(request);
 }
 
-export function graphql(query, variables) {
+export interface GraphQLError {
+  type: 'NOT_FOUND';
+}
+
+export function graphql(query: string, variables: {[key: string]: any}): Observable<any> {
   const request = {
     url: `${BASE_URL}/graphql`,
     method: 'post',
-    headers: {
+    headers: <any>{
       'Content-Type': 'application/json',
     },
     responseType: 'json',
@@ -80,18 +135,18 @@ export function graphql(query, variables) {
       Observable.of(resp.response.data));
 }
 
-function pullRequestUrl(owner, repo, number) {
+function pullRequestUrl(owner: string, repo: string, number: number): string {
   return `${BASE_URL}/repos/${owner}/${repo}/pulls/${number}`;
 }
 
-export function getPullRequest(owner, repo, number) {
+export function getPullRequest(owner: string, repo: string, number: number): Observable<PullRequestDTO> {
   return ajax({
     url: pullRequestUrl(owner, repo, number),
     method: 'get',
   }).map(resp => resp.response);
 }
 
-function paginated(obs) {
+function paginated<T>(obs: Observable<AjaxResponse>): Observable<T[]> {
   return obs.exhaustMap(resp => {
     const link = LinkHeader.parse(resp.xhr.getResponseHeader('Link') || '');
     const next = link.rel('next');
@@ -103,7 +158,7 @@ function paginated(obs) {
   });
 }
 
-export function getPullRequestAsDiff(owner, repo, number) {
+export function getPullRequestAsDiff(owner: string, repo: string, number: number): Observable<string> {
   return ajax({
     // Append query string to prevent interfering caches
     url: `${pullRequestUrl(owner, repo, number)}?.diff`,
@@ -115,14 +170,14 @@ export function getPullRequestAsDiff(owner, repo, number) {
   }).map(resp => resp.response);
 }
 
-export function getPullRequestComments(pullRequest) {
+export function getPullRequestComments(pullRequest: PullRequestDTO): Observable<PullRequestCommentDTO[]> {
   return paginated(ajax({
     url: `${pullRequest.url}/comments`,
     method: 'get',
   }));
 }
 
-export function getPullRequestFromGraphQL(owner, repo, number, author, fragment) {
+export function getPullRequestFromGraphQL(owner: string, repo: string, number: number, author: string, fragment: string): Observable<PullRequestDTO> {
   return graphql(`
     query($owner: String!, $repo: String!, $number: Int!, $author: String!) {
       repository(owner: $owner, name: $repo) {
@@ -135,14 +190,14 @@ export function getPullRequestFromGraphQL(owner, repo, number, author, fragment)
     .map(resp => resp.repository.pullRequest);
 }
 
-export function getAuthenticatedUser() {
+export function getAuthenticatedUser(): Observable<any> {
   return ajax({
     url: `${BASE_URL}/user`,
     method: 'get',
   }).map(resp => resp.response);
 }
 
-export function getPullRequestReviewComments(pullRequest, reviewId, startCursor) {
+export function getPullRequestReviewComments(pullRequest: PullRequestDTO, reviewId: string, startCursor: string): Observable<PullRequestCommentDTO[]> {
   return graphql(`
     query($reviewId: ID!, $startCursor: String) {
       node(id: $reviewId) {
@@ -170,7 +225,13 @@ export function getPullRequestReviewComments(pullRequest, reviewId, startCursor)
     });
 }
 
-export function addPullRequestReview(pullRequestId, commitId, event, comments = []) {
+export interface AddPullRequestReviewInputComment {
+  body: string;
+  position: number;
+  path: string;
+}
+
+export function addPullRequestReview(pullRequestId: string, commitId: string, event: PullRequestReviewEventInput, comments: AddPullRequestReviewInputComment[] = []): Observable<PullRequestReviewDTO> {
   return graphql(`
     mutation($input: AddPullRequestReviewInput!, $commentCount: Int) {
       addPullRequestReview(input: $input) {
@@ -195,7 +256,7 @@ export function addPullRequestReview(pullRequestId, commitId, event, comments = 
   }).map(resp => resp.addPullRequestReview.pullRequestReview);
 }
 
-export function submitPullRequestReview(pullRequestReviewId, event) {
+export function submitPullRequestReview(pullRequestReviewId: string, event: PullRequestReviewEventInput): Observable<PullRequestReviewDTO> {
   return graphql(`
     mutation($input: SubmitPullRequestReviewInput!) {
       submitPullRequestReview(input: $input) {
@@ -212,7 +273,7 @@ export function submitPullRequestReview(pullRequestReviewId, event) {
   }).map(resp => resp.submitPullRequestReview.pullRequestReview);
 }
 
-export function addPullRequestReviewCommentOnReview(reviewId, commitId, body, path, position) {
+export function addPullRequestReviewCommentOnReview(reviewId: string, commitId: string, body: string, path: string, position: number): Observable<PullRequestCommentDTO> {
   return graphql(`
     mutation($input: AddPullRequestReviewCommentInput!) {
       addPullRequestReviewComment(input: $input) {
@@ -232,14 +293,14 @@ export function addPullRequestReviewCommentOnReview(reviewId, commitId, body, pa
   }).map(resp => resp.addPullRequestReviewComment.comment);
 }
 
-export function deletePullRequestReviewComment(pullRequest, commentId) {
+export function deletePullRequestReviewComment(pullRequest: PullRequestDTO, commentId: number): Observable<any> {
   return ajax({
     url: `${pullRequest.base.repo.url}/pulls/comments/${commentId}`,
     method: 'DELETE',
   });
 }
 
-export function editPullRequestReviewComment(pullRequest, commentId, { body }) {
+export function editPullRequestReviewComment(pullRequest: PullRequestDTO, commentId: number, { body }: { body: string }): Observable<PullRequestCommentDTO> {
   return ajax({
     url: `${pullRequest.base.repo.url}/pulls/comments/${commentId}`,
     method: 'PATCH',
@@ -250,7 +311,7 @@ export function editPullRequestReviewComment(pullRequest, commentId, { body }) {
   }).map(resp => resp.response);
 }
 
-export function editPullRequestReviewCommentViaGraphQL(commentNodeId, { body }) {
+export function editPullRequestReviewCommentViaGraphQL(commentNodeId: string, { body }: { body: string }): Observable<PullRequestCommentDTO> {
   return graphql(`
     mutation($input: UpdatePullRequestReviewCommentInput!) {
       updatePullRequestReviewComment(input: $input) {

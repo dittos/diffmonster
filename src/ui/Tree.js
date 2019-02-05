@@ -4,14 +4,13 @@
  * of the license at https://github.com/palantir/blueprint/blob/master/LICENSE
  * and https://github.com/palantir/blueprint/blob/master/PATENTS
  */
-Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
 var classNames = require("classnames");
 var React = require("react");
 var Classes = require("@blueprintjs/core/dist/common/classes");
 var utils_1 = require("@blueprintjs/core/dist/common/utils");
 var treeNode_1 = require("./TreeNode");
-var Tree = (function (_super) {
+export var Tree = (function (_super) {
     tslib_1.__extends(Tree, _super);
     function Tree() {
         var _this = (_super !== null && _super.apply(this, arguments)) || this;
@@ -80,7 +79,6 @@ var Tree = (function (_super) {
     };
     return Tree;
 }(React.Component));
-exports.Tree = Tree;
-exports.TreeFactory = React.createFactory(Tree);
+export var TreeFactory = React.createFactory(Tree);
 
 //# sourceMappingURL=tree.js.map
