@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import DocumentTitle from 'react-document-title';
-import g from 'glamorous';
 import { Colors, Classes, Switch, NonIdealState } from '@blueprintjs/core';
 import FileTree from './FileTree';
 import Diff from './Diff';
@@ -12,28 +11,7 @@ import { startAuth, isAuthenticated } from '../lib/GithubAuth';
 import { setReviewState } from '../lib/Database';
 import * as Settings from '../lib/Settings';
 import { deleteComment } from '../stores/CommentStore';
-
-const NoPreview = g.div({
-  padding: '16px',
-});
-
-const PanelHeader = g.div({
-  display: 'flex',
-  flex: '0 0 auto',
-  padding: '0 16px',
-  lineHeight: '32px',
-  height: '32px',
-
-  color: Colors.DARK_GRAY1,
-  background: Colors.LIGHT_GRAY5,
-  borderBottom: `1px solid ${Colors.GRAY5}`,
-});
-
-const Summary = g.div({
-  maxWidth: '50em',
-  margin: '16px auto',
-  padding: '0 2em',
-});
+import Styles from './PullRequest.module.css';
 
 function collectCommentCountByPath(comments, commentCountByPath) {
   for (let comment of comments) {
@@ -68,17 +46,17 @@ class PullRequest extends Component {
 
     return (
       <DocumentTitle title={`${pullRequest.title} - ${pullRequest.base.repo.full_name}#${pullRequest.number}`}>
-        <g.Div flex="1" overflow="auto" display="flex" flexDirection="column" background={Colors.DARK_GRAY3}>
-          <g.Div flex="0" className={Classes.DARK}>
+        <div className={Styles.Container}>
+          <div style={{ flex: 0 }} className={Classes.DARK}>
             <Header />
-          </g.Div>
+          </div>
           <SplitPane
             sideWidth={this.state.fileTreeWidth}
             side={this._renderFileTree()}
             main={this._renderContent()}
             onResizeEnd={this._onResizeEnd}
           />
-        </g.Div>
+        </div>
       </DocumentTitle>
     );
   }
@@ -99,17 +77,19 @@ class PullRequest extends Component {
     collectCommentCountByPath(pendingComments, commentCountByPath);
 
     const header = (
-      <PanelHeader key="header">
-        <g.Div flex="1">
+      <div className={Styles.PanelHeader} key="header">
+        <div style={{ flex: 1 }}>
           Files
-        </g.Div>
-        <g.Div flex="initial">
+        </div>
+        <div style={{ flex: 'initial' }}>
           {reviewStates ?
-            <g.Span color={Colors.GRAY1}>{this._getReviewedFileCount()} of {files.length} reviewed</g.Span> :
+            <span style={{ color: Colors.GRAY1 }}>
+              {this._getReviewedFileCount()} of {files.length} reviewed
+            </span> :
             isLoadingReviewStates &&
-              <g.Span color={Colors.GRAY4}>Loading...</g.Span>}
-        </g.Div>
-      </PanelHeader>
+              <span style={{ color: Colors.GRAY4 }}>Loading...</span>}
+        </div>
+      </div>
     );
 
     const tree = (
@@ -141,13 +121,13 @@ class PullRequest extends Component {
     const activeFile = activePath && files.filter(file => file.filename === activePath)[0];
 
     const header = activeFile && (
-      <PanelHeader key="header">
-        <g.Div flex="1">
+      <div className={Styles.PanelHeader} key="header">
+        <div style={{ flex: 1 }}>
           {activeFile.filename}
           {activeFile.previous_filename &&
-            <g.Span color={Colors.GRAY1}> (was: {activeFile.previous_filename})</g.Span>}
-        </g.Div>
-        <g.Div flex="initial">
+            <span style={{ color: Colors.GRAY1 }}> (was: {activeFile.previous_filename})</span>}
+        </div>
+        <div style={{ flex: 'initial' }}>
           {reviewStates && <Switch
             className="pt-inline"
             checked={reviewStates[activeFile.sha] || false}
@@ -155,12 +135,12 @@ class PullRequest extends Component {
             onChange={this._onReviewStateChange}
           />}
           <a href={getBlobUrl(pullRequest, activeFile)} target="_blank" rel="noopener noreferrer">View</a>
-        </g.Div>
-      </PanelHeader>
+        </div>
+      </div>
     );
 
     const content = (
-      <g.Div key="content" flex="1" overflowY="auto" innerRef={el => this._scrollEl = el}>
+      <div key="content" style={{ flex: 1, overflowY: "auto" }} ref={el => this._scrollEl = el}>
         {activeFile ?
           activeFile.blocks && activeFile.blocks.length > 0 ?
             <Diff
@@ -170,15 +150,15 @@ class PullRequest extends Component {
               canCreateComment={isAuthenticated()}
               deleteComment={this._deleteComment}
             /> :
-            <NoPreview>
+            <div className={Styles.NoPreview}>
               No change
-            </NoPreview> :
-          <Summary
-            className="pt-running-text"
+            </div> :
+          <div
+            className={`${Styles.Summary} pt-running-text`}
             dangerouslySetInnerHTML={{__html: pullRequestBodyRendered}}
           />
         }
-      </g.Div>
+      </div>
     );
 
     return [header, content];
@@ -191,7 +171,7 @@ class PullRequest extends Component {
         visual="warning-sign"
         description={
           !isAuthenticated() && <p>
-            <a href="" onClick={this._login}>Login with GitHub</a> to view private repos.
+            <a href="https://github.com/" onClick={this._login}>Login with GitHub</a> to view private repos.
           </p>
         }
       />

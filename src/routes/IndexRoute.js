@@ -1,39 +1,10 @@
 import React from 'react';
-import g from 'glamorous';
 import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Intent, Colors, Tooltip, Position } from '@blueprintjs/core';
 import { isAuthenticated, startAuth } from '../lib/GithubAuth';
 import Nav from '../ui/Nav';
 import config from '../config';
-
-const Container = g.div({
-  maxWidth: '50em',
-  width: '100%',
-  margin: '40px auto',
-  padding: '0 2em',
-});
-
-const Title = g.h1({
-  marginBottom: '20px'
-});
-
-const Cards = g.div({
-  marginTop: '20px',
-
-  '& h5': {
-    marginBottom: '20px'
-  },
-
-  '& p': {
-    lineHeight: 1.6,
-    margin: '5px 0',
-  }
-});
-
-const ButtonContainer = g.div({
-  textAlign: 'center',
-  paddingTop: '10px',
-});
+import Styles from './IndexRoute.module.css';
 
 // eslint-disable-next-line
 const bookmarkletUrl = `javascript:void(location.href='${config.url}#'+(location.host==='github.com'?location.pathname:'/'))`;
@@ -43,16 +14,16 @@ const isFirefox = /Firefox/.exec(navigator.userAgent);
 export default class IndexRoute extends React.Component {
   render() {
     return (
-      <g.Div flex="1" overflow="auto" background={Colors.DARK_GRAY3} className="pt-dark">
-        <Container>
-          <Title>Welcome</Title>
+      <div style={{ flex: 1, overflow: 'auto', background: Colors.DARK_GRAY3 }} className="pt-dark">
+        <div className={Styles.Container}>
+          <h1 className={Styles.Title}>Welcome</h1>
 
           <p className="pt-running-text">
             <strong>Diff Monster</strong> is a tool for reviewing GitHub Pull
             Requests—especially big ones.
           </p>
 
-          <Cards>
+          <div className={Styles.Cards}>
             <div className="pt-card">
               <h5><span className="pt-icon-large pt-icon-locate" /> Open pull request by GitHub URL</h5>
               <form className="pt-control-group" onSubmit={this._onSubmit}>
@@ -72,15 +43,15 @@ export default class IndexRoute extends React.Component {
                 <Link to="/square/okhttp/pull/3207">requests</Link>.
               </p>
             </div>
-          </Cards>
+          </div>
 
-          <Cards>
+          <div className={Styles.Cards}>
             <div className="pt-card">
               <h5><span className="pt-icon-large pt-icon-bookmark" /> Install Bookmarklet</h5>
 
               <p>Drag the link to your bookmarks bar, then use it in GitHub pull request page.</p>
 
-              <ButtonContainer>
+              <div className={Styles.ButtonContainer}>
                 <Tooltip content="Drag me" position={Position.BOTTOM}>
                   <AnchorButton
                     intent={Intent.PRIMARY}
@@ -99,15 +70,15 @@ export default class IndexRoute extends React.Component {
                     <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=866522" target="_blank" rel="noopener noreferrer">Learn more...</a>
                   </p>
                 )}
-              </ButtonContainer>
+              </div>
             </div>
-          </Cards>
+          </div>
 
-          <Cards>
+          <div className={Styles.Cards}>
             <div className="pt-card">
               <h5><span className="pt-icon-large pt-icon-inbox" /> Use Inbox</h5>
               <p>See PRs you need to review in one place. (requires login)</p>
-              <ButtonContainer>
+              <div className={Styles.ButtonContainer}>
               {isAuthenticated() ?
                 <Button
                   intent={Intent.SUCCESS}
@@ -130,20 +101,20 @@ export default class IndexRoute extends React.Component {
                   </p>
                 </div>
               }
-              </ButtonContainer>
+              </div>
             </div>
-          </Cards>
+          </div>
 
-          <g.Div paddingTop="20px" textAlign="center" className="pt-text-muted">
+          <div style={{ paddingTop: "20px", textAlign: "center" }} className="pt-text-muted">
             <p>
               Built by <a href="https://github.com/dittos">@dittos</a>
               {' · '}
               <a href="https://github.com/dittos/diffmonster">Project page</a>
             </p>
             <code>{window.BUILD_INFO || 'dev mode'}</code>
-          </g.Div>
-        </Container>
-      </g.Div>
+          </div>
+        </div>
+      </div>
     );
   }
 

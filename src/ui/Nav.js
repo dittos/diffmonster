@@ -1,20 +1,10 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Popover, Position, Intent, Button, Menu, MenuItem, Tooltip } from '@blueprintjs/core';
-import { css } from 'glamor';
-import g from 'glamorous';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import Inbox from './Inbox';
 import { getUserInfo, signOut, startAuth } from '../lib/GithubAuth';
-
-const inboxPopover = css({
-  '& .pt-popover-content': {
-    width: '40em',
-    minHeight: '20em',
-    maxHeight: '30em',
-    overflowY: 'auto',
-  }
-});
+import Styles from './Nav.module.css';
 
 export default class Nav extends Component {
   static isInboxOpen = new BehaviorSubject(false);
@@ -38,17 +28,17 @@ export default class Nav extends Component {
 
     return (
       <nav className="pt-navbar pt-dark">
-        <g.Div className="pt-navbar-group pt-align-left" marginLeft="-8px">
+        <div className="pt-navbar-group pt-align-left" style={{ marginLeft: "-8px" }}>
           <Link to="/" className="pt-navbar-heading pt-button pt-minimal">
             Diff Monster{' '}
             <span className="pt-icon-standard pt-icon-help pt-align-right" />
           </Link>
-        </g.Div>
+        </div>
         <div className="pt-navbar-group pt-align-right">
           {user && <Popover
             content={<Inbox />}
             position={Position.BOTTOM_RIGHT} 
-            popoverClassName={inboxPopover.toString()}
+            popoverClassName={Styles.InboxPopover}
             inheritDarkTheme={false}
             isOpen={this.state.isInboxOpen}
             onInteraction={nextOpenState => Nav.isInboxOpen.next(nextOpenState)}

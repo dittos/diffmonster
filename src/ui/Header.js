@@ -1,39 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import g from 'glamorous';
-import { AnchorButton, Button, Classes, Colors, Tag, Intent } from '@blueprintjs/core';
+import { AnchorButton, Button, Classes, Tag, Intent } from '@blueprintjs/core';
 import { PullRequestReviewState } from '../lib/Github';
 import { submitReview, addReview } from '../stores/ReviewStore';
+import Styles from './Header.module.css';
 
-const Meta = g.div({
-  padding: '8px',
-});
-
-const Separator = g.span({
-  marginLeft: '16px',
-});
-
-const Branch = g.span({
-  padding: '2px 5px',
-  borderRadius: '3px',
-  border: `1px solid ${Colors.GRAY5}`,
-});
-
-const MergeInto = g.span({
-  padding: '0 4px',
-});
-
-const Links = g.div({
-  float: 'right',
-});
-
-const separator = <Separator />;
-
-const Title = g.div({
-  display: 'flex',
-  fontWeight: 'bold',
-});
+const separator = <span className={Styles.Separator} />;
 
 class Header extends React.Component {
   render() {
@@ -45,8 +18,8 @@ class Header extends React.Component {
       latestReviewState !== PullRequestReviewState.APPROVED;
     const pendingCommentCount = pendingComments.length;
 
-    return <g.Div padding="8px">
-      <Links>
+    return <div className={Styles.Container}>
+      <div className={Styles.Links}>
         {latestReviewState === PullRequestReviewState.PENDING && (
           <Button
             intent={Intent.PRIMARY}
@@ -78,16 +51,16 @@ class Header extends React.Component {
         >
           View on GitHub
         </AnchorButton>
-      </Links>
-      <Title>
+      </div>
+      <div className={Styles.Title}>
         <Link
           to={`/${pullRequest.base.repo.full_name}/pull/${pullRequest.number}`}
           className={`${Classes.BUTTON} ${Classes.MINIMAL} pt-icon-git-pull`}
         >
           {pullRequest.title}
         </Link>
-      </Title>
-      <Meta>
+      </div>
+      <div className={Styles.Meta}>
         {pullRequest.base.repo.full_name}
         #{pullRequest.number}
         {separator}
@@ -97,11 +70,11 @@ class Header extends React.Component {
         {separator}
         by <a href={pullRequest.user.html_url} target="_blank" rel="noopener noreferrer">{pullRequest.user.login}</a>
         {separator}
-        <Branch>{pullRequest.head.label}</Branch>
-        <MergeInto>&rarr;</MergeInto>
-        <Branch>{pullRequest.base.label}</Branch>
-      </Meta>
-    </g.Div>;
+        <span className={Styles.Branch}>{pullRequest.head.label}</span>
+        <span className={Styles.MergeInto}>&rarr;</span>
+        <span className={Styles.Branch}>{pullRequest.base.label}</span>
+      </div>
+    </div>;
   }
 
   _publishPendingComments = () => {

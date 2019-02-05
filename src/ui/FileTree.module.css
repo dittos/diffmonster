@@ -1,0 +1,26 @@
+.Container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.SearchWrapper {
+  flex: 0 0 auto;
+  padding: 5px;
+  background: #D8E1E8; /* TODO: Colors.LIGHT_GRAY2 */
+}
+
+.Dir {
+  font-size: 12px;
+  color: #5C7080; /* TODO: Colors.GRAY1 */
+  padding-top: 2px;
+}
+
+.FilteredTreeNode :global(.pt-tree-node-content) {
+  height: 50px;
+}
+
+.FilteredTreeNode :global(.pt-tree-node-selected) .Dir {
+  color: #fff;
+}

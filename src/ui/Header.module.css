@@ -1,0 +1,30 @@
+.Container {
+  padding: 8px;
+}
+
+.Title {
+  display: flex;
+  font-weight: bold;
+}
+
+.Meta {
+  padding: 8px;
+}
+
+.Separator {
+  margin-left: 16px;
+}
+
+.Branch {
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid #BFCCD6; /* TODO: Colors.GRAY5 */;
+}
+
+.MergeInto {
+  padding: 0 4px;
+}
+
+.Links {
+  float: right;
+}

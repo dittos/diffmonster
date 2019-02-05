@@ -1,39 +1,5 @@
 import React from 'react';
-import g from 'glamorous';
-import { Colors } from '@blueprintjs/core';
-
-const Container = g.div({
-  display: 'flex',
-  flex: '1',
-  overflow: 'auto',
-});
-
-const ResizeHandle = g.div({
-  cursor: 'ew-resize',
-  width: '6px',
-});
-
-const Panel = g.div({
-  background: Colors.WHITE,
-  borderRadius: '3px',
-  boxShadow: '0 0 1px rgba(0, 0, 0, 0.2)',
-});
-
-const SidePanel = g(Panel)({
-  flex: '0 0 auto',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-  margin: '0 0 6px 6px',
-});
-
-const MainPanel = g(Panel)({
-  flex: '1',
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-  margin: '0 6px 6px 0',
-});
+import Styles from './SplitPane.module.css';
 
 export default class SplitPane extends React.Component {
   constructor(initialProps) {
@@ -43,15 +9,15 @@ export default class SplitPane extends React.Component {
   
   render() {
     return (
-      <Container>
-        <SidePanel innerRef={el => this._sideEl = el} style={{width: this._sideWidth + 'px'}}>
+      <div className={Styles.Container}>
+        <div className={Styles.SidePanel} ref={el => this._sideEl = el} style={{width: this._sideWidth + 'px'}}>
           {this.props.side}
-        </SidePanel>
-        <ResizeHandle onMouseDown={this._beginResize} />
-        <MainPanel>
+        </div>
+        <div className={Styles.ResizeHandle} onMouseDown={this._beginResize} />
+        <div className={Styles.MainPanel}>
           {this.props.main}
-        </MainPanel>
-      </Container>
+        </div>
+      </div>
     );
   }
   

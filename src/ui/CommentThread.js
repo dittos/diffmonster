@@ -1,60 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import g from 'glamorous';
-import { Colors, Intent, Tag, Button, Classes } from '@blueprintjs/core';
+import { Intent, Tag, Button, Classes } from '@blueprintjs/core';
 import marked from 'marked';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
 import { getUserInfo } from '../lib/GithubAuth';
 import { editComment } from '../stores/CommentStore';
-
-const actionsClassName = 'CommentThread-Actions';
-
-const CommentItem = g.div({
-  padding: '8px',
-  margin: '8px',
-  border: `1px solid ${Colors.GRAY5}`,
-  borderRadius: '3px',
-  fontFamily: 'sans-serif',
-
-  [`& .${actionsClassName}`]: {
-    visibility: 'hidden'
-  },
-  [`&:hover .${actionsClassName}`]: {
-    visibility: 'visible'
-  },
-});
-
-const CommentMeta = g.div({
-  paddingBottom: '8px',
-});
-
-const CommentUser = g.a({
-  fontWeight: 'bold',
-  marginRight: '8px',
-});
-
-const CommentBody = g.div({
-  fontSize: '13px',
-
-  '& p:last-child': {
-    marginBottom: 0
-  }
-});
-
-const Actions = g.div({
-  float: 'right',
-  marginRight: '-4px',
-  marginTop: '-4px',
-});
-
-const EditingActions = g.div({
-  marginTop: '8px',
-
-  '& button': {
-    marginRight: '8px',
-  }
-});
+import Styles from './CommentThread.module.css';
 
 function renderMarkdown(body) {
   const rendered = marked(body, { gfm: true, sanitize: true });
@@ -75,7 +27,7 @@ class CommentEditor extends React.Component {
   render() {
     const { onStopEditing } = this.props;
     return (
-      <CommentItem>
+      <div className={Styles.CommentItem}>
         <textarea
           className="pt-input pt-fill"
           value={this.state.editingBody}
@@ -83,7 +35,7 @@ class CommentEditor extends React.Component {
           autoFocus
           disabled={this.state.saving}
         />
-        <EditingActions>
+        <div className={Styles.EditingActions}>
           <Button
             text="Cancel"
             onClick={onStopEditing}
@@ -95,8 +47,8 @@ class CommentEditor extends React.Component {
             onClick={this._save}
             disabled={this.state.saving}
           />
-        </EditingActions>
-      </CommentItem>
+        </div>
+      </div>
     );
   }
 
@@ -134,12 +86,12 @@ class Comment extends React.Component {
       />;
     } else {
       return (
-        <CommentItem>
-          <CommentMeta>
-            <CommentUser href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</CommentUser>
+        <div className={Styles.CommentItem}>
+          <div className={Styles.CommentMeta}>
+            <a className={Styles.CommentUser} href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</a>
             {isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
             {viewer && viewer.login === comment.user.login && (
-              <Actions className={actionsClassName}>
+              <div className={Styles.Actions}>
                 <Button
                   iconName="edit"
                   className={Classes.MINIMAL}
@@ -151,11 +103,11 @@ class Comment extends React.Component {
                   intent={Intent.DANGER}
                   onClick={() => deleteComment(comment)}
                 />
-              </Actions>
+              </div>
             )}
-          </CommentMeta>
-          <CommentBody dangerouslySetInnerHTML={{__html: renderMarkdown(comment.body)}} />
-        </CommentItem>
+          </div>
+          <div className={Styles.CommentBody} dangerouslySetInnerHTML={{__html: renderMarkdown(comment.body)}} />
+        </div>
       );
     }
   }

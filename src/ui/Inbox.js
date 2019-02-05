@@ -1,47 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import g from 'glamorous';
-import { Colors, Tab2, Tabs2, NonIdealState } from '@blueprintjs/core';
+import { Tab2, Tabs2, NonIdealState } from '@blueprintjs/core';
 import Loading from '../ui/Loading';
 import { graphql } from '../lib/Github';
 import { getUserInfo } from '../lib/GithubAuth';
-
-const Container = g.div({
-  padding: '8px 16px',
-});
-
-const Empty = g.div({
-  paddingTop: '32px',
-});
-
-const ResultList = g.div({
-});
-
-const ResultItem = g.div({
-  color: 'inherit',
-  paddingBottom: '16px',
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-});
-
-const ResultFooter = g.div({
-  color: Colors.GRAY3,
-  paddingBottom: '16px',
-  textAlign: 'center',
-  fontStyle: 'italic',
-});
-
-const Repo = g.span({
-  marginRight: '8px',
-  color: Colors.GRAY1,
-});
-
-const Title = g(Link, {
-  forwardProps: ['to'],
-  rootEl: 'a',
-})({
-});
+import Styles from './Inbox.module.css';
 
 export default class Inbox extends React.Component {
   state = {
@@ -89,10 +52,10 @@ export default class Inbox extends React.Component {
     const { data } = this.state;
 
     if (!data)
-      return <Container><Loading /></Container>;
+      return <div className={Styles.Container}><Loading /></div>;
 
     return (
-      <Container>
+      <div className={Styles.Container}>
         <Tabs2 id="inboxTabs">
           {this._renderTab({
             id: 'reviewRequested',
@@ -110,7 +73,7 @@ export default class Inbox extends React.Component {
             result: data.created,
           })}
         </Tabs2>
-      </Container>
+      </div>
     );
   }
 
@@ -118,24 +81,24 @@ export default class Inbox extends React.Component {
     let panel;
 
     if (result.nodes.length === 0) {
-      panel = <Empty><NonIdealState title="Hooray!" visual="tick" /></Empty>;
+      panel = <div className={Styles.Empty}><NonIdealState title="Hooray!" visual="tick" /></div>;
     } else {
       panel = (
-        <ResultList>
+        <div>
           {result.nodes.map(item => {
             return (
-              <ResultItem key={item.id}>
-                <Repo>{item.repository.nameWithOwner}</Repo>
-                <Title
+              <div className={Styles.ResultItem} key={item.id}>
+                <span className={Styles.Repo}>{item.repository.nameWithOwner}</span>
+                <Link
                   to={item.resourcePath}
                   className="pt-popover-dismiss"
-                >{item.title}</Title>
-              </ResultItem>
+                >{item.title}</Link>
+              </div>
             );
           })}
           {result.pageInfo.hasNextPage &&
-            <ResultFooter>Truncated search result</ResultFooter>}
-        </ResultList>
+            <div className={Styles.ResultFooter}>Truncated search result</div>}
+        </div>
       );
     }
 

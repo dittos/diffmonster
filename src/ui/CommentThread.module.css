@@ -1,0 +1,43 @@
+.CommentItem {
+  padding: 8px;
+  margin: 8px;
+  border: 1px solid #BFCCD6; /* TODO: Colors.GRAY5 */
+  border-radius: 3px;
+  font-family: sans-serif;
+}
+
+.CommentItem .Actions {
+  visibility: hidden;
+}
+.CommentItem:hover .Actions {
+  visibility: visible;
+}
+
+.CommentMeta {
+  padding-bottom: 8px;
+}
+
+.CommentUser {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.CommentBody {
+  font-size: 13px;
+}
+.CommentBody p:last-child {
+  margin-bottom: 0;
+}
+
+.Actions {
+  float: right;
+  margin-right: -4px;
+  margin-top: -4px;
+}
+
+.EditingActions {
+  margin-top: 8px;
+}
+.EditingActions button {
+  margin-right: 8px;
+}

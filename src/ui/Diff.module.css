@@ -1,0 +1,89 @@
+.DiffTable {
+  line-height: 20px;
+  font-size: 12px;
+  font-family: monospace;
+  border-collapse: collapse;
+  margin: 0 16px 16px;
+}
+
+.HunkGroup {
+  border: 1px solid #CED9E0; /* TODO: Colors.LIGHT_GRAY1 */
+  margin-bottom: 16px;
+}
+
+.HunkHeaderRow {
+  line-height: 32px;
+}
+
+.BaseLineRow .AddCommentIcon {
+  visibility: hidden;
+}
+
+.BaseLineRow:hover .AddCommentIcon {
+  visibility: visible;
+}
+
+.BaseContentCell {
+  white-space: pre-wrap;
+  padding: 0 10px;
+  background: #fff;
+}
+
+.ContextLineRow {
+  composes: BaseLineRow;
+  background: #F5F8FA; /* TODO: Colors.LIGHT_GRAY5 */
+}
+
+.DeletionLineRow {
+  composes: BaseLineRow;
+  background: #ffc9c9;
+}
+
+.DeletionContentCell {
+  composes: BaseContentCell;
+  background: #ffe3e3;
+}
+
+.DeletionHighlight {
+  background: #ffa8a8;
+}
+
+.AdditionLineRow {
+  composes: BaseLineRow;
+  background: #b2f2bb;
+}
+
+.AdditionContentCell {
+  composes: BaseContentCell;
+  background: #d3f9d8;
+}
+
+.AdditionHighlight {
+  background: #8ce99a;
+}
+
+.AddCommentCell {
+  width: 16px;
+  padding: 0 5px;
+  cursor: pointer;
+  color: #5C7080; /* TODO: Colors.GRAY1 */
+  vertical-align: top;
+}
+
+.AddCommentCell:hover {
+  color: #0E5A8A; /* TODO: Colors.BLUE1 */
+}
+
+.LineNumberCell {
+  width: 1%;
+  min-width: 50px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  text-align: right;
+  vertical-align: top;
+}
+
+.CommentContainer {
+  border-top: 1px solid #D8E1E8; /* TODO: Colors.LIGHT_GRAY2 */
+  border-bottom: 1px solid #D8E1E8; /* TODO: Colors.LIGHT_GRAY2 */
+}

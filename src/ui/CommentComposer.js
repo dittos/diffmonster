@@ -1,6 +1,5 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import g from 'glamorous';
 import { Button, Intent } from '@blueprintjs/core';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
@@ -10,19 +9,7 @@ import {
   addReviewComment,
 } from '../stores/CommentStore';
 import config from '../config';
-
-const Container = g.div({
-  margin: '8px',
-  fontFamily: 'sans-serif',
-});
-
-const Actions = g.div({
-  marginTop: '8px',
-
-  '& button': {
-    marginRight: '8px',
-  }
-});
+import Styles from './CommentComposer.module.css';
 
 class CommentComposer extends React.Component {
   state = {
@@ -35,7 +22,7 @@ class CommentComposer extends React.Component {
     const { latestReview } = this.props;
     const hasPendingReview = latestReview && latestReview.state === PullRequestReviewState.PENDING;
     return (
-      <Container>
+      <div className={Styles.Container}>
         <textarea
           placeholder="Leave a comment"
           className="pt-input pt-fill"
@@ -44,7 +31,7 @@ class CommentComposer extends React.Component {
           autoFocus
           disabled={this.state.addingComment}
         />
-        <Actions>
+        <div className={Styles.Actions}>
           <Button
             text="Cancel"
             onClick={this._closeComposer}
@@ -61,8 +48,8 @@ class CommentComposer extends React.Component {
             onClick={this._addReviewComment}
             disabled={this.state.addingComment}
           />
-        </Actions>
-      </Container>
+        </div>
+      </div>
     );
   }
 

@@ -1,0 +1,28 @@
+.Container {
+  max-width: 50em;
+  width: 100%;
+  margin: 40px auto;
+  padding: 0 2em;
+}
+
+.Title {
+  margin-bottom: 20px;
+}
+
+.Cards {
+  margin-top: 20px;
+}
+
+.Cards h5 {
+  margin-bottom: 20px;
+}
+
+.Cards p {
+  line-height: 1.6;
+  margin: 5px 0;
+}
+
+.ButtonContainer {
+  text-align: center;
+  padding-top: 10px;
+}

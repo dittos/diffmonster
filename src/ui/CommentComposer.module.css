@@ -1,0 +1,11 @@
+.Container {
+  margin: 8px;
+  font-family: sans-serif;
+}
+
+.Actions {
+  margin-top: 8px;
+}
+.Actions button {
+  margin-right: 8px;
+}

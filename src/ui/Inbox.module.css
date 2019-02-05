@@ -1,0 +1,27 @@
+.Container {
+  padding: 8px 16px;
+}
+
+.Empty {
+  padding-top: 32px;
+}
+
+.ResultItem {
+  color: inherit;
+  padding-bottom: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ResultFooter {
+  color: #8A9BA8; /* TODO: Color.GRAY3 */
+  padding-bottom: 16px;
+  text-align: center;
+  font-style: italic;
+}
+
+.Repo {
+  margin-right: 8px;
+  color: #5C7080; /* TODO: Color.GRAY1 */
+}

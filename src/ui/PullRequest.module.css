@@ -1,0 +1,29 @@
+.Container {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background: #293742; /* TODO: Colors.DARK_GRAY3 */
+}
+
+.NoPreview {
+  padding: 16px;
+}
+
+.PanelHeader {
+  display: flex;
+  flex: 0 0 auto;
+  padding: 0 16px;
+  line-height: 32px;
+  height: 32px;
+
+  color: #182026; /* TODO: Colors.DARK_GRAY1 */
+  background: #F5F8FA; /* TODO: Colors.LIGHT_GRAY5 */
+  border-bottom: 1px solid #BFCCD6; /* TODO: Colors.GRAY5 */
+}
+
+.Summary {
+  max-width: 50em;
+  margin: 16px auto;
+  padding: 0 2em;
+}

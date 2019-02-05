@@ -1,37 +1,15 @@
 import React from 'react';
-import { css } from 'glamor';
-import g from 'glamorous';
-import { InputGroup, Colors, Classes } from '@blueprintjs/core';
+import { InputGroup, Classes } from '@blueprintjs/core';
 import FuzzySearch from 'fuzzaldrin-plus';
 import { makeTree } from '../lib/FileTree';
 import { Tree } from './Tree';
+import Styles from './FileTree.module.css';
 
 const ICON_NAME_BY_STATUS = {
   added: 'add',
   removed: 'delete',
   renamed: 'circle-arrow-right',
 };
-
-const SearchWrapper = g.div({
-  flex: '0 0 auto',
-  padding: '5px',
-  background: Colors.LIGHT_GRAY2,
-});
-
-const Dir = css({
-  fontSize: '12px',
-  color: Colors.GRAY1,
-  paddingTop: '2px',
-});
-
-const FilteredTreeNode = css({
-  '& .pt-tree-node-content': {
-    height: '50px',
-  },
-  [`&.pt-tree-node-selected .${Dir}`]: {
-    color: Colors.WHITE,
-  },
-});
 
 class FileTree extends React.Component {
   state = {
@@ -53,8 +31,8 @@ class FileTree extends React.Component {
 
   render() {
     return (
-      <g.Div display="flex" flexDirection="column" flex="1" overflow="hidden">
-        <SearchWrapper>
+      <div className={Styles.Container}>
+        <div className={Styles.SearchWrapper}>
           <InputGroup
             autoComplete="off"
             leftIconName="search"
@@ -63,8 +41,8 @@ class FileTree extends React.Component {
             value={this.state.query}
             onChange={this._search}
           />
-        </SearchWrapper>
-        <g.Div flex="1" overflowY="auto" innerRef={el => this._scrollEl = el}>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }} ref={el => this._scrollEl = el}>
           <Tree
             contents={this.state.query ?
               this._renderFilteredTree(this.state.tree) :
@@ -73,8 +51,8 @@ class FileTree extends React.Component {
             onNodeExpand={this._onNodeClick}
             onNodeCollapse={this._onNodeClick}
           />
-        </g.Div>
-      </g.Div>
+        </div>
+      </div>
     );
   }
 
@@ -89,10 +67,10 @@ class FileTree extends React.Component {
       nodes.push({
         id: path,
         iconName: ICON_NAME_BY_STATUS[file.status],
-        className: FilteredTreeNode.toString(),
+        className: Styles.FilteredTreeNode,
         label: [
           this._highlightMatch(basename, matches, basenameOffset),
-          <div key="dir" className={`${Classes.TEXT_OVERFLOW_ELLIPSIS} ${Dir}`}>
+          <div key="dir" className={`${Classes.TEXT_OVERFLOW_ELLIPSIS} ${Styles.Dir}`}>
             {this._highlightMatch(dir, matches, 0)}
           </div>
         ],
