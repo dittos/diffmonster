@@ -21,10 +21,11 @@ function reducer(state: AppState = getInitialState(), action: AppAction) {
 }
 
 export function configureStore(): Store<AppState> {
-  const epicMiddleware = createEpicMiddleware(rootEpic);
+  const epicMiddleware = createEpicMiddleware();
   const composeEnhancers = (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
   const store = createStore(reducer, composeEnhancers(
     applyMiddleware(epicMiddleware)
   ));
+  epicMiddleware.run(rootEpic);
   return store;
 }

@@ -1,8 +1,7 @@
 import * as firebase from 'firebase';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/first';
-import 'rxjs/add/operator/toPromise';
+import { Observable } from 'rxjs';
 import { getAuthenticatedUser, UserDTO } from './Github';
+import { first } from 'rxjs/operators';
 
 let _accessToken: string | undefined;
 let _userInfo: UserDTO | undefined;
@@ -47,7 +46,7 @@ export async function initialize() {
     localStorage.setItem(tokenLocalStorageKey(result.user.uid), result.credential.accessToken);
     accessToken = result.credential.accessToken;
   } else {
-    const user = await firebaseAuthStateChanges().first().toPromise();
+    const user = await firebaseAuthStateChanges().pipe(first()).toPromise();
     if (user) {
       accessToken = localStorage.getItem(tokenLocalStorageKey(user.uid));
     }

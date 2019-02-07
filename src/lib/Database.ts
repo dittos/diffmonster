@@ -1,5 +1,5 @@
 import * as firebase from 'firebase';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 function getFirebaseUid(): string | null {
   const user = firebase.auth().currentUser;

@@ -1,10 +1,6 @@
-import { combineEpics, ActionsObservable } from 'redux-observable';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/do';
+import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
+import { Subject, of } from 'rxjs';
+import { mergeMap, tap, catchError, map } from 'rxjs/operators';
 import {
   addPullRequestReviewCommentOnReview,
   addPullRequestReview,
@@ -16,8 +12,6 @@ import {
   PullRequestCommentDTO,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
-import { Subject } from 'rxjs/Subject';
-import { Store } from 'redux';
 import { PullRequestLoadedState } from './getInitialState';
 
 export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
@@ -100,33 +94,34 @@ export function editComment(comment: PullRequestCommentDTO, body: string, subjec
   return { type: EDIT_COMMENT, payload: { comment, body }, meta: { subject } };
 }
 
-const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
-  action$.ofType<AddSingleCommentAction>('ADD_SINGLE_COMMENT').mergeMap(action => {
-    const { pullRequest } = store.getState();
+const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<AddSingleCommentAction>('ADD_SINGLE_COMMENT').pipe(mergeMap(action => {
+    const { pullRequest } = state$.value;
     const { body, position, path } = action.payload;
 
     return addPullRequestReview(pullRequest.node_id, pullRequest.head.sha, PullRequestReviewEvent.COMMENT, [{
       body,
       position,
       path,
-    }])
-      .do(action.meta.subject)
-      .mergeMap(({ comments, ...review }) => Observable.of({
+    }]).pipe(
+      tap(action.meta.subject),
+      mergeMap(({ comments, ...review }) => of({
         type: ADD_REVIEW_SUCCESS,
         payload: review,
       }, {
         type: ADD_SINGLE_COMMENT_SUCCESS,
         payload: comments!.nodes[0],
-      }))
-      .catch(error => Observable.of({
+      })),
+      catchError(error => of({
         type: ADD_SINGLE_COMMENT_ERROR,
         payload: error,
-      }));
-  });
+      }))
+    );
+  }));
 
-const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
-  action$.ofType<AddReviewCommentAction>('ADD_REVIEW_COMMENT').mergeMap(action => {
-    const { latestReview, pullRequest } = store.getState();
+const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<AddReviewCommentAction>('ADD_REVIEW_COMMENT').pipe(mergeMap(action => {
+    const { latestReview, pullRequest } = state$.value;
     const { body, position, path } = action.payload;
 
     if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
@@ -136,68 +131,73 @@ const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, store: 
         body,
         path,
         position
-      )
-        .do(action.meta.subject)
-        .map(comment => ({
+      ).pipe(
+        tap(action.meta.subject),
+        map(comment => ({
           type: ADD_REVIEW_COMMENT_SUCCESS,
           payload: comment,
-        }))
-        .catch(error => Observable.of({
+        })),
+        catchError(error => of({
           type: ADD_REVIEW_COMMENT_ERROR,
           payload: error,
-        }));
+        }))
+      );
     } else {
       return addPullRequestReview(pullRequest.node_id, pullRequest.head.sha, PullRequestReviewEvent.PENDING, [{
         path,
         position,
         body,
-      }])
-        .do(action.meta.subject)
-        .mergeMap(({ comments, ...review }) => Observable.of({
+      }]).pipe(
+        tap(action.meta.subject),
+        mergeMap(({ comments, ...review }) => of({
           type: ADD_REVIEW_SUCCESS,
           payload: review,
         }, {
           type: ADD_REVIEW_COMMENT_SUCCESS,
           payload: comments!.nodes[0],
-        }))
-        .catch(error => Observable.of({
+        })),
+        catchError(error => of({
           type: ADD_REVIEW_COMMENT_ERROR,
           payload: error,
-        }));
+        }))
+      );
     }
-  });
+  }));
 
-const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
-  action$.ofType<DeleteCommentAction>('DELETE_COMMENT').mergeMap(action => {
+const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<DeleteCommentAction>('DELETE_COMMENT').pipe(mergeMap(action => {
     const comment = action.payload;
-    const { pullRequest } = store.getState();
-    return deletePullRequestReviewComment(pullRequest, comment.id)
-      .map(() => ({
+    const { pullRequest } = state$.value;
+    return deletePullRequestReviewComment(pullRequest, comment.id).pipe(
+      map(() => ({
         type: DELETE_COMMENT_SUCCESS,
         payload: comment.id,
-      }))
-      .catch(error => Observable.of({
+      })),
+      catchError(error => of({
         type: DELETE_COMMENT_ERROR,
         payload: error,
-      }));
-  });
+      }))
+    );
+  }));
 
-const editCommentEpic = (action$: ActionsObservable<CommentAction>, store: Store<PullRequestLoadedState>) =>
-  action$.ofType<EditCommentAction>('EDIT_COMMENT').mergeMap(action => {
+const editCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<EditCommentAction>('EDIT_COMMENT').pipe(mergeMap(action => {
     const { comment, body } = action.payload;
     const call$ = comment.node_id ?
       editPullRequestReviewCommentViaGraphQL(comment.node_id, { body }) :
-      editPullRequestReviewComment(store.getState().pullRequest, comment.id, { body });
-    return call$.do(action.meta.subject)
-      .map(updatedComment => ({
+      editPullRequestReviewComment(state$.value.pullRequest, comment.id, { body });
+    return call$.pipe(
+      tap(action.meta.subject),
+      map(updatedComment => ({
         type: EDIT_COMMENT_SUCCESS,
         payload: updatedComment,
-      }))
-      .catch(error => Observable.of({
+      })),
+      catchError(error => of({
         type: EDIT_COMMENT_ERROR,
         payload: error,
-      }));
-  });
+      }))
+    );
+  }));
 
 export const commentEpic = combineEpics(
   addSingleCommentEpic,

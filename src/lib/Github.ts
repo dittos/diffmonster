@@ -1,12 +1,8 @@
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/observable/dom/ajax';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/exhaustMap';
+import { throwError as observableThrowError, Observable, of } from 'rxjs';
 import LinkHeader from 'http-link-header';
 import { getAccessToken } from './GithubAuth';
-import { AjaxRequest, AjaxResponse } from 'rxjs/observable/dom/AjaxObservable';
+import { ajax as ajaxObservable, AjaxRequest, AjaxResponse } from 'rxjs/ajax';
+import { exhaustMap, map } from 'rxjs/operators';
 
 const BASE_URL = 'https://api.github.com';
 
@@ -123,7 +119,7 @@ function ajax(request: AjaxRequest): Observable<AjaxResponse> {
   const token = getAccessToken();
   if (token)
     headers['Authorization'] = `token ${token}`;
-  return Observable.ajax(request);
+  return ajaxObservable(request);
 }
 
 export interface GraphQLError {
@@ -144,10 +140,11 @@ export function graphql(query: string, variables: {[key: string]: any}): Observa
   const token = getAccessToken();
   if (token)
     request.headers['Authorization'] = `bearer ${token}`;
-  return Observable.ajax(request)
-    .exhaustMap(resp => resp.response.errors ?
-      Observable.throw(resp.response.errors) :
-      Observable.of(resp.response.data));
+  return ajaxObservable(request).pipe(
+    exhaustMap(resp => resp.response.errors ?
+      observableThrowError(resp.response.errors) :
+      of(resp.response.data))
+  );
 }
 
 function pullRequestUrl(owner: string, repo: string, number: number): string {
@@ -158,19 +155,19 @@ export function getPullRequest(owner: string, repo: string, number: number): Obs
   return ajax({
     url: pullRequestUrl(owner, repo, number),
     method: 'get',
-  }).map(resp => resp.response);
+  }).pipe(map(resp => resp.response));
 }
 
 function paginated<T>(obs: Observable<AjaxResponse>): Observable<T[]> {
-  return obs.exhaustMap(resp => {
+  return obs.pipe(exhaustMap(resp => {
     const link = LinkHeader.parse(resp.xhr.getResponseHeader('Link') || '');
     const next = link.rel('next');
     if (next && next.length === 1) {
       return paginated(ajax({url: next[0].uri, method: 'get'}))
-        .map(result => resp.response.concat(result));
+        .pipe(map(result => resp.response.concat(result)));
     }
-    return Observable.of(resp.response);
-  });
+    return of(resp.response);
+  }));
 }
 
 export function getPullRequestAsDiff(owner: string, repo: string, number: number): Observable<string> {
@@ -182,7 +179,7 @@ export function getPullRequestAsDiff(owner: string, repo: string, number: number
       'Accept': 'application/vnd.github.v3.diff',
     },
     responseType: 'text',
-  }).map(resp => resp.response);
+  }).pipe(map(resp => resp.response));
 }
 
 export function getPullRequestComments(pullRequest: PullRequestDTO): Observable<PullRequestCommentDTO[]> {
@@ -202,14 +199,14 @@ export function getPullRequestFromGraphQL(owner: string, repo: string, number: n
       }
     }
   `, { owner, repo, number, author })
-    .map(resp => resp.repository.pullRequest);
+    .pipe(map(resp => resp.repository.pullRequest));
 }
 
 export function getAuthenticatedUser(): Observable<UserDTO> {
   return ajax({
     url: `${BASE_URL}/user`,
     method: 'get',
-  }).map(resp => resp.response);
+  }).pipe(map(resp => resp.response));
 }
 
 export function getPullRequestReviewComments(pullRequest: PullRequestDTO, reviewId: string, startCursor: string): Observable<PullRequestCommentDTO[]> {
@@ -230,14 +227,14 @@ export function getPullRequestReviewComments(pullRequest: PullRequestDTO, review
       }
     }
   `, { reviewId, startCursor })
-    .exhaustMap(resp => {
+    .pipe(exhaustMap(resp => {
       const comments = resp.node.comments;
       if (comments.pageInfo.hasPreviousPage) {
         return getPullRequestReviewComments(pullRequest, reviewId, comments.pageInfo.startCursor)
-          .map(result => result.concat(comments.nodes));
+          .pipe(map(result => result.concat(comments.nodes)));
       }
-      return Observable.of(comments.nodes);
-    });
+      return of(comments.nodes);
+    }));
 }
 
 export interface AddPullRequestReviewInputComment {
@@ -268,7 +265,7 @@ export function addPullRequestReview(pullRequestId: string, commitId: string, ev
       comments,
     },
     commentCount: comments.length,
-  }).map(resp => resp.addPullRequestReview.pullRequestReview);
+  }).pipe(map(resp => resp.addPullRequestReview.pullRequestReview));
 }
 
 export function submitPullRequestReview(pullRequestReviewId: string, event: PullRequestReviewEventInput): Observable<PullRequestReviewDTO> {
@@ -285,7 +282,7 @@ export function submitPullRequestReview(pullRequestReviewId: string, event: Pull
       pullRequestReviewId,
       event,
     }
-  }).map(resp => resp.submitPullRequestReview.pullRequestReview);
+  }).pipe(map(resp => resp.submitPullRequestReview.pullRequestReview));
 }
 
 export function addPullRequestReviewCommentOnReview(reviewId: string, commitId: string, body: string, path: string, position: number): Observable<PullRequestCommentDTO> {
@@ -305,7 +302,7 @@ export function addPullRequestReviewCommentOnReview(reviewId: string, commitId: 
       path,
       position,
     }
-  }).map(resp => resp.addPullRequestReviewComment.comment);
+  }).pipe(map(resp => resp.addPullRequestReviewComment.comment));
 }
 
 export function deletePullRequestReviewComment(pullRequest: PullRequestDTO, commentId: number): Observable<any> {
@@ -323,7 +320,7 @@ export function editPullRequestReviewComment(pullRequest: PullRequestDTO, commen
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ body }),
-  }).map(resp => resp.response);
+  }).pipe(map(resp => resp.response));
 }
 
 export function editPullRequestReviewCommentViaGraphQL(commentNodeId: string, { body }: { body: string }): Observable<PullRequestCommentDTO> {
@@ -340,5 +337,5 @@ export function editPullRequestReviewCommentViaGraphQL(commentNodeId: string, { 
       pullRequestReviewCommentId: commentNodeId,
       body,
     }
-  }).map(resp => resp.updatePullRequestReviewComment.pullRequestReviewComment);
+  }).pipe(map(resp => resp.updatePullRequestReviewComment.pullRequestReviewComment));
 }

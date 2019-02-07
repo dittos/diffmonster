@@ -1,8 +1,7 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Button, Intent } from '@blueprintjs/core';
-import { Subject } from 'rxjs/Subject';
-import { Subscription } from 'rxjs/Subscription';
+import { Subject, Subscription } from 'rxjs';
 import { PullRequestReviewState, PullRequestReviewDTO, PullRequestDTO } from '../lib/Github';
 import {
   addSingleComment,

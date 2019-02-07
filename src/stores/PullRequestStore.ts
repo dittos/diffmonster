@@ -1,14 +1,6 @@
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/zip';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/concat';
-import 'rxjs/add/observable/empty';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/merge';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/takeUntil';
+import { of, zip, Observable, concat, empty } from 'rxjs';
+import { switchMap, catchError, takeUntil, map, merge } from 'rxjs/operators';
+import { ActionsObservable } from 'redux-observable';
 import marked from 'marked';
 import {
   getPullRequest,
@@ -28,7 +20,6 @@ import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
 import getInitialState, { AppState } from './getInitialState';
 import { COMMENTS_FETCHED, PENDING_COMMENTS_FETCHED } from './CommentStore';
-import { ActionsObservable } from 'redux-observable';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -69,8 +60,8 @@ export function fetchCancel(): PullRequestAction {
 }
 
 export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =>
-  action$.ofType<FetchAction>(FETCH).switchMap(action =>
-    Observable.zip<PullRequestDTO, string, any>(
+  action$.ofType<FetchAction>(FETCH).pipe(switchMap(action =>
+    zip<Observable<PullRequestDTO>, Observable<string>, Observable<any>>(
       getPullRequest(action.payload.owner, action.payload.repo, action.payload.number),
       getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
       getUserInfo() ?
@@ -96,15 +87,15 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
               }
             }
           }
-        `).catch((error: GraphQLError[]) => {
+        `).pipe(catchError((error: GraphQLError[]) => {
           if (error.some(e => e.type === 'NOT_FOUND')) {
             throw { status: 404 }; // XXX
           }
           throw error;
-        }) :
-        Observable.of(null)
-    )
-    .switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
+        })) :
+        of(null)
+    ).pipe(
+    switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
       const authenticated = isAuthenticated();
       let latestReview: PullRequestReviewDTO | null = null;
       let pullRequestBodyRendered;
@@ -115,7 +106,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       } else {
         pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
       }
-      const success$ = Observable.of(({
+      const success$ = of(({
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
@@ -127,34 +118,34 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       }));
 
       let comments$ = getPullRequestComments(pullRequest)
-        .map(comments => ({ type: COMMENTS_FETCHED, payload: comments }));
+        .pipe(map(comments => ({ type: COMMENTS_FETCHED, payload: comments })));
       if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
         const pendingComments$ = latestReview.comments!.pageInfo.hasPreviousPage ?
           getPullRequestReviewComments(pullRequest, latestReview.id, latestReview.comments!.pageInfo.startCursor)
-            .map(morePendingComments => morePendingComments.concat(latestReview!.comments!.nodes)) :
-          Observable.of(latestReview.comments!.nodes);
-        comments$ = comments$.merge(
-          pendingComments$.map(pendingComments => ({
+            .pipe(map(morePendingComments => morePendingComments.concat(latestReview!.comments!.nodes))) :
+          of(latestReview.comments!.nodes);
+        comments$ = comments$.pipe(merge(
+          pendingComments$.pipe(map(pendingComments => ({
             type: PENDING_COMMENTS_FETCHED,
             payload: pendingComments,
-          }))
-        );
+          })))
+        ));
       }
 
       const reviewStates$ = authenticated ?
         observeReviewStates(pullRequest.id)
-          .map(reviewStates =>
-            ({ type: REVIEW_STATES_CHANGED, payload: reviewStates || {} })) :
-        Observable.empty();
+          .pipe(map(reviewStates =>
+            ({ type: REVIEW_STATES_CHANGED, payload: reviewStates || {} }))) :
+        empty();
       
-      return Observable.concat(success$, comments$.merge(reviewStates$));
-    })
-    .catch(error => {
+      return concat(success$, comments$.pipe(merge(reviewStates$)));
+    }),
+    catchError(error => {
       console.error(error);
-      return Observable.of({ type: FETCH_ERROR, payload: error });
-    })
-    .takeUntil(action$.ofType(FETCH_CANCEL)
-  ));
+      return of({ type: FETCH_ERROR, payload: error });
+    }),
+    takeUntil(action$.ofType(FETCH_CANCEL))
+  )));
 
 export default function pullRequestReducer(state: AppState, action: PullRequestAction): AppState {
   switch (action.type) {

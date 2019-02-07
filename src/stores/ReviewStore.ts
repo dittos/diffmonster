@@ -1,11 +1,6 @@
-import { combineEpics, ActionsObservable } from 'redux-observable';
-import { Store } from 'redux';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/do';
+import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
+import { of } from 'rxjs';
+import { mergeMap, catchError, map } from 'rxjs/operators';
 import {
   addPullRequestReview,
   submitPullRequestReview,
@@ -41,33 +36,33 @@ export function addReview({ event }: AddReviewAction['payload']): AddReviewActio
   return { type: ADD_REVIEW, payload: { event } };
 }
 
-const addReviewEpic = (action$: ActionsObservable<ReviewAction>, store: Store<PullRequestLoadedState>) =>
-  action$.ofType<AddReviewAction>('ADD_REVIEW').mergeMap(action => {
-    const state = store.getState();
-    return addPullRequestReview(state.pullRequest.node_id, state.pullRequest.head.sha, action.payload.event)
-      .map(review => ({
+const addReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<AddReviewAction>('ADD_REVIEW').pipe(mergeMap(action => {
+    const state = state$.value;
+    return addPullRequestReview(state.pullRequest.node_id, state.pullRequest.head.sha, action.payload.event).pipe(
+      map(review => ({
         type: ADD_REVIEW_SUCCESS,
         payload: review,
-      }))
-      .catch(error => Observable.of({
+      })),
+      catchError(error => of({
         type: ADD_REVIEW_ERROR,
         payload: error,
-      }));
-  });
+      })));
+  }));
 
-const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, store: Store<PullRequestLoadedState>) =>
-  action$.ofType<SubmitReviewAction>('SUBMIT_REVIEW').mergeMap(action => {
-    const state = store.getState();
-    return submitPullRequestReview(state.latestReview!.id, action.payload.event)
-      .map(review => ({
+const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<SubmitReviewAction>('SUBMIT_REVIEW').pipe(mergeMap(action => {
+    const state = state$.value;
+    return submitPullRequestReview(state.latestReview!.id, action.payload.event).pipe(
+      map(review => ({
         type: SUBMIT_REVIEW_SUCCESS,
         payload: review,
-      }))
-      .catch(error => Observable.of({
+      })),
+      catchError(error => of({
         type: SUBMIT_REVIEW_ERROR,
         payload: error,
-      }));
-  });
+      })));
+  }));
 
 export const reviewEpic = combineEpics(
   addReviewEpic,

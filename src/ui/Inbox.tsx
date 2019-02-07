@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Tab, Tabs, NonIdealState, Classes } from '@blueprintjs/core';
+import { Tab, Tabs, NonIdealState } from '@blueprintjs/core';
 import Loading from '../ui/Loading';
 import { graphql } from '../lib/Github';
 import { getUserInfo } from '../lib/GithubAuth';
 import Styles from './Inbox.module.css';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription } from 'rxjs';
 import Nav from './Nav';
 
 interface State {

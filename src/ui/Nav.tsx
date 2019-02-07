@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Popover, Position, Intent, Button, Menu, MenuItem, Tooltip, Navbar, Alignment, Icon } from '@blueprintjs/core';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import Inbox from './Inbox';
 import { getUserInfo, signOut, startAuth } from '../lib/GithubAuth';
 import Styles from './Nav.module.css';
-import { Subscription } from 'rxjs/Subscription';
 
 export default class Nav extends Component {
   static isInboxOpen = new BehaviorSubject(false);
