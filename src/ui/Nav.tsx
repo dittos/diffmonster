@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Popover, Position, Intent, Button, Menu, MenuItem, Tooltip } from '@blueprintjs/core';
+import { Popover, Position, Intent, Button, Menu, MenuItem, Tooltip, Navbar, Alignment, Icon } from '@blueprintjs/core';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import Inbox from './Inbox';
 import { getUserInfo, signOut, startAuth } from '../lib/GithubAuth';
@@ -30,14 +30,14 @@ export default class Nav extends Component {
     const user = getUserInfo();
 
     return (
-      <nav className="pt-navbar pt-dark">
-        <div className="pt-navbar-group pt-align-left" style={{ marginLeft: "-8px" }}>
-          <Link to="/" className="pt-navbar-heading pt-button pt-minimal">
-            Diff Monster{' '}
-            <span className="pt-icon-standard pt-icon-help pt-align-right" />
+      <Navbar className="bp3-dark">
+        <Navbar.Group align={Alignment.LEFT} style={{ marginLeft: "-8px" }}>
+          <Link to="/" className="bp3-navbar-heading bp3-button bp3-minimal">
+            <span className="bp3-button-text">Diff Monster</span>
+            <Icon icon="help" />
           </Link>
-        </div>
-        <div className="pt-navbar-group pt-align-right">
+        </Navbar.Group>
+        <Navbar.Group align={Alignment.RIGHT}>
           {user && <Popover
             content={<Inbox />}
             position={Position.BOTTOM_RIGHT} 
@@ -48,8 +48,8 @@ export default class Nav extends Component {
           >
             <Tooltip content="Inbox" position={Position.BOTTOM}>
               <Button
-                className="pt-minimal"
-                iconName="inbox"
+                className="bp3-minimal"
+                icon="inbox"
               />
             </Tooltip>
           </Popover>}
@@ -61,19 +61,19 @@ export default class Nav extends Component {
             inheritDarkTheme={false}
           >
             <Button
-              className="pt-minimal"
-              iconName="user"
+              className="bp3-minimal"
+              icon="user"
               text={user.login}
             />
           </Popover>}
           {!user && <Button
             intent={Intent.PRIMARY}
-            iconName="log-in"
+            icon="log-in"
             text="Login with GitHub"
             onClick={startAuth}
           />}
-        </div>
-      </nav>
+        </Navbar.Group>
+      </Navbar>
     );
   }
 }

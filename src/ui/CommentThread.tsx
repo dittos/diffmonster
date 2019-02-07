@@ -36,7 +36,7 @@ class CommentEditor extends React.Component<EditorProps> {
     return (
       <div className={Styles.CommentItem}>
         <textarea
-          className="pt-input pt-fill"
+          className="bp3-input bp3-fill"
           value={this.state.editingBody}
           onChange={event => this.setState({ editingBody: event.target.value })}
           autoFocus
@@ -107,12 +107,12 @@ class Comment extends React.Component<CommentProps> {
             {viewer && viewer.login === comment.user.login && (
               <div className={Styles.Actions}>
                 <Button
-                  iconName="edit"
+                  icon="edit"
                   className={Classes.MINIMAL}
                   onClick={this._startEditing}
                 />
                 <Button
-                  iconName="delete"
+                  icon="delete"
                   className={Classes.MINIMAL}
                   intent={Intent.DANGER}
                   onClick={() => deleteComment(comment)}

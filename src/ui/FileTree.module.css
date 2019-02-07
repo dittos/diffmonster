@@ -17,10 +17,10 @@
   padding-top: 2px;
 }
 
-.FilteredTreeNode :global(.pt-tree-node-content) {
+.FilteredTreeNode :global(.bp3-tree-node-content) {
   height: 50px;
 }
 
-.FilteredTreeNode :global(.pt-tree-node-selected) .Dir {
+.FilteredTreeNode:global(.bp3-tree-node-selected) .Dir {
   color: #fff;
 }

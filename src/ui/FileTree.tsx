@@ -1,5 +1,5 @@
 import React, { ReactNode, FormEvent } from 'react';
-import { InputGroup, Classes, ITreeNode } from '@blueprintjs/core';
+import { InputGroup, Classes, ITreeNode, Icon } from '@blueprintjs/core';
 import FuzzySearch from 'fuzzaldrin-plus';
 import { makeTree, FileTreeNode } from '../lib/FileTree';
 import { Tree } from './Tree';
@@ -59,7 +59,7 @@ class FileTree extends React.Component<Props, State> {
         <div className={Styles.SearchWrapper}>
           <InputGroup
             autoComplete="off"
-            leftIconName="search"
+            leftIcon="search"
             placeholder="Search..."
             type="search"
             value={this.state.query}
@@ -90,7 +90,7 @@ class FileTree extends React.Component<Props, State> {
       const matches = FuzzySearch.match(path, this.state.query);
       nodes.push({
         id: path,
-        iconName: ICON_NAME_BY_STATUS[file.status],
+        icon: ICON_NAME_BY_STATUS[file.status],
         className: Styles.FilteredTreeNode,
         label: [
           this._highlightMatch(basename, matches, basenameOffset),
@@ -123,7 +123,7 @@ class FileTree extends React.Component<Props, State> {
         const basename = path.split('/').pop();
         nodes.push({
           id: path,
-          iconName: ICON_NAME_BY_STATUS[file.status],
+          icon: ICON_NAME_BY_STATUS[file.status],
           label: basename,
           isSelected: this.props.activePath === path,
           secondaryLabel: this._renderSecondaryLabel(file),
@@ -135,9 +135,9 @@ class FileTree extends React.Component<Props, State> {
 
   _renderSecondaryLabel(file: File) {
     if (!file.isReviewed && file.commentCount > 0) {
-      return <span className="pt-icon-standard pt-icon-comment" />;
+      return <Icon icon="comment" />;
     } else if (file.isReviewed) {
-      return <span className="pt-icon-standard pt-icon-small-tick" />;
+      return <Icon icon="small-tick" />;
     } else {
       return null;
     }

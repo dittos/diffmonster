@@ -1,4 +1,4 @@
-.InboxPopover :global(.pt-popover-content) {
+.InboxPopover :global(.bp3-popover-content) {
   width: 40em;
   min-height: 20em;
   max-height: 30em;

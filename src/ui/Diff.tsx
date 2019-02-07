@@ -7,6 +7,7 @@ import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
 import Styles from './Diff.module.css';
 import { PullRequestCommentDTO } from '../lib/Github';
+import { Icon } from '@blueprintjs/core';
 
 const CUSTOM_LANGUAGE_ALIASES: {[key: string]: string} = {
   // https://github.com/isagalaev/highlight.js/pull/1651
@@ -95,7 +96,7 @@ class Hunk extends React.Component<HunkProps> {
         <tr className={C.LineRow} key={'L' + line.position}>
           {canCreateComment &&
             <td className={Styles.AddCommentCell} onClick={() => this.props.onOpenCommentComposer(line.position)}>
-              <span className={`pt-icon-standard pt-icon-comment ${Styles.AddCommentIcon}`} />
+              <Icon icon="comment" className={Styles.AddCommentIcon} />
             </td>}
           <td className={Styles.LineNumberCell}>{line.oldNumber || ''}</td>
           <td className={Styles.LineNumberCell}>{line.newNumber || ''}</td>

@@ -44,7 +44,7 @@ class CommentComposer extends React.Component<Props> {
       <div className={Styles.Container}>
         <textarea
           placeholder="Leave a comment"
-          className="pt-input pt-fill"
+          className="bp3-input bp3-fill"
           value={this.state.commentBody}
           onChange={event => this.setState({ commentBody: event.target.value })}
           autoFocus

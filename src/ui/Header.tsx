@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { AnchorButton, Button, Classes, Tag, Intent } from '@blueprintjs/core';
+import { AnchorButton, Button, Classes, Tag, Intent, Icon } from '@blueprintjs/core';
 import { PullRequestReviewState } from '../lib/Github';
 import { submitReview, addReview } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
@@ -25,7 +25,7 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
         {latestReviewState === PullRequestReviewState.PENDING && (
           <Button
             intent={Intent.PRIMARY}
-            iconName="upload"
+            icon="upload"
             loading={this.props.isAddingReview}
             onClick={this._publishPendingComments}
           >
@@ -33,11 +33,11 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
           </Button>
         )}
         {latestReviewState === PullRequestReviewState.APPROVED &&
-          <Button intent={Intent.SUCCESS} active={true} iconName="tick">Approved</Button>}
+          <Button intent={Intent.SUCCESS} active={true} icon="tick">Approved</Button>}
         {canApprove && (
           <Button
             intent={Intent.SUCCESS}
-            iconName="tick"
+            icon="tick"
             loading={this.props.isAddingReview}
             onClick={this._approve}
           >
@@ -48,7 +48,7 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
         <AnchorButton
           href={pullRequest.html_url}
           target="_blank"
-          rightIconName="share"
+          rightIcon="share"
           className={Classes.MINIMAL}
         >
           View on GitHub
@@ -57,9 +57,10 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
       <div className={Styles.Title}>
         <Link
           to={`/${pullRequest.base.repo.full_name}/pull/${pullRequest.number}`}
-          className={`${Classes.BUTTON} ${Classes.MINIMAL} pt-icon-git-pull`}
+          className={`${Classes.BUTTON} ${Classes.MINIMAL}`}
         >
-          {pullRequest.title}
+          <Icon icon="git-pull" />
+          <span className="bp3-button-text">{pullRequest.title}</span>
         </Link>
       </div>
       <div className={Styles.Meta}>

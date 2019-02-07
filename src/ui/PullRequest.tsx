@@ -142,7 +142,7 @@ class PullRequest extends Component<Props> {
         </div>
         <div style={{ flex: 'initial' }}>
           {reviewStates && <Switch
-            className="pt-inline"
+            className="bp3-inline"
             checked={reviewStates[activeFile.sha || ''] || false}
             label="Done"
             onChange={this._onReviewStateChange}
@@ -167,7 +167,7 @@ class PullRequest extends Component<Props> {
               No change
             </div> :
           (pullRequestBodyRendered && <div
-            className={`${Styles.Summary} pt-running-text`}
+            className={`${Styles.Summary} bp3-running-text`}
             dangerouslySetInnerHTML={{__html: pullRequestBodyRendered}}
           />)
         }
@@ -181,7 +181,7 @@ class PullRequest extends Component<Props> {
     return (
       <NonIdealState
         title="Not Found"
-        visual="warning-sign"
+        icon="warning-sign"
         description={
           isAuthenticated() ? undefined : <p>
             <a href="https://github.com/" onClick={this._login}>Login with GitHub</a> to view private repos.

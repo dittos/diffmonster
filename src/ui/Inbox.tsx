@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Tab2, Tabs2, NonIdealState } from '@blueprintjs/core';
+import { Tab, Tabs, NonIdealState, Classes } from '@blueprintjs/core';
 import Loading from '../ui/Loading';
 import { graphql } from '../lib/Github';
 import { getUserInfo } from '../lib/GithubAuth';
 import Styles from './Inbox.module.css';
 import { Subscription } from 'rxjs/Subscription';
+import Nav from './Nav';
 
 interface State {
   data: {
@@ -67,7 +68,7 @@ export default class Inbox extends React.Component {
 
     return (
       <div className={Styles.Container}>
-        <Tabs2 id="inboxTabs" animate={false}>
+        <Tabs id="inboxTabs">
           {this._renderTab({
             id: 'reviewRequested',
             title: 'Review Requested',
@@ -83,7 +84,7 @@ export default class Inbox extends React.Component {
             title: 'Created',
             result: data.created,
           })}
-        </Tabs2>
+        </Tabs>
       </div>
     );
   }
@@ -92,7 +93,7 @@ export default class Inbox extends React.Component {
     let panel;
 
     if (result.nodes.length === 0) {
-      panel = <div className={Styles.Empty}><NonIdealState title="Hooray!" visual="tick" /></div>;
+      panel = <div className={Styles.Empty}><NonIdealState title="Hooray!" icon="tick" /></div>;
     } else {
       panel = (
         <div>
@@ -102,7 +103,7 @@ export default class Inbox extends React.Component {
                 <span className={Styles.Repo}>{item.repository.nameWithOwner}</span>
                 <Link
                   to={item.resourcePath}
-                  className="pt-popover-dismiss"
+                  onClick={() => Nav.isInboxOpen.next(false)}
                 >{item.title}</Link>
               </div>
             );
@@ -113,7 +114,7 @@ export default class Inbox extends React.Component {
       );
     }
 
-    return <Tab2
+    return <Tab
       id={id}
       title={`${title} (${result.issueCount})`}
       panel={panel}
