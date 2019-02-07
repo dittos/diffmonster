@@ -13,13 +13,21 @@ import {
 import config from '../config';
 import Styles from './CommentComposer.module.css';
 import { PullRequestLoadedState } from '../stores/getInitialState';
+import { AppAction } from '../stores';
+import { DiffFile } from '../lib/DiffParser';
 
-interface Props extends DispatchProp {
+interface StateProps {
   latestReview: PullRequestReviewDTO | null;
   pullRequest: PullRequestDTO;
-  file: any;
+}
+
+interface OwnProps {
+  file: DiffFile;
   position: number;
   onCloseComposer(): void;
+}
+
+interface Props extends DispatchProp<AppAction>, StateProps, OwnProps {
 }
 
 class CommentComposer extends React.Component<Props> {
@@ -109,7 +117,7 @@ class CommentComposer extends React.Component<Props> {
   };
 }
 
-export default connect((state: PullRequestLoadedState) => ({
+export default connect<StateProps, {}, OwnProps, PullRequestLoadedState>(state => ({
   pullRequest: state.pullRequest,
   latestReview: state.latestReview,
 }))(CommentComposer);

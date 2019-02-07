@@ -25,7 +25,7 @@ import {
 } from '../lib/Github';
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
-import { parseDiff } from '../lib/DiffParser';
+import { parseDiff, DiffFile } from '../lib/DiffParser';
 import getInitialState, { AppState } from './getInitialState';
 import { COMMENTS_FETCHED, PENDING_COMMENTS_FETCHED } from './CommentStore';
 import { ActionsObservable } from 'redux-observable';
@@ -48,23 +48,24 @@ type FetchAction = {
 
 export type PullRequestAction =
   FetchAction |
+  { type: 'FETCH_CANCEL'; } |
   { type: 'FETCH_ERROR'; payload: { status: 404 }; } |
   { type: 'FETCH_SUCCESS'; payload: {
     pullRequest: PullRequestDTO;
     pullRequestBodyRendered: string;
-    files: any[];
+    files: DiffFile[];
     latestReview: PullRequestReviewDTO | null;
     isLoadingReviewStates: boolean;
   }; } |
   { type: 'REVIEW_STATES_CHANGED'; payload: {[fileId: string]: boolean}; }
   ;
 
-export function fetch({ owner, repo, number }: FetchAction['payload']) {
-  return { type: FETCH, payload: { owner, repo, number } };
+export function fetch({ owner, repo, number }: FetchAction['payload']): PullRequestAction {
+  return { type: 'FETCH', payload: { owner, repo, number } };
 }
 
-export function fetchCancel() {
-  return { type: FETCH_CANCEL };
+export function fetchCancel(): PullRequestAction {
+  return { type: 'FETCH_CANCEL' };
 }
 
 export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =>
@@ -74,7 +75,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
       getUserInfo() ?
         getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
-          getUserInfo().login, `
+          getUserInfo()!.login, `
           bodyHTML
           reviews(last: 1, author: $author) {
             nodes {

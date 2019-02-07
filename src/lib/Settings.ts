@@ -1,6 +1,6 @@
 var KEY_FILE_TREE_WIDTH = 'fileTreeWidth';
 
-function read(key, defaultValue) {
+function read<T>(key: string, defaultValue: T): T {
   const value = window.localStorage.getItem(key);
   if (value == null) {
     return defaultValue;
@@ -8,7 +8,7 @@ function read(key, defaultValue) {
   return JSON.parse(value);
 }
 
-function write(key, value) {
+function write<T>(key: string, value: T) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
@@ -18,7 +18,7 @@ export function getFileTreeWidth() {
   return fileTreeWidth;
 }
 
-export function setFileTreeWidth(value) {
+export function setFileTreeWidth(value: number) {
   write(KEY_FILE_TREE_WIDTH, value);
   fileTreeWidth = value;
 }

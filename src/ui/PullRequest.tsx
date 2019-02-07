@@ -27,10 +27,12 @@ function collectCommentCountByPath(comments: PullRequestCommentDTO[], commentCou
   }
 }
 
-type Props = AppState & DispatchProp<AppAction> & {
-  activePath: string;
-  onSelectFile(): void;
-};
+interface OwnProps {
+  activePath: string | undefined;
+  onSelectFile(path: string): void;
+}
+
+type Props = AppState & DispatchProp<AppAction> & OwnProps;
 
 class PullRequest extends Component<Props> {
   private _scrollEl: Element | null = null;
@@ -234,4 +236,4 @@ function getBlobUrl(pullRequest: PullRequestDTO, file: DiffFile) {
   return `${pullRequest.head.repo.html_url}/blob/${pullRequest.head.sha}/${file.filename}`;
 }
 
-export default connect(state => state)(PullRequest);
+export default connect<AppState, {}, OwnProps, AppState>(state => state)(PullRequest);

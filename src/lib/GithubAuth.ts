@@ -2,10 +2,10 @@ import * as firebase from 'firebase';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/toPromise';
-import { getAuthenticatedUser } from './Github';
+import { getAuthenticatedUser, UserDTO } from './Github';
 
-let _accessToken;
-let _userInfo;
+let _accessToken: string | undefined;
+let _userInfo: UserDTO | undefined;
 
 export function startAuth() {
   const provider = new firebase.auth.GithubAuthProvider();
@@ -18,13 +18,13 @@ export function startAuth() {
 
 export function signOut() {
   const auth = firebase.auth();
-  localStorage.removeItem(tokenLocalStorageKey(auth.currentUser.uid));
+  localStorage.removeItem(tokenLocalStorageKey(auth.currentUser!.uid));
   auth.signOut();
   window.location.reload(); // TODO: without refresh
 }
 
-function firebaseAuthStateChanges() {
-  return Observable.create(obs => {
+function firebaseAuthStateChanges(): Observable<firebase.User> {
+  return Observable.create((obs: any) => {
     const unsubscribe = firebase.auth().onAuthStateChanged(
       user => obs.next(user),
       err => obs.error(err),
@@ -34,7 +34,7 @@ function firebaseAuthStateChanges() {
   });
 }
 
-function tokenLocalStorageKey(uid) {
+function tokenLocalStorageKey(uid: string): string {
   return `githubTokens/${uid}`;
 }
 
@@ -59,14 +59,14 @@ export async function initialize() {
   }
 }
 
-export function getAccessToken() {
+export function getAccessToken(): string | undefined {
   return _accessToken;
 }
 
-export function getUserInfo() {
+export function getUserInfo(): UserDTO | undefined {
   return _userInfo;
 }
 
-export function isAuthenticated() {
+export function isAuthenticated(): boolean {
   return Boolean(_userInfo);
 }

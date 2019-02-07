@@ -1,9 +1,17 @@
-function defaultGetFilename(file) {
+import { DiffFile } from "./DiffParser";
+
+function defaultGetFilename(file: DiffFile): string {
   return file.filename;
 }
 
-export function makeTree(files, getFilename = defaultGetFilename) {
-  const tree = {dirs: {}};
+export interface FileTreeNode<File = DiffFile> {
+  name: string;
+  dirs: {[key: string]: FileTreeNode<File>};
+  files?: File[];
+}
+
+export function makeTree<T extends DiffFile>(files: T[], getFilename: (file: T) => string = defaultGetFilename): FileTreeNode<T> {
+  const tree: FileTreeNode<T> = {name: '', dirs: {}};
   for (let file of files) {
     const parts = getFilename(file).split('/');
     parts.pop();
@@ -25,7 +33,7 @@ export function makeTree(files, getFilename = defaultGetFilename) {
   return tree;
 }
 
-function mergeTreePaths(tree) {
+function mergeTreePaths<T extends DiffFile>(tree: FileTreeNode<T>) {
   const dirs = Object.keys(tree.dirs);
   const merged = tree;
   if (dirs.length === 1 && !tree.files) {

@@ -5,14 +5,25 @@ import Loading from '../ui/Loading';
 import { graphql } from '../lib/Github';
 import { getUserInfo } from '../lib/GithubAuth';
 import Styles from './Inbox.module.css';
+import { Subscription } from 'rxjs/Subscription';
+
+interface State {
+  data: {
+    reviewed: any;
+    reviewRequested: any;
+    created: any;
+  } | null;
+}
 
 export default class Inbox extends React.Component {
-  state = {
+  private subscription: Subscription | null = null;
+
+  state: State = {
     data: null,
   };
 
   componentDidMount() {
-    const user = getUserInfo();
+    const user = getUserInfo()!;
     this.subscription = graphql(`
       fragment frag on SearchResultItemConnection {
         nodes {
@@ -77,7 +88,7 @@ export default class Inbox extends React.Component {
     );
   }
 
-  _renderTab({ id, title, result }) {
+  _renderTab({ id, title, result }: { id: string; title: string; result: any; }) {
     let panel;
 
     if (result.nodes.length === 0) {
@@ -85,7 +96,7 @@ export default class Inbox extends React.Component {
     } else {
       panel = (
         <div>
-          {result.nodes.map(item => {
+          {result.nodes.map((item: any) => {
             return (
               <div className={Styles.ResultItem} key={item.id}>
                 <span className={Styles.Repo}>{item.repository.nameWithOwner}</span>

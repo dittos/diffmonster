@@ -1,14 +1,16 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Classes, Tag, Intent } from '@blueprintjs/core';
 import { PullRequestReviewState } from '../lib/Github';
 import { submitReview, addReview } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
+import { PullRequestLoadedState } from '../stores/getInitialState';
+import { AppAction } from '../stores';
 
 const separator = <span className={Styles.Separator} />;
 
-class Header extends React.Component {
+class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAction>> {
   render() {
     const { pullRequest, latestReview, pendingComments, currentUser } = this.props;
     const latestReviewState = latestReview && latestReview.state;
@@ -86,4 +88,4 @@ class Header extends React.Component {
   };
 }
 
-export default connect(state => state)(Header);
+export default connect<PullRequestLoadedState, {}, {}, PullRequestLoadedState>(state => state)(Header);

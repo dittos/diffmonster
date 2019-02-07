@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { highlight, getLanguage, ICompiledMode } from "highlight.js";
 import "highlight.js/styles/default.css";
-import { LineType, DiffFile } from '../lib/DiffParser';
+import { LineType, DiffFile, DiffBlock } from '../lib/DiffParser';
 import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
@@ -62,8 +62,8 @@ function detectFileLanguage(file: DiffFile) {
 }
 
 interface HunkProps {
-  hunk: any;
-  file: any;
+  hunk: DiffBlock;
+  file: DiffFile;
   commentsByPosition: {[key: number]: PullRequestCommentDTO[]};
   pendingCommentsByPosition: {[key: number]: PullRequestCommentDTO[]};
   language: string | null;
@@ -166,7 +166,7 @@ function collectCommentsByPosition(comments: PullRequestCommentDTO[]) {
 }
 
 export interface DiffProps {
-  file: any;
+  file: DiffFile;
   comments: PullRequestCommentDTO[];
   pendingComments: PullRequestCommentDTO[];
   canCreateComment: boolean;

@@ -1,11 +1,11 @@
 import { getUserInfo } from '../lib/GithubAuth';
-import { PullRequestCommentDTO, PullRequestReviewDTO, PullRequestDTO } from '../lib/Github';
+import { PullRequestCommentDTO, PullRequestReviewDTO, PullRequestDTO, UserDTO } from '../lib/Github';
 import { DiffFile } from '../lib/DiffParser';
 
 export type AppStatus = 'loading' | 'notFound' | 'success';
 
 export interface AppState {
-  currentUser: any;
+  currentUser: UserDTO | undefined;
   status: AppStatus;
   pullRequest: PullRequestDTO | null;
   pullRequestBodyRendered: string | undefined;

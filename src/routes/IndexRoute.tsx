@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, RouteComponentProps } from 'react-router-dom';
 import { AnchorButton, Button, Intent, Colors, Tooltip, Position } from '@blueprintjs/core';
 import { isAuthenticated, startAuth } from '../lib/GithubAuth';
 import Nav from '../ui/Nav';
@@ -11,7 +11,9 @@ const bookmarkletUrl = `javascript:void(location.href='${config.url}#'+(location
 
 const isFirefox = /Firefox/.exec(navigator.userAgent);
 
-export default class IndexRoute extends React.Component {
+export default class IndexRoute extends React.Component<RouteComponentProps> {
+  private _urlInput: HTMLInputElement | null = null;
+
   render() {
     return (
       <div style={{ flex: 1, overflow: 'auto', background: Colors.DARK_GRAY3 }} className="pt-dark">
@@ -59,7 +61,7 @@ export default class IndexRoute extends React.Component {
                     text="Open in Diff Monster"
                     href={bookmarkletUrl}
                     onClick={this._showBookmarkletNotice}
-                    disabled={isFirefox}
+                    disabled={Boolean(isFirefox)}
                   />
                 </Tooltip>
                 
@@ -111,16 +113,16 @@ export default class IndexRoute extends React.Component {
               {' · '}
               <a href="https://github.com/dittos/diffmonster">Project page</a>
             </p>
-            <code>{window.BUILD_INFO || 'dev mode'}</code>
+            <code>{(window as any).BUILD_INFO || 'dev mode'}</code>
           </div>
         </div>
       </div>
     );
   }
 
-  _onSubmit = event => {
+  _onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const url = this._urlInput.value;
+    const url = this._urlInput!.value;
     const urlMatch = /https?:\/\/github\.com\/(.+?)\/(.+?)\/pull\/([0-9]+)/.exec(url);
     if (urlMatch) {
       const [, owner, repo, number] = urlMatch;
@@ -136,7 +138,7 @@ export default class IndexRoute extends React.Component {
     }
   };
 
-  _showBookmarkletNotice = event => {
+  _showBookmarkletNotice = (event: React.MouseEvent) => {
     event.preventDefault();
     alert('Drag it to your bookmarks bar!');
   };

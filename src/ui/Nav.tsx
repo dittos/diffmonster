@@ -5,9 +5,12 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import Inbox from './Inbox';
 import { getUserInfo, signOut, startAuth } from '../lib/GithubAuth';
 import Styles from './Nav.module.css';
+import { Subscription } from 'rxjs/Subscription';
 
 export default class Nav extends Component {
   static isInboxOpen = new BehaviorSubject(false);
+
+  private _subscription: Subscription | null = null;
 
   state = {
     isInboxOpen: Nav.isInboxOpen.value

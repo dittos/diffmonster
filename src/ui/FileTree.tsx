@@ -1,31 +1,55 @@
-import React from 'react';
-import { InputGroup, Classes } from '@blueprintjs/core';
+import React, { ReactNode, FormEvent } from 'react';
+import { InputGroup, Classes, ITreeNode } from '@blueprintjs/core';
 import FuzzySearch from 'fuzzaldrin-plus';
-import { makeTree } from '../lib/FileTree';
+import { makeTree, FileTreeNode } from '../lib/FileTree';
 import { Tree } from './Tree';
 import Styles from './FileTree.module.css';
+import { DiffFile } from '../lib/DiffParser';
 
-const ICON_NAME_BY_STATUS = {
+const ICON_NAME_BY_STATUS: {[key: string]: string} = {
   added: 'add',
   removed: 'delete',
   renamed: 'circle-arrow-right',
 };
 
-class FileTree extends React.Component {
-  state = {
+export interface File extends DiffFile {
+  commentCount: number;
+  isReviewed: boolean | null;
+}
+
+type Node = FileTreeNode<File>;
+
+export interface Props {
+  files: File[];
+  activePath: string | undefined;
+  onSelectFile(path: string): void;
+}
+
+interface State {
+  query: string;
+  tree: Node | File[];
+  collapsed: {[key: string]: boolean};
+}
+
+const TreeComponent: any = Tree; // TODO
+
+class FileTree extends React.Component<Props, State> {
+  private _scrollEl: Element | null = null;
+
+  state: State = {
     query: '',
-    tree: makeTree(this.props.files),
+    tree: makeTree<File>(this.props.files),
     collapsed: {},
   };
 
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps: Props) {
     if (this.props.files !== nextProps.files)
       this.setState({ tree: this._getTree(nextProps.files, this.state.query) });
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
     if (prevState.query !== this.state.query) {
-      this._scrollEl.scrollTop = 0;
+      this._scrollEl!.scrollTop = 0;
     }
   }
 
@@ -43,10 +67,10 @@ class FileTree extends React.Component {
           />
         </div>
         <div style={{ flex: 1, overflowY: "auto" }} ref={el => this._scrollEl = el}>
-          <Tree
+          <TreeComponent
             contents={this.state.query ?
-              this._renderFilteredTree(this.state.tree) :
-              this._renderTree(this.state.tree)}
+              this._renderFilteredTree(this.state.tree as File[]) :
+              this._renderTree(this.state.tree as Node)}
             onNodeClick={this._onNodeClick}
             onNodeExpand={this._onNodeClick}
             onNodeCollapse={this._onNodeClick}
@@ -56,11 +80,11 @@ class FileTree extends React.Component {
     );
   }
 
-  _renderFilteredTree(tree) {
+  _renderFilteredTree(tree: File[]) {
     const nodes = [];
     for (let file of tree) {
       const path = file.filename;
-      const basename = path.split('/').pop();
+      const basename = path.split('/').pop() || '';
       const basenameOffset = path.length - basename.length;
       const dir = path.substring(0, basenameOffset);
       const matches = FuzzySearch.match(path, this.state.query);
@@ -81,7 +105,7 @@ class FileTree extends React.Component {
     return nodes;
   }
 
-  _renderTree(tree, prefix = '') {
+  _renderTree(tree: Node, prefix = ''): ReactNode {
     const nodes = [];
     for (let dir of Object.keys(tree.dirs)) {
       const subtree = tree.dirs[dir];
@@ -109,7 +133,7 @@ class FileTree extends React.Component {
     return nodes;
   }
 
-  _renderSecondaryLabel(file) {
+  _renderSecondaryLabel(file: File) {
     if (!file.isReviewed && file.commentCount > 0) {
       return <span className="pt-icon-standard pt-icon-comment" />;
     } else if (file.isReviewed) {
@@ -119,11 +143,11 @@ class FileTree extends React.Component {
     }
   }
 
-  _getTree(files, query) {
+  _getTree(files: File[], query: string) {
     return query ? FuzzySearch.filter(files, query, { key: 'filename' }) : makeTree(files);
   }
 
-  _highlightMatch(path, matches, offsetIndex) {
+  _highlightMatch(path: string, matches: number[], offsetIndex: number) {
     // Similar to https://github.com/atom/fuzzy-finder/blob/cf40851/lib/fuzzy-finder-view.js
     let lastIndex = 0
     let matchedChars = []
@@ -163,7 +187,7 @@ class FileTree extends React.Component {
     return fragment
   }
 
-  _onNodeClick = node => {
+  _onNodeClick = (node: ITreeNode) => {
     if (node.childNodes) {
       // dir node
       const isExpanded = node.isExpanded;
@@ -177,13 +201,13 @@ class FileTree extends React.Component {
     } else {
       // file node
       if (!node.isSelected) {
-        this.props.onSelectFile(node.id);
+        this.props.onSelectFile(String(node.id));
       }
     }
   };
 
-  _search = event => {
-    const query = event.target.value;
+  _search = (event: FormEvent<HTMLInputElement>) => {
+    const query = event.currentTarget.value;
     this.setState({
       query,
       tree: this._getTree(this.props.files, query),

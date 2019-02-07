@@ -1,5 +1,5 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import { Intent, Tag, Button, Classes } from '@blueprintjs/core';
 import marked from 'marked';
 import { Subject } from 'rxjs/Subject';
@@ -7,13 +7,20 @@ import { Subscription } from 'rxjs/Subscription';
 import { getUserInfo } from '../lib/GithubAuth';
 import { editComment } from '../stores/CommentStore';
 import Styles from './CommentThread.module.css';
+import { PullRequestCommentDTO, UserDTO } from '../lib/Github';
+import { AppAction } from '../stores';
 
-function renderMarkdown(body) {
+function renderMarkdown(body: string): string {
   const rendered = marked(body, { gfm: true, sanitize: true });
   return rendered.replace(/&lt;(\/?sub)&gt;/g, '<$1>'); // TODO: is it okay?
 }
 
-class CommentEditor extends React.Component {
+interface EditorProps extends DispatchProp<AppAction> {
+  comment: PullRequestCommentDTO;
+  onStopEditing(): void;
+}
+
+class CommentEditor extends React.Component<EditorProps> {
   state = {
     editingBody: this.props.comment.body,
     saving: false,
@@ -72,7 +79,14 @@ class CommentEditor extends React.Component {
 
 const CommentEditorContainer = connect()(CommentEditor);
 
-class Comment extends React.Component {
+interface CommentProps {
+  viewer: UserDTO | undefined;
+  comment: PullRequestCommentDTO;
+  isPending: boolean;
+  deleteComment(comment: PullRequestCommentDTO): void;
+}
+
+class Comment extends React.Component<CommentProps> {
   state = {
     isEditing: false,
   };
@@ -121,7 +135,11 @@ class Comment extends React.Component {
   };
 }
 
-function CommentThread({ comments, isPending, deleteComment }) {
+function CommentThread({ comments, isPending, deleteComment }: {
+  comments: PullRequestCommentDTO[];
+  isPending: boolean;
+  deleteComment(comment: PullRequestCommentDTO): void;
+}) {
   const viewer = getUserInfo();
   return (
     <div>

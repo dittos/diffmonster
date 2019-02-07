@@ -1,15 +1,29 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { connect, DispatchProp } from 'react-redux';
 import PullRequest from '../ui/PullRequest';
 import withQueryParams from '../lib/withQueryParams';
 import { fetch, fetchCancel } from '../stores/PullRequestStore';
+import { RouteComponentProps } from 'react-router';
+import { AppAction } from '../stores';
 
-class PullRequestRoute extends React.Component {
+interface Params {
+  owner: string;
+  repo: string;
+  number: string;
+}
+
+interface QueryParams {
+  path?: string;
+}
+
+type Props = RouteComponentProps<Params> & { queryParams: QueryParams } & DispatchProp<AppAction>;
+
+class PullRequestRoute extends React.Component<Props> {
   componentDidMount() {
     this._load(this.props.match.params);
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps: Props) {
     const params = this.props.match.params;
     const nextParams = nextProps.match.params;
     if (
@@ -30,7 +44,7 @@ class PullRequestRoute extends React.Component {
     );
   }
 
-  _load({ owner, repo, number }) {
+  _load({ owner, repo, number }: { owner: string; repo: string; number: string; }) {
     this.props.dispatch(fetchCancel());
     this.props.dispatch(fetch({
       owner,
@@ -39,7 +53,7 @@ class PullRequestRoute extends React.Component {
     }));
   }
 
-  _onSelectFile = path => {
+  _onSelectFile = (path: string) => {
     this.props.history.push({
       ...this.props.location,
       search: path ? `?path=${encodeURIComponent(path)}` : '',

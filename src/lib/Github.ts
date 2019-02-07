@@ -50,6 +50,12 @@ export const pullRequestReviewCommentRestLikeFragment = `
   position
 `;
 
+export interface UserDTO {
+  id: number;
+  html_url: string;
+  login: string;
+}
+
 export interface PullRequestDTO {
   id: number;
   node_id: string;
@@ -58,8 +64,12 @@ export interface PullRequestDTO {
   html_url: string;
   title: string;
   body: string;
+  user: UserDTO;
+  state: 'open';
+  merged: boolean;
   base: {
     sha: string;
+    label: string;
     repo: {
       url: string;
       html_url: string;
@@ -68,6 +78,7 @@ export interface PullRequestDTO {
   };
   head: {
     sha: string;
+    label: string;
     repo: {
       url: string;
       html_url: string;
@@ -79,10 +90,7 @@ export interface PullRequestDTO {
 export interface PullRequestCommentDTO {
   id: number;
   node_id: string;
-  user: {
-    html_url: string;
-    login: string;
-  };
+  user: UserDTO;
   body: string;
   path: string;
   position: number;
@@ -197,7 +205,7 @@ export function getPullRequestFromGraphQL(owner: string, repo: string, number: n
     .map(resp => resp.repository.pullRequest);
 }
 
-export function getAuthenticatedUser(): Observable<any> {
+export function getAuthenticatedUser(): Observable<UserDTO> {
   return ajax({
     url: `${BASE_URL}/user`,
     method: 'get',
