@@ -1,9 +1,33 @@
-.CommentItem {
-  padding: 8px;
+.CommentThread {
   margin: 8px;
+  font-family: sans-serif;
   border: 1px solid #BFCCD6; /* TODO: Colors.GRAY5 */
   border-radius: 3px;
+}
+
+.CommentThreadHeader {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: #EBF1F5;
+  cursor: pointer;
+}
+
+.CommentThreadHeaderText {
+  margin-left: 4px;
+}
+
+.CommentThreadHeader:hover {
+  background-color: #F5F8FA;
+}
+
+.CommentItem {
+  padding: 8px;
+  border-top: 1px solid #BFCCD6; /* TODO: Colors.GRAY5 */
   font-family: sans-serif;
+}
+.CommentItem:first-child {
+  border-top: none;
 }
 
 .CommentItem .Actions {

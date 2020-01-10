@@ -6,7 +6,7 @@ import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
 import Styles from './Diff.module.css';
-import { PullRequestCommentDTO } from '../lib/Github';
+import { PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import { Icon } from '@blueprintjs/core';
 
 const CUSTOM_LANGUAGE_ALIASES: {[key: string]: string} = {
@@ -65,8 +65,7 @@ function detectFileLanguage(file: DiffFile) {
 interface HunkProps {
   hunk: DiffBlock;
   file: DiffFile;
-  commentsByPosition: {[key: number]: PullRequestCommentDTO[]};
-  pendingCommentsByPosition: {[key: number]: PullRequestCommentDTO[]};
+  reviewThreadsByPosition: {[key: number]: PullRequestReviewThreadDTO[]};
   language: string | null;
   canCreateComment: boolean;
   commentComposerPosition: number;
@@ -80,8 +79,7 @@ class Hunk extends React.Component<HunkProps> {
     const {
       hunk,
       file,
-      commentsByPosition,
-      pendingCommentsByPosition,
+      reviewThreadsByPosition,
       language,
       canCreateComment,
       commentComposerPosition,
@@ -119,24 +117,20 @@ class Hunk extends React.Component<HunkProps> {
           </td>
         </tr>
       );
-      const comments = commentsByPosition[line.position];
-      const pendingComments = pendingCommentsByPosition[line.position];
+      const threads = reviewThreadsByPosition[line.position];
       const showComposer = line.position === commentComposerPosition;
-      if (comments || pendingComments || showComposer) {
+      if (threads || showComposer) {
         lines.push(
           <tr key={'C' + line.position}>
             <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
               <div className={Styles.CommentContainer}>
-                {comments && <CommentThread
-                  comments={comments}
-                  isPending={false}
-                  deleteComment={deleteComment}
-                />}
-                {pendingComments && <CommentThread
-                  comments={pendingComments}
-                  isPending={true}
-                  deleteComment={deleteComment}
-                />}
+                {threads && threads.map(thread => (
+                  <CommentThread
+                    key={thread.id}
+                    thread={thread}
+                    deleteComment={deleteComment}
+                  />
+                ))}
                 {showComposer && <CommentComposer
                   file={file}
                   position={line.position}
@@ -154,22 +148,22 @@ class Hunk extends React.Component<HunkProps> {
   }
 }
 
-function collectCommentsByPosition(comments: PullRequestCommentDTO[]) {
-  const commentsByPosition: {[key: number]: PullRequestCommentDTO[]} = {};
-  comments.forEach(comment => {
-    if (comment.position) {
-      if (!commentsByPosition[comment.position])
-        commentsByPosition[comment.position] = [];
-      commentsByPosition[comment.position].push(comment);
+function collectReviewThreadsByPosition(reviewThreads: PullRequestReviewThreadDTO[]) {
+  const threadsByPosition: {[key: number]: PullRequestReviewThreadDTO[]} = {};
+  reviewThreads.forEach(thread => {
+    const firstComment = thread.comments && thread.comments.nodes[0];
+    if (firstComment && firstComment.position) {
+      if (!threadsByPosition[firstComment.position])
+        threadsByPosition[firstComment.position] = [];
+      threadsByPosition[firstComment.position].push(thread);
     }
   });
-  return commentsByPosition;
+  return threadsByPosition;
 }
 
 export interface DiffProps {
   file: DiffFile;
-  comments: PullRequestCommentDTO[];
-  pendingComments: PullRequestCommentDTO[];
+  reviewThreads: PullRequestReviewThreadDTO[];
   canCreateComment: boolean;
   deleteComment(comment: PullRequestCommentDTO): void;
 }
@@ -186,9 +180,8 @@ export default class Diff extends React.Component<DiffProps> {
   }
 
   render() {
-    const { file, comments, pendingComments, canCreateComment, deleteComment } = this.props;
-    const commentsByPosition = collectCommentsByPosition(comments);
-    const pendingCommentsByPosition = collectCommentsByPosition(pendingComments);
+    const { file, reviewThreads, canCreateComment, deleteComment } = this.props;
+    const threadsByPosition = collectReviewThreadsByPosition(reviewThreads);
 
     const colSpan = canCreateComment ? 4 : 3;
 
@@ -210,8 +203,7 @@ export default class Diff extends React.Component<DiffProps> {
           key={'L' + i}
           file={file}
           hunk={hunk}
-          commentsByPosition={commentsByPosition}
-          pendingCommentsByPosition={pendingCommentsByPosition}
+          reviewThreadsByPosition={threadsByPosition}
           language={language}
           canCreateComment={canCreateComment}
           commentComposerPosition={this.state.commentComposerPosition}

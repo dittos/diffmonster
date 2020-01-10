@@ -6,6 +6,7 @@ import {
   submitPullRequestReview,
   PullRequestReviewEventInput,
   PullRequestReviewDTO,
+  PullRequestCommentState,
 } from '../lib/Github';
 import { PullRequestLoadedState } from './getInitialState';
 
@@ -107,8 +108,13 @@ export default function reviewReducer(state: PullRequestLoadedState, action: Rev
         ...state,
         latestReview: action.payload,
         isAddingReview: false,
-        comments: state.comments.concat(state.pendingComments),
-        pendingComments: [],
+        reviewThreads: state.reviewThreads.map(thread => ({
+          ...thread,
+          comments: thread.comments && {
+            ...thread.comments,
+            nodes: thread.comments.nodes.map(c => c.state === 'PENDING' ? { ...c, state: 'SUBMITTED' as PullRequestCommentState } : c)
+          }
+        })),
       };
     
     default:

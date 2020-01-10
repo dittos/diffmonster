@@ -7,19 +7,17 @@ import {
   getPullRequestAsDiff,
   getPullRequestComments,
   getPullRequestFromGraphQL,
-  getPullRequestReviewComments,
-  PullRequestReviewState,
   pullRequestReviewFragment,
-  pullRequestReviewCommentRestLikeFragment,
   PullRequestReviewDTO,
   PullRequestDTO,
   GraphQLError,
+  getPullRequestReviewThreads,
 } from '../lib/Github';
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
-import getInitialState, { AppState } from './getInitialState';
-import { COMMENTS_FETCHED, PENDING_COMMENTS_FETCHED } from './CommentStore';
+import getInitialState, { AppState, generateClientId } from './getInitialState';
+import { REVIEW_THREADS_FETCHED, ReviewThreadsFetchedAction } from './CommentStore';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -76,15 +74,6 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
           pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
             nodes {
               ${pullRequestReviewFragment}
-              comments(last: 100) {
-                nodes {
-                  ${pullRequestReviewCommentRestLikeFragment}
-                }
-                pageInfo {
-                  hasPreviousPage
-                  startCursor
-                }
-              }
             }
           }
         `).pipe(catchError((error: GraphQLError[]) => {
@@ -117,19 +106,27 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
         },
       }));
 
-      let comments$ = getPullRequestComments(pullRequest)
-        .pipe(map(comments => ({ type: COMMENTS_FETCHED, payload: comments })));
-      if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
-        const pendingComments$ = latestReview.comments!.pageInfo.hasPreviousPage ?
-          getPullRequestReviewComments(pullRequest, latestReview.id, latestReview.comments!.pageInfo.startCursor)
-            .pipe(map(morePendingComments => morePendingComments.concat(latestReview!.comments!.nodes))) :
-          of(latestReview.comments!.nodes);
-        comments$ = comments$.pipe(merge(
-          pendingComments$.pipe(map(pendingComments => ({
-            type: PENDING_COMMENTS_FETCHED,
-            payload: pendingComments,
-          })))
-        ));
+      let comments$: Observable<ReviewThreadsFetchedAction>;
+      if (authenticated) {
+        comments$ = getPullRequestReviewThreads(pullRequest)
+          .pipe(map(reviewThreads => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: reviewThreads })));
+      } else {
+        // API v4 (GraphQL) does not support anonymous queries.
+        // API v3 (REST) does not support Review Threads.
+        // Make it viewable by wrapping each comment as individual review thread
+        comments$ = getPullRequestComments(pullRequest)
+          .pipe(map(comments => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: comments.map(comment => ({
+            id: generateClientId(),
+            isResolved: false,
+            resolvedBy: null,
+            comments: {
+              nodes: [comment],
+              pageInfo: {
+                hasPreviousPage: false,
+                startCursor: '',
+              }
+            },
+          }))})));
       }
 
       const reviewStates$ = authenticated ?

@@ -10,12 +10,12 @@ import {
   editPullRequestReviewComment,
   editPullRequestReviewCommentViaGraphQL,
   PullRequestCommentDTO,
+  PullRequestReviewThreadDTO,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
-import { PullRequestLoadedState } from './getInitialState';
+import { PullRequestLoadedState, generateClientId } from './getInitialState';
 
-export const COMMENTS_FETCHED = 'COMMENTS_FETCHED';
-export const PENDING_COMMENTS_FETCHED = 'PENDING_COMMENTS_FETCHED';
+export const REVIEW_THREADS_FETCHED = 'REVIEW_THREADS_FETCHED';
 
 const ADD_SINGLE_COMMENT = 'ADD_SINGLE_COMMENT';
 const ADD_SINGLE_COMMENT_SUCCESS = 'ADD_SINGLE_COMMENT_SUCCESS';
@@ -29,6 +29,11 @@ const DELETE_COMMENT_ERROR = 'DELETE_COMMENT_ERROR';
 const EDIT_COMMENT = 'EDIT_COMMENT';
 const EDIT_COMMENT_SUCCESS = 'EDIT_COMMENT_SUCCESS';
 const EDIT_COMMENT_ERROR = 'EDIT_COMMENT_ERROR';
+
+export type ReviewThreadsFetchedAction = {
+  type: 'REVIEW_THREADS_FETCHED';
+  payload: PullRequestReviewThreadDTO[];
+};
 
 export interface AddCommentActionPayload {
   body: string;
@@ -62,8 +67,7 @@ type EditCommentAction = {
 };
 
 export type CommentAction =
-  { type: 'COMMENTS_FETCHED'; payload: PullRequestCommentDTO[]; } |
-  { type: 'PENDING_COMMENTS_FETCHED'; payload: PullRequestCommentDTO[]; } |
+  ReviewThreadsFetchedAction |
   AddSingleCommentAction |
   { type: 'ADD_SINGLE_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
   { type: 'ADD_SINGLE_COMMENT_ERROR'; } |
@@ -208,22 +212,30 @@ export const commentEpic = combineEpics(
 
 export default function commentsReducer(state: PullRequestLoadedState, action: CommentAction): PullRequestLoadedState {
   switch (action.type) {
-    case COMMENTS_FETCHED:
+    case REVIEW_THREADS_FETCHED:
       return {
         ...state,
-        comments: action.payload,
-      };
-
-    case PENDING_COMMENTS_FETCHED:
-      return {
-        ...state,
-        pendingComments: action.payload,
+        reviewThreads: action.payload,
       };
       
     case ADD_SINGLE_COMMENT_SUCCESS:
       return {
         ...state,
-        comments: state.comments.concat(action.payload),
+        reviewThreads: state.reviewThreads.concat({
+          // There's no way to know thread ID of comment easily.
+          // Anyway, currently comments always create the new thread.
+          // Should revisit when implementing comment reply.
+          id: generateClientId(),
+          isResolved: false,
+          resolvedBy: null,
+          comments: {
+            nodes: [action.payload],
+            pageInfo: {
+              hasPreviousPage: false,
+              startCursor: '',
+            }
+          }
+        }),
       };
     
     case ADD_REVIEW_COMMENT:
@@ -235,7 +247,21 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
     case ADD_REVIEW_COMMENT_SUCCESS:
       return {
         ...state,
-        pendingComments: state.pendingComments.concat(action.payload),
+        reviewThreads: state.reviewThreads.concat({
+          // There's no way to know thread ID of comment easily.
+          // Anyway, currently comments always create the new thread.
+          // Should revisit when implementing comment reply.
+          id: generateClientId(),
+          isResolved: false,
+          resolvedBy: null,
+          comments: {
+            nodes: [action.payload],
+            pageInfo: {
+              hasPreviousPage: false,
+              startCursor: '',
+            }
+          }
+        }),
         isAddingReview: false,
       };
     
@@ -246,21 +272,33 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
       };
     
     case DELETE_COMMENT_SUCCESS: {
-      const pendingComments = state.pendingComments.filter(c => c.id !== action.payload);
+      const reviewThreads = state.reviewThreads.map(thread => ({
+        ...thread,
+        comments: thread.comments && {
+          ...thread.comments,
+          nodes: thread.comments.nodes.filter(c => c.id !== action.payload)
+        }
+      }));
+      const hasPendingComments = reviewThreads.some(thread =>
+        !!thread.comments && thread.comments.nodes.some(c => c.state === 'PENDING'));
       return {
         ...state,
-        comments: state.comments.filter(c => c.id !== action.payload),
-        pendingComments,
+        reviewThreads,
         // FIXME: should go into ReviewStore?
-        latestReview: pendingComments.length === 0 ? null : state.latestReview,
+        latestReview: hasPendingComments ? state.latestReview : null,
       };
     }
     
     case EDIT_COMMENT_SUCCESS:
       return {
         ...state,
-        comments: state.comments.map(c => c.id === action.payload.id ? action.payload : c),
-        pendingComments: state.pendingComments.map(c => c.id === action.payload.id ? action.payload : c),
+        reviewThreads: state.reviewThreads.map(thread => ({
+          ...thread,
+          comments: thread.comments && {
+            ...thread.comments,
+            nodes: thread.comments.nodes.map(c => c.id === action.payload.id ? action.payload : c)
+          }
+        })),
       };
 
     default:

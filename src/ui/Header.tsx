@@ -2,7 +2,7 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Classes, Tag, Intent, Icon } from '@blueprintjs/core';
-import { PullRequestReviewState } from '../lib/Github';
+import { PullRequestReviewState, PullRequestReviewThreadDTO } from '../lib/Github';
 import { submitReview, addReview } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
 import { PullRequestLoadedState } from '../stores/getInitialState';
@@ -10,15 +10,28 @@ import { AppAction } from '../stores';
 
 const separator = <span className={Styles.Separator} />;
 
+function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
+  let count = 0;
+  for (let thread of reviewThreads) {
+    if (!thread.comments)
+      continue;
+    for (let comment of thread.comments.nodes) {
+      if (comment.state === 'PENDING')
+        count++;
+    }
+  }
+  return count;
+}
+
 class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAction>> {
   render() {
-    const { pullRequest, latestReview, pendingComments, currentUser } = this.props;
+    const { pullRequest, latestReview, reviewThreads, currentUser } = this.props;
     const latestReviewState = latestReview && latestReview.state;
     const canApprove = currentUser &&
       pullRequest.user.id !== currentUser.id &&
       latestReviewState !== PullRequestReviewState.PENDING &&
       latestReviewState !== PullRequestReviewState.APPROVED;
-    const pendingCommentCount = pendingComments.length;
+    const pendingCommentCount = countPendingComments(reviewThreads);
 
     return <div className={Styles.Container}>
       <div className={Styles.Links}>

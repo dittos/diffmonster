@@ -1,12 +1,12 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Intent, Tag, Button, Classes } from '@blueprintjs/core';
+import { Intent, Tag, Button, Classes, Callout, Icon } from '@blueprintjs/core';
 import marked from 'marked';
 import { Subject, Subscription } from 'rxjs';
 import { getUserInfo } from '../lib/GithubAuth';
 import { editComment } from '../stores/CommentStore';
 import Styles from './CommentThread.module.css';
-import { PullRequestCommentDTO, UserDTO } from '../lib/Github';
+import { PullRequestCommentDTO, UserDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import { AppAction } from '../stores';
 
 function renderMarkdown(body: string): string {
@@ -134,25 +134,54 @@ class Comment extends React.Component<CommentProps> {
   };
 }
 
-function CommentThread({ comments, isPending, deleteComment }: {
-  comments: PullRequestCommentDTO[];
-  isPending: boolean;
+interface CommentThreadProps {
+  thread: PullRequestReviewThreadDTO;
   deleteComment(comment: PullRequestCommentDTO): void;
-}) {
-  const viewer = getUserInfo();
-  return (
-    <div>
-      {comments.map(comment => (
-        <Comment
-          key={comment.id}
-          comment={comment}
-          deleteComment={deleteComment}
-          isPending={isPending}
-          viewer={viewer}
-        />
-      ))}
-    </div>
-  );
+}
+
+class CommentThread extends React.Component<CommentThreadProps> {
+  state = {
+    hidden: this.props.thread.isResolved,
+  };
+
+  componentWillReceiveProps(nextProps: CommentThreadProps) {
+    if (this.props.thread.id !== nextProps.thread.id) {
+      this.setState({
+        hidden: nextProps.thread.isResolved,
+      });
+    }
+  }
+
+  render() {
+    const { thread, deleteComment } = this.props;
+    const viewer = getUserInfo();
+    const comments = thread.comments && thread.comments.nodes;
+    return (
+      <div className={Styles.CommentThread}>
+        {thread.isResolved &&
+          <div className={Styles.CommentThreadHeader} onClick={this._toggle}>
+            <Icon icon={this.state.hidden ? 'expand-all' : 'collapse-all'} />
+            <div className={Styles.CommentThreadHeaderText}>
+              This conversation was marked as resolved by{' '}
+              <a className={Styles.CommentUser} href={thread.resolvedBy!.url} target="_blank" rel="noopener noreferrer">{thread.resolvedBy!.login}</a>
+            </div>
+          </div>}
+        {!this.state.hidden && comments && comments.map(comment => (
+          <Comment
+            key={comment.id}
+            comment={comment}
+            deleteComment={deleteComment}
+            isPending={comment.state === 'PENDING'}
+            viewer={viewer}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  private _toggle = () => {
+    this.setState({ hidden: !this.state.hidden });
+  };
 }
 
 export default CommentThread;

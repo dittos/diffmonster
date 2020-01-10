@@ -44,6 +44,7 @@ export const pullRequestReviewCommentRestLikeFragment = `
   body
   path
   position
+  state
 `;
 
 export interface UserDTO {
@@ -83,6 +84,8 @@ export interface PullRequestDTO {
   };
 }
 
+export type PullRequestCommentState = 'PENDING' | 'SUBMITTED';
+
 export interface PullRequestCommentDTO {
   id: number;
   node_id: string;
@@ -90,6 +93,7 @@ export interface PullRequestCommentDTO {
   body: string;
   path: string;
   position: number;
+  state?: PullRequestCommentState;
 }
 
 export interface PullRequestReviewCommentsConnection {
@@ -103,6 +107,16 @@ export interface PullRequestReviewCommentsConnection {
 export interface PullRequestReviewDTO {
   id: string;
   state: PullRequestReviewStateType;
+  comments?: PullRequestReviewCommentsConnection;
+}
+
+export interface PullRequestReviewThreadDTO {
+  id: string;
+  isResolved: boolean;
+  resolvedBy: {
+    url: string;
+    login: string;
+  } | null;
   comments?: PullRequestReviewCommentsConnection;
 }
 
@@ -234,6 +248,47 @@ export function getPullRequestReviewComments(pullRequest: PullRequestDTO, review
           .pipe(map(result => result.concat(comments.nodes)));
       }
       return of(comments.nodes);
+    }));
+}
+
+export function getPullRequestReviewThreads(pullRequest: PullRequestDTO, startCursor: string | null = null): Observable<PullRequestReviewThreadDTO[]> {
+  return graphql(`
+    query($pullRequestId: ID!, $startCursor: String) {
+      node(id: $pullRequestId) {
+        ... on PullRequest {
+          reviewThreads(last: 100, before: $startCursor) {
+            nodes {
+              id
+              isResolved
+              resolvedBy {
+                url
+                login
+              }
+              comments(first: 100) {
+                nodes {
+                  ${pullRequestReviewCommentRestLikeFragment}
+                }
+                pageInfo {
+                  hasNextPage
+                }
+              }
+            }
+            pageInfo {
+              hasPreviousPage
+              startCursor
+            }
+          }
+        }
+      }
+    }
+  `, { pullRequestId: pullRequest.node_id, startCursor })
+    .pipe(exhaustMap(resp => {
+      const reviewThreads = resp.node.reviewThreads;
+      if (reviewThreads.pageInfo.hasPreviousPage) {
+        return getPullRequestReviewThreads(pullRequest, reviewThreads.pageInfo.startCursor)
+          .pipe(map(result => result.concat(reviewThreads.nodes)));
+      }
+      return of(reviewThreads.nodes);
     }));
 }
 

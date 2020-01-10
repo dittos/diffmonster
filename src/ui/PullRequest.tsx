@@ -12,19 +12,29 @@ import { setReviewState } from '../lib/Database';
 import * as Settings from '../lib/Settings';
 import { deleteComment } from '../stores/CommentStore';
 import Styles from './PullRequest.module.css';
-import { PullRequestCommentDTO, PullRequestDTO } from '../lib/Github';
+import { PullRequestCommentDTO, PullRequestDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import { AppState } from '../stores/getInitialState';
 import { AppAction } from '../stores';
 import { DiffFile } from '../lib/DiffParser';
 
-function collectCommentCountByPath(comments: PullRequestCommentDTO[], commentCountByPath: {[key: string]: number}) {
-  for (let comment of comments) {
-    if (!comment.position)
+function collectCommentCountByPath(reviewThreads: PullRequestReviewThreadDTO[]) {
+  const commentCountByPath: {[key: string]: number} = {};
+  for (let thread of reviewThreads) {
+    // FIXME: is this right UX-wise?
+    if (thread.isResolved)
       continue;
-    if (!commentCountByPath[comment.path])
-      commentCountByPath[comment.path] = 0;
-    commentCountByPath[comment.path]++;
+
+    if (!thread.comments)
+      continue;
+    for (let comment of thread.comments.nodes) {
+      if (!comment.position)
+        continue;
+      if (!commentCountByPath[comment.path])
+        commentCountByPath[comment.path] = 0;
+      commentCountByPath[comment.path]++;
+    }
   }
+  return commentCountByPath;
 }
 
 interface OwnProps {
@@ -77,17 +87,13 @@ class PullRequest extends Component<Props> {
   _renderFileTree() {
     const {
       files,
-      comments,
-      pendingComments,
       isLoadingReviewStates,
       reviewStates,
+      reviewThreads,
       activePath,
       onSelectFile,
     } = this.props;
-    
-    const commentCountByPath: {[key: string]: number} = {};
-    collectCommentCountByPath(comments, commentCountByPath);
-    collectCommentCountByPath(pendingComments, commentCountByPath);
+    const commentCountByPath = collectCommentCountByPath(reviewThreads);
 
     const header = (
       <div className={Styles.PanelHeader} key="header">
@@ -126,8 +132,7 @@ class PullRequest extends Component<Props> {
       pullRequest,
       pullRequestBodyRendered,
       files,
-      comments,
-      pendingComments,
+      reviewThreads,
       activePath,
       reviewStates,
     } = this.props;
@@ -158,8 +163,7 @@ class PullRequest extends Component<Props> {
           activeFile.blocks && activeFile.blocks.length > 0 ?
             <Diff
               file={activeFile}
-              comments={comments.filter(c => c.path === activePath)}
-              pendingComments={pendingComments.filter(c => c.path === activePath)}
+              reviewThreads={reviewThreads.filter(it => it.comments && it.comments.nodes[0] && it.comments.nodes[0].path === activePath)}
               canCreateComment={isAuthenticated()}
               deleteComment={this._deleteComment}
             /> :

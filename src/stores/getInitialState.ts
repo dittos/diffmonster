@@ -1,5 +1,5 @@
 import { getUserInfo } from '../lib/GithubAuth';
-import { PullRequestCommentDTO, PullRequestReviewDTO, PullRequestDTO, UserDTO } from '../lib/Github';
+import { PullRequestReviewDTO, PullRequestDTO, UserDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import { DiffFile } from '../lib/DiffParser';
 
 export type AppStatus = 'loading' | 'notFound' | 'success';
@@ -10,8 +10,7 @@ export interface AppState {
   pullRequest: PullRequestDTO | null;
   pullRequestBodyRendered: string | undefined;
   files: DiffFile[] | null;
-  comments: PullRequestCommentDTO[];
-  pendingComments: PullRequestCommentDTO[];
+  reviewThreads: PullRequestReviewThreadDTO[];
   isLoadingReviewStates: boolean;
   reviewStates: {[fileId: string]: boolean} | null;
   latestReview: PullRequestReviewDTO | null;
@@ -29,11 +28,16 @@ export default function getInitialState(): AppState {
     pullRequest: null,
     pullRequestBodyRendered: undefined,
     files: null,
-    comments: [],
-    pendingComments: [],
+    reviewThreads: [],
     isLoadingReviewStates: false,
     reviewStates: null,
     latestReview: null,
     isAddingReview: false,
   };
+}
+
+let _nextClientId = 1;
+
+export function generateClientId(): string {
+  return `client:${_nextClientId++}`;
 }
