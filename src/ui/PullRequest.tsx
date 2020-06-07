@@ -44,17 +44,30 @@ interface OwnProps {
 
 type Props = AppState & DispatchProp<AppAction> & OwnProps;
 
+interface Snapshot {
+  scrollTop: number;
+}
+
 class PullRequest extends Component<Props> {
   private _scrollEl: Element | null = null;
+  private _scrollPositions = new Map<string, number>();
 
   state = {
     fileTreeWidth: Settings.getFileTreeWidth(),
   };
 
-  componentDidUpdate(prevProps: Props) {
+  getSnapshotBeforeUpdate(): Snapshot {
+    return {
+      scrollTop: this._scrollEl ? this._scrollEl.scrollTop : 0
+    };
+  }
+
+  componentDidUpdate(prevProps: Props, prevState: any, snapshot: Snapshot) {
     if (prevProps.activePath !== this.props.activePath) {
+      this._scrollPositions.set(prevProps.activePath || '', snapshot.scrollTop);
+
       if (this._scrollEl)
-        this._scrollEl.scrollTop = 0;
+        this._scrollEl.scrollTop = this._scrollPositions.get(this.props.activePath || '') || 0;
     }
   }
 
