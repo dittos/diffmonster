@@ -33,6 +33,9 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
       latestReviewState !== PullRequestReviewState.APPROVED;
     const pendingCommentCount = countPendingComments(reviewThreads);
 
+    const [baseRepo, baseRef] = pullRequest.base.label.split(':', 2);
+    const [headRepo, headRef] = pullRequest.head.label.split(':', 2);
+
     return <div className={Styles.Container}>
       <div className={Styles.Links}>
         {latestReviewState === PullRequestReviewState.PENDING && (
@@ -86,9 +89,9 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
         {separator}
         by <a href={pullRequest.user.html_url} target="_blank" rel="noopener noreferrer">{pullRequest.user.login}</a>
         {separator}
-        <span className={Styles.Branch}>{pullRequest.head.label}</span>
+        <span className={Styles.Branch}>{baseRepo === headRepo ? headRef : pullRequest.head.label}</span>
         <span className={Styles.MergeInto}>&rarr;</span>
-        <span className={Styles.Branch}>{pullRequest.base.label}</span>
+        <span className={Styles.Branch}>{baseRepo === headRepo ? baseRef : pullRequest.base.label}</span>
       </div>
     </div>;
   }
