@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@blueprintjs/core": "^3",
+    "@blueprintjs/core": "^3.28.2",
     "@types/classnames": "^2.2.7",
     "@types/diff2html": "^0.0.4",
     "@types/fuzzaldrin-plus": "^0.6.0",
