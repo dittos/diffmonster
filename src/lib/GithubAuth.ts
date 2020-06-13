@@ -43,8 +43,8 @@ export async function initialize() {
   let accessToken;
   if (result.user) {
     // Redirected
-    localStorage.setItem(tokenLocalStorageKey(result.user.uid), result.credential.accessToken);
-    accessToken = result.credential.accessToken;
+    accessToken = (result.credential as firebase.auth.OAuthCredential).accessToken!;
+    localStorage.setItem(tokenLocalStorageKey(result.user.uid), accessToken);
   } else {
     const user = await firebaseAuthStateChanges().pipe(first()).toPromise();
     if (user) {
