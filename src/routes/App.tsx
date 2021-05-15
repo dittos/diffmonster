@@ -9,6 +9,8 @@ import { configureStore } from '../stores';
 import Loading from '../ui/Loading';
 import Nav from '../ui/Nav';
 import Styles from './App.module.css';
+import { ApolloProvider } from '@apollo/client';
+import { apollo } from '../lib/Github';
 
 class App extends Component {
   store = configureStore();
@@ -34,11 +36,13 @@ class App extends Component {
     } else {
       return (
         <Provider store={this.store}>
-          <div className={Styles.Viewport}>
-            <Nav />
-            <Route path="/:owner/:repo/pull/:number" component={PullRequestRoute} />
-            <Route exact path="/" component={IndexRoute} />
-          </div>
+          <ApolloProvider client={apollo}>
+            <div className={Styles.Viewport}>
+              <Nav />
+              <Route path="/:owner/:repo/pull/:number" component={PullRequestRoute} />
+              <Route exact path="/" component={IndexRoute} />
+            </div>
+          </ApolloProvider>
         </Provider>
       );
     }

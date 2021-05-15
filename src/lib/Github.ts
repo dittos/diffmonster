@@ -3,6 +3,8 @@ import LinkHeader from 'http-link-header';
 import { getAccessToken } from './GithubAuth';
 import { ajax as ajaxObservable, AjaxRequest, AjaxResponse } from 'rxjs/ajax';
 import { exhaustMap, map } from 'rxjs/operators';
+import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { setContext } from "@apollo/client/link/context";
 
 const BASE_URL = 'https://api.github.com';
 
@@ -119,6 +121,24 @@ export interface PullRequestReviewThreadDTO {
   } | null;
   comments?: PullRequestReviewCommentsConnection;
 }
+
+const authLink = setContext(() => {
+  const token = getAccessToken();
+  if (token)
+    return {
+      headers: {
+        authorization: `bearer ${token}`
+      }
+    };
+  return {};
+});
+
+export const apollo = new ApolloClient({
+  cache: new InMemoryCache(),
+  link: authLink.concat(new HttpLink({
+    uri: `${BASE_URL}/graphql`,
+  })),
+});
 
 function ajax(request: AjaxRequest): Observable<AjaxResponse> {
   if (!request.responseType)
