@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Intent, Tag, Button, Classes, Callout, Icon } from '@blueprintjs/core';
+import { Intent, Tag, Button, Classes, Icon } from '@blueprintjs/core';
 import marked from 'marked';
 import { Subject, Subscription } from 'rxjs';
 import { getUserInfo } from '../lib/GithubAuth';
