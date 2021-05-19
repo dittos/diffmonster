@@ -67,6 +67,11 @@ const pullRequestQuery = gql`
         viewerLatestReview {
           ...PullRequestReviewFragment
         }
+        pendingReviews: reviews(last: 1, states: [PENDING]) {
+          nodes {
+            ...PullRequestReviewFragment
+          }
+        }
       }
     }
   }
@@ -94,8 +99,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
     switchMap(([ diff, result ]) => {
       const pullRequest = result.data?.repository?.pullRequest!;
       const authenticated = isAuthenticated();
-      // FIXME: Pending review is always on the first of reviews connection
-      const latestReview = pullRequest.viewerLatestReview;
+      const latestReview = pullRequest.pendingReviews?.nodes?.[0] ?? pullRequest.viewerLatestReview;
       const success$ = of<PullRequestAction>({
         type: FETCH_SUCCESS,
         payload: {

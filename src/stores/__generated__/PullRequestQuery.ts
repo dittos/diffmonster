@@ -26,6 +26,31 @@ export interface PullRequestQuery_repository_pullRequest_viewerLatestReview {
   createdAt: any;
 }
 
+export interface PullRequestQuery_repository_pullRequest_pendingReviews_nodes {
+  __typename: "PullRequestReview";
+  id: string;
+  /**
+   * Identifies the current state of the pull request review.
+   */
+  state: PullRequestReviewState;
+  /**
+   * Did the viewer author this comment.
+   */
+  viewerDidAuthor: boolean;
+  /**
+   * Identifies the date and time when the object was created.
+   */
+  createdAt: any;
+}
+
+export interface PullRequestQuery_repository_pullRequest_pendingReviews {
+  __typename: "PullRequestReviewConnection";
+  /**
+   * A list of nodes.
+   */
+  nodes: (PullRequestQuery_repository_pullRequest_pendingReviews_nodes | null)[] | null;
+}
+
 export interface PullRequestQuery_repository_pullRequest {
   __typename: "PullRequest";
   /**
@@ -49,6 +74,10 @@ export interface PullRequestQuery_repository_pullRequest {
    * The latest review given from the viewer.
    */
   viewerLatestReview: PullRequestQuery_repository_pullRequest_viewerLatestReview | null;
+  /**
+   * A list of reviews associated with the pull request.
+   */
+  pendingReviews: PullRequestQuery_repository_pullRequest_pendingReviews | null;
 }
 
 export interface PullRequestQuery_repository {
