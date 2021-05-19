@@ -24,10 +24,10 @@ function collectCommentCountByPath(reviewThreads: PullRequestReviewThreadDTO[]) 
     if (thread.isResolved)
       continue;
 
-    if (!thread.comments)
+    if (!thread.comments?.nodes)
       continue;
     for (let comment of thread.comments.nodes) {
-      if (!comment.position)
+      if (!comment?.position)
         continue;
       if (!commentCountByPath[comment.path])
         commentCountByPath[comment.path] = 0;
@@ -176,7 +176,7 @@ class PullRequest extends Component<Props> {
           activeFile.blocks && activeFile.blocks.length > 0 ?
             <Diff
               file={activeFile}
-              reviewThreads={reviewThreads.filter(it => it.comments && it.comments.nodes[0] && it.comments.nodes[0].path === activePath)}
+              reviewThreads={reviewThreads.filter(it => it.comments?.nodes?.[0]?.path === activePath)}
               canCreateComment={isAuthenticated()}
               deleteComment={this._deleteComment}
             /> :

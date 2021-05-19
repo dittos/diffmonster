@@ -13,10 +13,10 @@ const separator = <span className={Styles.Separator} />;
 function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
   let count = 0;
   for (let thread of reviewThreads) {
-    if (!thread.comments)
+    if (!thread.comments?.nodes)
       continue;
     for (let comment of thread.comments.nodes) {
-      if (comment.state === 'PENDING')
+      if (comment?.state === 'PENDING')
         count++;
     }
   }

@@ -101,9 +101,9 @@ class Comment extends React.Component<CommentProps> {
       return (
         <div className={Styles.CommentItem}>
           <div className={Styles.CommentMeta}>
-            <a className={Styles.CommentUser} href={comment.user.html_url} target="_blank" rel="noopener noreferrer">{comment.user.login}</a>
+            <a className={Styles.CommentUser} href={comment.user?.html_url ?? '#'} target="_blank" rel="noopener noreferrer">{comment.user?.login}</a>
             {isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
-            {viewer && viewer.login === comment.user.login && (
+            {viewer && viewer.login === comment.user?.login && (
               <div className={Styles.Actions}>
                 <Button
                   icon="edit"

@@ -164,9 +164,9 @@ export function graphql(query: string, variables: {[key: string]: any}): Observa
   const request = {
     url: `${BASE_URL}/graphql`,
     method: 'post',
-    headers: <any>{
+    headers: {
       'Content-Type': 'application/json',
-    },
+    } as any,
     responseType: 'json',
     body: JSON.stringify({ query, variables }),
   };

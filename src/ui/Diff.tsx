@@ -151,7 +151,7 @@ class Hunk extends React.Component<HunkProps> {
 function collectReviewThreadsByPosition(reviewThreads: PullRequestReviewThreadDTO[]) {
   const threadsByPosition: {[key: number]: PullRequestReviewThreadDTO[]} = {};
   reviewThreads.forEach(thread => {
-    const firstComment = thread.comments && thread.comments.nodes[0];
+    const firstComment = thread.comments?.nodes?.[0];
     if (firstComment && firstComment.position) {
       if (!threadsByPosition[firstComment.position])
         threadsByPosition[firstComment.position] = [];

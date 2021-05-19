@@ -85,7 +85,7 @@ export class TreeNode<T = {}> extends React.Component<ITreeNodeProps<T>, {}> {
     }
 
     public render() {
-        const { children, className, icon, isExpanded, isSelected, label } = this.props;
+        const { className, icon, isExpanded, isSelected, label } = this.props;
         const classes = classNames(
             Classes.TREE_NODE,
             {

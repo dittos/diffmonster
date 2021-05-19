@@ -78,6 +78,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
           }
         `).pipe(catchError((error: GraphQLError[]) => {
           if (error.some(e => e.type === 'NOT_FOUND')) {
+            // eslint-disable-next-line no-throw-literal
             throw { status: 404 }; // XXX
           }
           throw error;
