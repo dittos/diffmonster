@@ -1,15 +1,12 @@
 import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
 import { from, of } from 'rxjs';
 import { mergeMap, catchError, map } from 'rxjs/operators';
-import {
-  PullRequestReviewDTO,
-  apollo,
-} from '../lib/Github';
-import { approveMutation, submitReviewMutation } from '../lib/GithubMutations';
-import { Approve, ApproveVariables } from '../lib/__generated__/Approve';
-import { SubmitReview, SubmitReviewVariables } from '../lib/__generated__/SubmitReview';
+import { apollo } from '../lib/Github';
+import { approveMutation, submitReviewMutation } from './GithubMutations';
+import { Approve, ApproveVariables } from './__generated__/Approve';
+import { SubmitReview, SubmitReviewVariables } from './__generated__/SubmitReview';
 import { PullRequestReviewCommentState, PullRequestReviewEvent } from '../__generated__/globalTypes';
-import { PullRequestLoadedState } from './getInitialState';
+import { PullRequestReviewDTO, PullRequestLoadedState } from './types';
 
 export const ADD_REVIEW_SUCCESS = 'REVIEW_ADDED';
 const APPROVE = 'APPROVE';

@@ -2,7 +2,6 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Button, Intent } from '@blueprintjs/core';
 import { Subject, Subscription } from 'rxjs';
-import { PullRequestReviewDTO, PullRequestDTO, PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import {
   addSingleComment,
   addReviewComment,
@@ -12,8 +11,14 @@ import {
 } from '../stores/CommentStore';
 import config from '../config';
 import Styles from './CommentComposer.module.css';
-import { PullRequestLoadedState } from '../stores/getInitialState';
-import { AppAction } from '../stores';
+import {
+  PullRequestReviewDTO,
+  PullRequestDTO,
+  PullRequestCommentDTO,
+  PullRequestReviewThreadDTO,
+  PullRequestLoadedState,
+  AppAction,
+} from '../stores';
 import { DiffFile } from '../lib/DiffParser';
 import { PullRequestReviewState } from '../__generated__/globalTypes';
 

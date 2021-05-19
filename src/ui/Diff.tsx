@@ -6,7 +6,7 @@ import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
 import Styles from './Diff.module.css';
-import { PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
+import { PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../stores';
 import { Icon } from '@blueprintjs/core';
 import { CommentPosition } from '../stores/CommentStore';
 

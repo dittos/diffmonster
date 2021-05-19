@@ -1,19 +1,19 @@
 import { of, zip, concat, merge, EMPTY } from 'rxjs';
 import { switchMap, catchError, takeUntil, map } from 'rxjs/operators';
 import { ActionsObservable } from 'redux-observable';
-import {
-  getPullRequestAsDiff,
-  PullRequestReviewDTO,
-  apollo,
-  PullRequestDTO,
-} from '../lib/Github';
+import { apollo, getPullRequestAsDiff } from '../lib/Github';
 import { isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
-import getInitialState, { AppState } from './getInitialState';
+import getInitialState from './getInitialState';
+import {
+  AppState,
+  PullRequestReviewDTO,
+  PullRequestDTO,
+} from './types';
 import { fetchReviewThreads } from './CommentStore';
 import gql from 'graphql-tag';
-import { pullRequestReviewFragment } from '../lib/GithubFragments';
+import { pullRequestReviewFragment } from './GithubFragments';
 import { PullRequestQuery, PullRequestQueryVariables } from './__generated__/PullRequestQuery';
 import { ApolloError } from '@apollo/client';
 

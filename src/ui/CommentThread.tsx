@@ -5,8 +5,8 @@ import { Subject, Subscription } from 'rxjs';
 import { getUserInfo } from '../lib/GithubAuth';
 import { CommentPosition, editComment } from '../stores/CommentStore';
 import Styles from './CommentThread.module.css';
-import { PullRequestCommentDTO, UserDTO, PullRequestReviewThreadDTO } from '../lib/Github';
-import { AppAction } from '../stores';
+import { UserDTO } from '../lib/Github';
+import { AppAction, PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../stores';
 import CommentComposer from './CommentComposer';
 import { DiffFile } from '../lib/DiffParser';
 

@@ -26,6 +26,7 @@ Object {
       "name": "b/c",
     },
   },
+  "name": "",
 }
 `;
 
@@ -63,6 +64,7 @@ Object {
       "name": "b/c",
     },
   },
+  "name": "",
 }
 `;
 
@@ -95,5 +97,6 @@ Object {
       "name": "b",
     },
   },
+  "name": "",
 }
 `;

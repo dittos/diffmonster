@@ -2,12 +2,10 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Classes, Tag, Intent, Icon } from '@blueprintjs/core';
-import { PullRequestReviewState, PullRequestReviewThreadDTO } from '../lib/Github';
 import { submitReview, approve } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
-import { PullRequestLoadedState } from '../stores/getInitialState';
-import { AppAction } from '../stores';
-import { PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestState } from '../__generated__/globalTypes';
+import { AppAction, PullRequestLoadedState, PullRequestReviewThreadDTO } from '../stores';
+import { PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestReviewState, PullRequestState } from '../__generated__/globalTypes';
 import gql from 'graphql-tag';
 import { HeaderPullRequestFragment } from './__generated__/HeaderPullRequestFragment';
 

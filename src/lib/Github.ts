@@ -4,10 +4,6 @@ import { ajax as ajaxObservable, AjaxRequest, AjaxResponse } from 'rxjs/ajax';
 import { map } from 'rxjs/operators';
 import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { setContext } from "@apollo/client/link/context";
-import { PullRequestQuery_repository_pullRequest } from '../stores/__generated__/PullRequestQuery';
-import { PullRequestReviewThreadFragment } from './__generated__/PullRequestReviewThreadFragment';
-import { PullRequestReviewCommentRestLikeFragment } from './__generated__/PullRequestReviewCommentRestLikeFragment';
-import { PullRequestReviewFragment } from './__generated__/PullRequestReviewFragment';
 
 const BASE_URL = 'https://api.github.com';
 
@@ -16,21 +12,11 @@ const BASE_URL = 'https://api.github.com';
 // Mangled a bit to avoid token scanning.
 const PUBLIC_TOKEN = 'mp8ke1wLfOlimDLlkOEqaLTf69eIVe1YOo3j_phg'.split('').reverse().join('');
 
-export { PullRequestReviewState } from '../__generated__/globalTypes';
-
 export interface UserDTO {
   id?: number | null;
   html_url: string;
   login: string;
 }
-
-export type PullRequestDTO = PullRequestQuery_repository_pullRequest;
-
-export type PullRequestCommentDTO = PullRequestReviewCommentRestLikeFragment;
-
-export type PullRequestReviewDTO = PullRequestReviewFragment;
-
-export type PullRequestReviewThreadDTO = PullRequestReviewThreadFragment;
 
 const authLink = setContext(() => {
   const token = getAccessToken() ?? PUBLIC_TOKEN;

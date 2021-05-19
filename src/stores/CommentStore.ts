@@ -1,23 +1,23 @@
 import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
 import { Subject, of, from, Observable } from 'rxjs';
 import { mergeMap, tap, catchError, map, filter, exhaustMap } from 'rxjs/operators';
+import { apollo } from '../lib/Github';
+import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 import {
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
-  apollo,
   PullRequestReviewDTO,
   PullRequestDTO,
-} from '../lib/Github';
-import { ADD_REVIEW_SUCCESS } from './ReviewStore';
-import { PullRequestLoadedState } from './getInitialState';
-import { addCommentMutation, addReplyCommentMutation, deleteCommentMutation, editCommentMutation } from '../lib/GithubMutations';
-import { AddComment, AddCommentVariables } from '../lib/__generated__/AddComment';
+  PullRequestLoadedState
+} from './types';
+import { addCommentMutation, addReplyCommentMutation, deleteCommentMutation, editCommentMutation } from './GithubMutations';
+import { AddComment, AddCommentVariables } from './__generated__/AddComment';
 import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestReviewState } from '../__generated__/globalTypes';
-import { AddReplyComment, AddReplyCommentVariables } from '../lib/__generated__/AddReplyComment';
-import { EditComment, EditCommentVariables } from '../lib/__generated__/EditComment';
-import { DeleteComment, DeleteCommentVariables } from '../lib/__generated__/DeleteComment';
+import { AddReplyComment, AddReplyCommentVariables } from './__generated__/AddReplyComment';
+import { EditComment, EditCommentVariables } from './__generated__/EditComment';
+import { DeleteComment, DeleteCommentVariables } from './__generated__/DeleteComment';
 import { gql } from '@apollo/client';
-import { pullRequestReviewThreadFragment } from '../lib/GithubFragments';
+import { pullRequestReviewThreadFragment } from './GithubFragments';
 import { ReviewThreadQuery, ReviewThreadQueryVariables } from './__generated__/ReviewThreadQuery';
 
 const FETCH_REVIEW_THREADS = 'FETCH_REVIEW_THREADS';
