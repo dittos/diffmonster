@@ -1,27 +1,34 @@
 import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
-import { Subject, of } from 'rxjs';
-import { mergeMap, tap, catchError, map } from 'rxjs/operators';
+import { Subject, of, from, Observable } from 'rxjs';
+import { mergeMap, tap, catchError, map, filter } from 'rxjs/operators';
 import {
-  addPullRequestReviewCommentOnReview,
-  addPullRequestReview,
-  deletePullRequestReviewComment,
   PullRequestReviewState,
-  PullRequestReviewEvent,
-  editPullRequestReviewComment,
-  editPullRequestReviewCommentViaGraphQL,
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
+  getPullRequestReviewThreads,
+  getPullRequestComments,
+  apollo,
+  PullRequestReviewDTO,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 import { PullRequestLoadedState, generateClientId } from './getInitialState';
+import { isAuthenticated } from '../lib/GithubAuth';
+import { addCommentMutation, addReplyCommentMutation, deleteCommentMutation, editCommentMutation } from '../lib/GithubMutations';
+import { AddComment, AddCommentVariables } from '../lib/__generated__/AddComment';
+import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent as GqlPullRequestReviewEvent } from '../__generated__/globalTypes';
+import { AddReplyComment, AddReplyCommentVariables } from '../lib/__generated__/AddReplyComment';
+import { EditComment, EditCommentVariables } from '../lib/__generated__/EditComment';
+import { DeleteComment, DeleteCommentVariables } from '../lib/__generated__/DeleteComment';
 
-export const REVIEW_THREADS_FETCHED = 'REVIEW_THREADS_FETCHED';
-
+const FETCH_REVIEW_THREADS = 'FETCH_REVIEW_THREADS';
+const REVIEW_THREADS_FETCHED = 'REVIEW_THREADS_FETCHED';
 const ADD_SINGLE_COMMENT = 'ADD_SINGLE_COMMENT';
 const ADD_SINGLE_COMMENT_SUCCESS = 'ADD_SINGLE_COMMENT_SUCCESS';
+const ADD_SINGLE_COMMENT_REPLY_SUCCESS = 'ADD_SINGLE_COMMENT_REPLY_SUCCESS';
 const ADD_SINGLE_COMMENT_ERROR = 'ADD_SINGLE_COMMENT_ERROR';
 const ADD_REVIEW_COMMENT = 'ADD_REVIEW_COMMENT';
 const ADD_REVIEW_COMMENT_SUCCESS = 'ADD_REVIEW_COMMENT_SUCCESS';
+const ADD_REVIEW_COMMENT_REPLY_SUCCESS = 'ADD_REVIEW_COMMENT_REPLY_SUCCESS';
 const ADD_REVIEW_COMMENT_ERROR = 'ADD_REVIEW_COMMENT_ERROR';
 const DELETE_COMMENT = 'DELETE_COMMENT';
 const DELETE_COMMENT_SUCCESS = 'DELETE_COMMENT_SUCCESS';
@@ -30,15 +37,29 @@ const EDIT_COMMENT = 'EDIT_COMMENT';
 const EDIT_COMMENT_SUCCESS = 'EDIT_COMMENT_SUCCESS';
 const EDIT_COMMENT_ERROR = 'EDIT_COMMENT_ERROR';
 
+export type FetchReviewThreadsAction = {
+  type: 'FETCH_REVIEW_THREADS';
+};
+
 export type ReviewThreadsFetchedAction = {
   type: 'REVIEW_THREADS_FETCHED';
   payload: PullRequestReviewThreadDTO[];
 };
 
+export type CommentPosition = {
+  position: number;
+  line: number;
+  side: 'LEFT' | 'RIGHT';
+};
+
 export interface AddCommentActionPayload {
   body: string;
-  position: number;
+  position: CommentPosition;
   path: string;
+  replyContext?: {
+    thread: PullRequestReviewThreadDTO;
+    comment: PullRequestCommentDTO;
+  };
 }
 
 type AddSingleCommentAction = {
@@ -67,12 +88,15 @@ type EditCommentAction = {
 };
 
 export type CommentAction =
+  FetchReviewThreadsAction |
   ReviewThreadsFetchedAction |
   AddSingleCommentAction |
-  { type: 'ADD_SINGLE_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
+  { type: 'ADD_SINGLE_COMMENT_SUCCESS'; payload: { thread: PullRequestReviewThreadDTO; }; } |
+  { type: 'ADD_SINGLE_COMMENT_REPLY_SUCCESS'; payload: { threadId: string; comment: PullRequestCommentDTO; }; } |
   { type: 'ADD_SINGLE_COMMENT_ERROR'; } |
   AddReviewCommentAction |
-  { type: 'ADD_REVIEW_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
+  { type: 'ADD_REVIEW_COMMENT_SUCCESS'; payload: { thread: PullRequestReviewThreadDTO; }; } |
+  { type: 'ADD_REVIEW_COMMENT_REPLY_SUCCESS'; payload: { threadId: string; comment: PullRequestCommentDTO; }; } |
   { type: 'ADD_REVIEW_COMMENT_ERROR'; } |
   DeleteCommentAction |
   { type: 'DELETE_COMMENT_SUCCESS'; payload: number; } |
@@ -82,12 +106,16 @@ export type CommentAction =
   { type: 'EDIT_COMMENT_ERROR'; }
   ;
 
-export function addSingleComment({ body, position, path }: AddSingleCommentAction['payload'], subject: Subject<void>): AddSingleCommentAction {
-  return { type: ADD_SINGLE_COMMENT, payload: { body, position, path }, meta: { subject } };
+export function fetchReviewThreads(): FetchReviewThreadsAction {
+  return { type: FETCH_REVIEW_THREADS };
 }
 
-export function addReviewComment({ body, position, path }: AddReviewCommentAction['payload'], subject: Subject<void>): AddReviewCommentAction {
-  return { type: ADD_REVIEW_COMMENT, payload: { body, position, path }, meta: { subject } };
+export function addSingleComment({ body, position, path, replyContext }: AddSingleCommentAction['payload'], subject: Subject<void>): AddSingleCommentAction {
+  return { type: ADD_SINGLE_COMMENT, payload: { body, position, path, replyContext }, meta: { subject } };
+}
+
+export function addReviewComment({ body, position, path, replyContext }: AddReviewCommentAction['payload'], subject: Subject<void>): AddReviewCommentAction {
+  return { type: ADD_REVIEW_COMMENT, payload: { body, position, path, replyContext }, meta: { subject } };
 }
 
 export function deleteComment(comment: DeleteCommentAction['payload']): DeleteCommentAction {
@@ -98,23 +126,80 @@ export function editComment(comment: PullRequestCommentDTO, body: string, subjec
   return { type: EDIT_COMMENT, payload: { comment, body }, meta: { subject } };
 }
 
+const fetchReviewThreadsEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<FetchReviewThreadsAction>('FETCH_REVIEW_THREADS').pipe(mergeMap(() => {
+    const authenticated = isAuthenticated();
+    const { pullRequest } = state$.value;
+    
+    if (authenticated) {
+      return getPullRequestReviewThreads(pullRequest)
+        .pipe(map(reviewThreads => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: reviewThreads })));
+    } else {
+      // API v4 (GraphQL) does not support anonymous queries.
+      // API v3 (REST) does not support Review Threads.
+      // Make it viewable by wrapping each comment as individual review thread
+      return getPullRequestComments(pullRequest)
+        .pipe(map(comments => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: comments.map(comment => ({
+          id: generateClientId(),
+          isResolved: false,
+          resolvedBy: null,
+          comments: {
+            nodes: [comment],
+            pageInfo: {
+              hasPreviousPage: false,
+              startCursor: '',
+            }
+          },
+        }))})));
+    }
+  }));
+
 const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<AddSingleCommentAction>('ADD_SINGLE_COMMENT').pipe(mergeMap(action => {
     const { pullRequest } = state$.value;
-    const { body, position, path } = action.payload;
+    const { body, position, path, replyContext } = action.payload;
 
-    return addPullRequestReview(pullRequest.node_id, pullRequest.head.sha, PullRequestReviewEvent.COMMENT, [{
+    if (replyContext) {
+      return replyComment(
+        pullRequest.node_id,
+        pullRequest.head.sha,
+        null,
+        replyContext.comment.node_id,
+        body,
+        position,
+        path,
+        true
+      ).pipe(
+        tap(action.meta.subject),
+        mergeMap(({ comment, review }) => of({
+          type: ADD_REVIEW_SUCCESS,
+          payload: review,
+        }, <CommentAction>{
+          type: ADD_SINGLE_COMMENT_REPLY_SUCCESS,
+          payload: { threadId: replyContext.thread.id, comment },
+        })),
+        catchError(error => of({
+          type: ADD_SINGLE_COMMENT_ERROR,
+          payload: error,
+        }))
+      );
+    }
+
+    return createComment(
+      pullRequest.node_id,
+      null,
       body,
       position,
       path,
-    }]).pipe(
+      true
+    ).pipe(
       tap(action.meta.subject),
-      mergeMap(({ comments, ...review }) => of({
+      mergeMap(({ thread, review }) => of({
         type: ADD_REVIEW_SUCCESS,
         payload: review,
-      }, {
+      }, <CommentAction>{
         type: ADD_SINGLE_COMMENT_SUCCESS,
-        payload: comments!.nodes[0],
+        payload: { thread },
       })),
       catchError(error => of({
         type: ADD_SINGLE_COMMENT_ERROR,
@@ -126,53 +211,157 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<AddReviewCommentAction>('ADD_REVIEW_COMMENT').pipe(mergeMap(action => {
     const { latestReview, pullRequest } = state$.value;
-    const { body, position, path } = action.payload;
+    const { body, position, path, replyContext } = action.payload;
+    const latestReviewId = latestReview && latestReview.state === PullRequestReviewState.PENDING ? latestReview.id : null;
 
-    if (latestReview && latestReview.state === PullRequestReviewState.PENDING) {
-      return addPullRequestReviewCommentOnReview(
-        latestReview.id,
-        pullRequest!.head.sha,
+    if (replyContext) {
+      return replyComment(
+        pullRequest.node_id,
+        pullRequest.head.sha,
+        latestReviewId,
+        replyContext.comment.node_id,
         body,
+        position,
         path,
-        position
+        false
       ).pipe(
         tap(action.meta.subject),
-        map(comment => ({
-          type: ADD_REVIEW_COMMENT_SUCCESS,
-          payload: comment,
-        })),
-        catchError(error => of({
-          type: ADD_REVIEW_COMMENT_ERROR,
-          payload: error,
-        }))
-      );
-    } else {
-      return addPullRequestReview(pullRequest.node_id, pullRequest.head.sha, PullRequestReviewEvent.PENDING, [{
-        path,
-        position,
-        body,
-      }]).pipe(
-        tap(action.meta.subject),
-        mergeMap(({ comments, ...review }) => of({
+        mergeMap(({ comment, review }) => of(!latestReviewId ? {
           type: ADD_REVIEW_SUCCESS,
           payload: review,
-        }, {
-          type: ADD_REVIEW_COMMENT_SUCCESS,
-          payload: comments!.nodes[0],
-        })),
+        } : null, <CommentAction>{
+          type: ADD_REVIEW_COMMENT_REPLY_SUCCESS,
+          payload: { threadId: replyContext.thread.id, comment },
+        }).pipe(filter(it => it != null))),
         catchError(error => of({
           type: ADD_REVIEW_COMMENT_ERROR,
           payload: error,
         }))
       );
     }
+
+    return createComment(
+      pullRequest.node_id,
+      latestReviewId,
+      body,
+      position,
+      path,
+      false
+    ).pipe(
+      tap(action.meta.subject),
+      mergeMap(({ thread, review }) => of(!latestReviewId ? {
+        type: ADD_REVIEW_SUCCESS,
+        payload: review,
+      } : null, <CommentAction>{
+        type: ADD_REVIEW_COMMENT_SUCCESS,
+        payload: { thread },
+      }).pipe(filter(it => it != null))),
+      catchError(error => of({
+        type: ADD_REVIEW_COMMENT_ERROR,
+        payload: error,
+      }))
+    );
   }));
+
+// not reply, immediate : add review thread with first comment -> submit review
+// reply, immediate : add comment -> submit review
+// not reply, new pending review : add pending review -> add review thread with first comment
+// reply, new pending review: add pending review -> add comment
+// not reply, old pending review: add review thread with first comment
+// reply, old pending review: add comment
+
+function createComment(
+  pullRequestId: string,
+  pendingReviewId: string | null,
+
+  body: string,
+  position: CommentPosition,
+  path: string,
+  
+  submitNow: boolean,
+): Observable<{
+  thread: PullRequestReviewThreadDTO;
+  review: PullRequestReviewDTO;
+}> {
+  return from(apollo.mutate<AddComment, AddCommentVariables>({
+    mutation: addCommentMutation,
+    variables: {
+      input: {
+        body,
+        line: position.line,
+        side: position.side === 'LEFT' ? DiffSide.LEFT : DiffSide.RIGHT,
+        path,
+        pullRequestId,
+        pullRequestReviewId: pendingReviewId,
+      },
+      submitNow,
+      submitInput: {
+        pullRequestId,
+        event: GqlPullRequestReviewEvent.COMMENT,
+      },
+    },
+    fetchPolicy: 'no-cache',
+  })).pipe(map(result => {
+    const thread = result.data?.addPullRequestReviewThread?.thread!;
+    const comment = thread?.comments?.nodes?.[0];
+    if (comment && submitNow) comment.state = PullRequestReviewCommentState.SUBMITTED;
+    const review = result.data?.submitPullRequestReview?.pullRequestReview ?? comment?.pullRequestReview!;
+    return {thread, review};
+  }));
+}
+
+function replyComment(
+  pullRequestId: string,
+  commitId: string,
+  pendingReviewId: string | null,
+  inReplyToCommentId: string,
+
+  body: string,
+  position: CommentPosition,
+  path: string,
+  
+  submitNow: boolean,
+): Observable<{
+  comment: PullRequestCommentDTO;
+  review: PullRequestReviewDTO;
+}> {
+  return from(apollo.mutate<AddReplyComment, AddReplyCommentVariables>({
+    mutation: addReplyCommentMutation,
+    variables: {
+      input: {
+        pullRequestId,
+        commitOID: commitId,
+        body,
+        path,
+        position: position.position,
+        inReplyTo: inReplyToCommentId,
+        pullRequestReviewId: pendingReviewId,
+      },
+      submitNow,
+      submitInput: {
+        pullRequestId,
+        event: GqlPullRequestReviewEvent.COMMENT,
+      },
+    },
+    fetchPolicy: 'no-cache',
+  })).pipe(map(result => {
+    const comment = result.data?.addPullRequestReviewComment?.comment!
+    if (submitNow) comment.state = PullRequestReviewCommentState.SUBMITTED;
+    const review = result.data?.submitPullRequestReview?.pullRequestReview ?? comment.pullRequestReview!;
+    return {comment, review};
+  }));
+}  
 
 const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<DeleteCommentAction>('DELETE_COMMENT').pipe(mergeMap(action => {
     const comment = action.payload;
-    const { pullRequest } = state$.value;
-    return deletePullRequestReviewComment(pullRequest, comment.id).pipe(
+    return from(apollo.mutate<DeleteComment, DeleteCommentVariables>({
+      mutation: deleteCommentMutation,
+      variables: {
+        commentId: comment.node_id,
+      },
+      fetchPolicy: 'no-cache',
+    })).pipe(
       map(() => ({
         type: DELETE_COMMENT_SUCCESS,
         payload: comment.id,
@@ -187,14 +376,18 @@ const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, state$: St
 const editCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<EditCommentAction>('EDIT_COMMENT').pipe(mergeMap(action => {
     const { comment, body } = action.payload;
-    const call$ = comment.node_id ?
-      editPullRequestReviewCommentViaGraphQL(comment.node_id, { body }) :
-      editPullRequestReviewComment(state$.value.pullRequest, comment.id, { body });
-    return call$.pipe(
+    return from(apollo.mutate<EditComment, EditCommentVariables>({
+      mutation: editCommentMutation,
+      variables: {
+        commentId: comment.node_id,
+        body,
+      },
+      fetchPolicy: 'no-cache',
+    })).pipe(
       tap(action.meta.subject),
-      map(updatedComment => ({
+      map(result => ({
         type: EDIT_COMMENT_SUCCESS,
-        payload: updatedComment,
+        payload: result.data?.updatePullRequestReviewComment?.pullRequestReviewComment,
       })),
       catchError(error => of({
         type: EDIT_COMMENT_ERROR,
@@ -204,11 +397,26 @@ const editCommentEpic = (action$: ActionsObservable<CommentAction>, state$: Stat
   }));
 
 export const commentEpic = combineEpics(
+  fetchReviewThreadsEpic,
   addSingleCommentEpic,
   addReviewCommentEpic,
   deleteCommentEpic,
   editCommentEpic,
 );
+
+function addCommentToReviewThread(
+  threads: PullRequestReviewThreadDTO[],
+  threadId: string | null,
+  comment: PullRequestCommentDTO
+): PullRequestReviewThreadDTO[] {
+  return threads.map(thread => thread.id === threadId ? {
+    ...thread,
+    comments: thread.comments && {
+      ...thread.comments,
+      nodes: thread.comments!.nodes!.concat(comment),
+    },
+  } : thread);
+}
 
 export default function commentsReducer(state: PullRequestLoadedState, action: CommentAction): PullRequestLoadedState {
   switch (action.type) {
@@ -221,21 +429,13 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
     case ADD_SINGLE_COMMENT_SUCCESS:
       return {
         ...state,
-        reviewThreads: state.reviewThreads.concat({
-          // There's no way to know thread ID of comment easily.
-          // Anyway, currently comments always create the new thread.
-          // Should revisit when implementing comment reply.
-          id: generateClientId(),
-          isResolved: false,
-          resolvedBy: null,
-          comments: {
-            nodes: [action.payload],
-            pageInfo: {
-              hasPreviousPage: false,
-              startCursor: '',
-            }
-          }
-        }),
+        reviewThreads: state.reviewThreads.concat(action.payload.thread),
+      };
+      
+    case ADD_SINGLE_COMMENT_REPLY_SUCCESS:
+      return {
+        ...state,
+        reviewThreads: addCommentToReviewThread(state.reviewThreads, action.payload.threadId, action.payload.comment),
       };
     
     case ADD_REVIEW_COMMENT:
@@ -247,21 +447,14 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
     case ADD_REVIEW_COMMENT_SUCCESS:
       return {
         ...state,
-        reviewThreads: state.reviewThreads.concat({
-          // There's no way to know thread ID of comment easily.
-          // Anyway, currently comments always create the new thread.
-          // Should revisit when implementing comment reply.
-          id: generateClientId(),
-          isResolved: false,
-          resolvedBy: null,
-          comments: {
-            nodes: [action.payload],
-            pageInfo: {
-              hasPreviousPage: false,
-              startCursor: '',
-            }
-          }
-        }),
+        reviewThreads: state.reviewThreads.concat(action.payload.thread),
+        isAddingReview: false,
+      };
+    
+    case ADD_REVIEW_COMMENT_REPLY_SUCCESS:
+      return {
+        ...state,
+        reviewThreads: addCommentToReviewThread(state.reviewThreads, action.payload.threadId, action.payload.comment),
         isAddingReview: false,
       };
     
@@ -276,11 +469,11 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
         ...thread,
         comments: thread.comments && {
           ...thread.comments,
-          nodes: thread.comments.nodes.filter(c => c.id !== action.payload)
+          nodes: thread.comments.nodes!.filter(c => c!.id !== action.payload)
         }
       }));
       const hasPendingComments = reviewThreads.some(thread =>
-        !!thread.comments && thread.comments.nodes.some(c => c.state === 'PENDING'));
+        !!thread.comments && thread.comments.nodes.some(c => c!.state === 'PENDING'));
       return {
         ...state,
         reviewThreads,
@@ -296,7 +489,7 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
           ...thread,
           comments: thread.comments && {
             ...thread.comments,
-            nodes: thread.comments.nodes.map(c => c.id === action.payload.id ? action.payload : c)
+            nodes: thread.comments.nodes!.map(c => c!.id === action.payload.id ? action.payload : c)
           }
         })),
       };

@@ -5,19 +5,17 @@ import marked from 'marked';
 import {
   getPullRequest,
   getPullRequestAsDiff,
-  getPullRequestComments,
   getPullRequestFromGraphQL,
   pullRequestReviewFragment,
   PullRequestReviewDTO,
   PullRequestDTO,
   GraphQLError,
-  getPullRequestReviewThreads,
 } from '../lib/Github';
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
-import getInitialState, { AppState, generateClientId } from './getInitialState';
-import { REVIEW_THREADS_FETCHED, ReviewThreadsFetchedAction } from './CommentStore';
+import getInitialState, { AppState } from './getInitialState';
+import { fetchReviewThreads } from './CommentStore';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -96,7 +94,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       } else {
         pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
       }
-      const success$ = of(({
+      const success$ = of({
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
@@ -105,30 +103,8 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
           latestReview,
           isLoadingReviewStates: authenticated,
         },
-      }));
-
-      let comments$: Observable<ReviewThreadsFetchedAction>;
-      if (authenticated) {
-        comments$ = getPullRequestReviewThreads(pullRequest)
-          .pipe(map(reviewThreads => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: reviewThreads })));
-      } else {
-        // API v4 (GraphQL) does not support anonymous queries.
-        // API v3 (REST) does not support Review Threads.
-        // Make it viewable by wrapping each comment as individual review thread
-        comments$ = getPullRequestComments(pullRequest)
-          .pipe(map(comments => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: comments.map(comment => ({
-            id: generateClientId(),
-            isResolved: false,
-            resolvedBy: null,
-            comments: {
-              nodes: [comment],
-              pageInfo: {
-                hasPreviousPage: false,
-                startCursor: '',
-              }
-            },
-          }))})));
-      }
+      });
+      const comments$ = of(fetchReviewThreads());
 
       const reviewStates$ = authenticated ?
         observeReviewStates(pullRequest.id)

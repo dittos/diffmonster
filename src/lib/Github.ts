@@ -20,13 +20,11 @@ export type PullRequestReviewStateType = keyof (typeof PullRequestReviewState);
 
 export const PullRequestReviewEvent = {
   PENDING: null,
-  COMMENT: 'COMMENT' as PullRequestReviewEventInput,
-  APPROVE: 'APPROVE' as PullRequestReviewEventInput,
-  REQUEST_CHANGES: 'REQUEST_CHANGES' as PullRequestReviewEventInput,
+  COMMENT: 'COMMENT',
+  APPROVE: 'APPROVE',
+  REQUEST_CHANGES: 'REQUEST_CHANGES',
   DISMISS: 'DISMISS',
 };
-
-export type PullRequestReviewEventInput = null | 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES';
 
 export const pullRequestReviewFragment = `
   id
@@ -49,8 +47,26 @@ export const pullRequestReviewCommentRestLikeFragment = `
   state
 `;
 
+const pullRequestReviewThreadFragment = `
+  id
+  isResolved
+  resolvedBy {
+    url
+    login
+  }
+  comments(first: 100) {
+    nodes {
+      ${pullRequestReviewCommentRestLikeFragment}
+    }
+    pageInfo {
+      hasNextPage
+    }
+  }
+  viewerCanReply
+`;
+
 export interface UserDTO {
-  id: number;
+  id?: number | null;
   html_url: string;
   login: string;
 }
@@ -89,20 +105,20 @@ export interface PullRequestDTO {
 export type PullRequestCommentState = 'PENDING' | 'SUBMITTED';
 
 export interface PullRequestCommentDTO {
-  id: number;
+  id: number | null;
   node_id: string;
-  user: UserDTO;
+  user: UserDTO | null;
   body: string;
   path: string;
-  position: number;
+  position: number | null;
   state?: PullRequestCommentState;
 }
 
 export interface PullRequestReviewCommentsConnection {
-  nodes: PullRequestCommentDTO[];
+  nodes: (PullRequestCommentDTO | null)[] | null;
   pageInfo: {
     hasPreviousPage: boolean;
-    startCursor: string;
+    startCursor: string | null;
   };
 }
 
@@ -120,6 +136,7 @@ export interface PullRequestReviewThreadDTO {
     login: string;
   } | null;
   comments?: PullRequestReviewCommentsConnection;
+  viewerCanReply: boolean;
 }
 
 const authLink = setContext(() => {
@@ -278,20 +295,7 @@ export function getPullRequestReviewThreads(pullRequest: PullRequestDTO, startCu
         ... on PullRequest {
           reviewThreads(last: 100, before: $startCursor) {
             nodes {
-              id
-              isResolved
-              resolvedBy {
-                url
-                login
-              }
-              comments(first: 100) {
-                nodes {
-                  ${pullRequestReviewCommentRestLikeFragment}
-                }
-                pageInfo {
-                  hasNextPage
-                }
-              }
+              ${pullRequestReviewThreadFragment}
             }
             pageInfo {
               hasPreviousPage
@@ -310,107 +314,4 @@ export function getPullRequestReviewThreads(pullRequest: PullRequestDTO, startCu
       }
       return of(reviewThreads.nodes);
     }));
-}
-
-export interface AddPullRequestReviewInputComment {
-  body: string;
-  position: number;
-  path: string;
-}
-
-export function addPullRequestReview(pullRequestId: string, commitId: string, event: PullRequestReviewEventInput, comments: AddPullRequestReviewInputComment[] = []): Observable<PullRequestReviewDTO> {
-  return graphql(`
-    mutation($input: AddPullRequestReviewInput!, $commentCount: Int) {
-      addPullRequestReview(input: $input) {
-        pullRequestReview {
-          ${pullRequestReviewFragment}
-          comments(first: $commentCount) {
-            nodes {
-              ${pullRequestReviewCommentRestLikeFragment}
-            }
-          }
-        }
-      }
-    }
-  `, {
-    input: {
-      pullRequestId,
-      commitOID: commitId,
-      event,
-      comments,
-    },
-    commentCount: comments.length,
-  }).pipe(map(resp => resp.addPullRequestReview.pullRequestReview));
-}
-
-export function submitPullRequestReview(pullRequestReviewId: string, event: PullRequestReviewEventInput): Observable<PullRequestReviewDTO> {
-  return graphql(`
-    mutation($input: SubmitPullRequestReviewInput!) {
-      submitPullRequestReview(input: $input) {
-        pullRequestReview {
-          ${pullRequestReviewFragment}
-        }
-      }
-    }
-  `, {
-    input: {
-      pullRequestReviewId,
-      event,
-    }
-  }).pipe(map(resp => resp.submitPullRequestReview.pullRequestReview));
-}
-
-export function addPullRequestReviewCommentOnReview(reviewId: string, commitId: string, body: string, path: string, position: number): Observable<PullRequestCommentDTO> {
-  return graphql(`
-    mutation($input: AddPullRequestReviewCommentInput!) {
-      addPullRequestReviewComment(input: $input) {
-        comment {
-          ${pullRequestReviewCommentRestLikeFragment}
-        }
-      }
-    }
-  `, {
-    input: {
-      pullRequestReviewId: reviewId,
-      commitOID: commitId,
-      body,
-      path,
-      position,
-    }
-  }).pipe(map(resp => resp.addPullRequestReviewComment.comment));
-}
-
-export function deletePullRequestReviewComment(pullRequest: PullRequestDTO, commentId: number): Observable<any> {
-  return ajax({
-    url: `${pullRequest.base.repo.url}/pulls/comments/${commentId}`,
-    method: 'DELETE',
-  });
-}
-
-export function editPullRequestReviewComment(pullRequest: PullRequestDTO, commentId: number, { body }: { body: string }): Observable<PullRequestCommentDTO> {
-  return ajax({
-    url: `${pullRequest.base.repo.url}/pulls/comments/${commentId}`,
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ body }),
-  }).pipe(map(resp => resp.response));
-}
-
-export function editPullRequestReviewCommentViaGraphQL(commentNodeId: string, { body }: { body: string }): Observable<PullRequestCommentDTO> {
-  return graphql(`
-    mutation($input: UpdatePullRequestReviewCommentInput!) {
-      updatePullRequestReviewComment(input: $input) {
-        pullRequestReviewComment {
-          ${pullRequestReviewCommentRestLikeFragment}
-        }
-      }
-    }
-  `, {
-    input: {
-      pullRequestReviewCommentId: commentNodeId,
-      body,
-    }
-  }).pipe(map(resp => resp.updatePullRequestReviewComment.pullRequestReviewComment));
 }

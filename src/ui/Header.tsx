@@ -3,10 +3,11 @@ import { connect, DispatchProp } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Classes, Tag, Intent, Icon } from '@blueprintjs/core';
 import { PullRequestReviewState, PullRequestReviewThreadDTO } from '../lib/Github';
-import { submitReview, addReview } from '../stores/ReviewStore';
+import { submitReview, approve } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
 import { PullRequestLoadedState } from '../stores/getInitialState';
 import { AppAction } from '../stores';
+import { PullRequestReviewEvent } from '../__generated__/globalTypes';
 
 const separator = <span className={Styles.Separator} />;
 
@@ -97,11 +98,11 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
   }
 
   _publishPendingComments = () => {
-    this.props.dispatch(submitReview({ event: 'COMMENT' }));
+    this.props.dispatch(submitReview({ event: PullRequestReviewEvent.COMMENT }));
   };
 
   _approve = () => {
-    this.props.dispatch(addReview({ event: 'APPROVE' }));
+    this.props.dispatch(approve());
   };
 }
 

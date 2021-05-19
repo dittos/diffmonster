@@ -2,12 +2,13 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Button, Intent } from '@blueprintjs/core';
 import { Subject, Subscription } from 'rxjs';
-import { PullRequestReviewState, PullRequestReviewDTO, PullRequestDTO } from '../lib/Github';
+import { PullRequestReviewState, PullRequestReviewDTO, PullRequestDTO, PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import {
   addSingleComment,
   addReviewComment,
   AddCommentActionPayload,
   AddCommentAction,
+  CommentPosition,
 } from '../stores/CommentStore';
 import config from '../config';
 import Styles from './CommentComposer.module.css';
@@ -22,7 +23,11 @@ interface StateProps {
 
 interface OwnProps {
   file: DiffFile;
-  position: number;
+  position: CommentPosition;
+  replyContext?: {
+    thread: PullRequestReviewThreadDTO;
+    comment: PullRequestCommentDTO;
+  };
   onCloseComposer(): void;
 }
 
@@ -99,6 +104,7 @@ class CommentComposer extends React.Component<Props> {
       body: this._getBodyWithSig(),
       position: this.props.position,
       path: this.props.file.filename,
+      replyContext: this.props.replyContext,
     }, subject));
   }
 
