@@ -56,10 +56,13 @@ function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
   return count;
 }
 
-class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAction>> {
+type OwnProps = {
+  pullRequestFragment: HeaderPullRequestFragment;
+};
+
+class Header extends React.Component<PullRequestLoadedState & OwnProps & DispatchProp<AppAction>> {
   render() {
-    const { pullRequest: fullPullRequest, latestReview, reviewThreads, currentUser } = this.props;
-    const pullRequest: HeaderPullRequestFragment = fullPullRequest;
+    const { pullRequestFragment: pullRequest, latestReview, reviewThreads, currentUser } = this.props;
     const latestReviewState = latestReview && latestReview.state;
     const canApprove = currentUser &&
       pullRequest.author?.__typename === 'User' && pullRequest.author.databaseId !== currentUser.id &&

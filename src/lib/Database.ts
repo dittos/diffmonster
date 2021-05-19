@@ -20,14 +20,14 @@ function refValues<T>(ref: firebase.database.Reference): Observable<T> {
   });
 }
 
-function reviewStatesRef(pullRequestId: number): firebase.database.Reference {
+function reviewStatesRef(pullRequestId: string): firebase.database.Reference {
   return firebase.database().ref(`reviewStates/${pullRequestId}/${getFirebaseUid()}`);
 }
 
-export function observeReviewStates(pullRequestId: number): Observable<{[fileId: string]: boolean}> {
+export function observeReviewStates(pullRequestId: string): Observable<{[fileId: string]: boolean}> {
   return refValues(reviewStatesRef(pullRequestId));
 }
 
-export function setReviewState(pullRequestId: number, fileId: string, reviewState: boolean): Promise<any> {
+export function setReviewState(pullRequestId: string, fileId: string, reviewState: boolean): Promise<any> {
   return reviewStatesRef(pullRequestId).child(fileId).set(reviewState);
 }

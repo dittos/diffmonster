@@ -1,12 +1,12 @@
 import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
 import { Subject, of, from, Observable } from 'rxjs';
-import { mergeMap, tap, catchError, map, filter } from 'rxjs/operators';
+import { mergeMap, tap, catchError, map, filter, exhaustMap } from 'rxjs/operators';
 import {
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
-  getPullRequestReviewThreads,
   apollo,
   PullRequestReviewDTO,
+  PullRequestDTO,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 import { PullRequestLoadedState } from './getInitialState';
@@ -16,6 +16,9 @@ import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent, PullRe
 import { AddReplyComment, AddReplyCommentVariables } from '../lib/__generated__/AddReplyComment';
 import { EditComment, EditCommentVariables } from '../lib/__generated__/EditComment';
 import { DeleteComment, DeleteCommentVariables } from '../lib/__generated__/DeleteComment';
+import { gql } from '@apollo/client';
+import { pullRequestReviewThreadFragment } from '../lib/GithubFragments';
+import { ReviewThreadQuery, ReviewThreadQueryVariables } from './__generated__/ReviewThreadQuery';
 
 const FETCH_REVIEW_THREADS = 'FETCH_REVIEW_THREADS';
 const REVIEW_THREADS_FETCHED = 'REVIEW_THREADS_FETCHED';
@@ -473,4 +476,45 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
     default:
       return state;
   }
+}
+
+const reviewThreadQuery = gql`
+  ${pullRequestReviewThreadFragment}
+  query ReviewThreadQuery($pullRequestId: ID!, $startCursor: String) {
+    node(id: $pullRequestId) {
+      ... on PullRequest {
+        reviewThreads(last: 100, before: $startCursor) {
+          nodes {
+            ...PullRequestReviewThreadFragment
+          }
+          pageInfo {
+            hasPreviousPage
+            startCursor
+          }
+        }
+      }
+    }
+  }
+`;
+
+function getPullRequestReviewThreads(pullRequest: PullRequestDTO, startCursor: string | null = null): Observable<PullRequestReviewThreadDTO[]> {
+  return from(apollo.query<ReviewThreadQuery, ReviewThreadQueryVariables>({
+    query: reviewThreadQuery,
+    variables: {
+      pullRequestId: pullRequest.id,
+      startCursor,
+    },
+    fetchPolicy: 'no-cache',
+  }))
+    .pipe(exhaustMap(resp => {
+      if (resp.data.node?.__typename !== 'PullRequest') {
+        return of([]);
+      }
+      const reviewThreads = resp.data.node.reviewThreads;
+      if (reviewThreads.pageInfo.hasPreviousPage) {
+        return getPullRequestReviewThreads(pullRequest, reviewThreads.pageInfo.startCursor)
+          .pipe(map(result => result.concat(reviewThreads.nodes!.map(it => it!))));
+      }
+      return of(reviewThreads.nodes!.map(it => it!));
+    }));
 }

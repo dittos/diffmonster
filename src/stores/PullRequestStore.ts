@@ -7,7 +7,7 @@ import {
   apollo,
   PullRequestDTO,
 } from '../lib/Github';
-import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
+import { isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
 import getInitialState, { AppState } from './getInitialState';
@@ -16,7 +16,6 @@ import gql from 'graphql-tag';
 import { pullRequestReviewFragment } from '../lib/GithubFragments';
 import { PullRequestQuery, PullRequestQueryVariables } from './__generated__/PullRequestQuery';
 import { ApolloError } from '@apollo/client';
-import { headerPullRequestFragment } from '../ui/Header';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -57,40 +56,16 @@ export function fetchCancel(): PullRequestAction {
 
 const pullRequestQuery = gql`
   ${pullRequestReviewFragment}
-  ${headerPullRequestFragment}
-  query PullRequestQuery($owner: String!, $repo: String!, $number: Int!, $author: String!) {
+  query PullRequestQuery($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
         databaseId
         id
-        number
         url
-        title
-        bodyHTML
-        state
-        merged
-        baseRefName
         baseRefOid
-        baseRepository {
-          nameWithOwner
-          owner { login }
-        }
-        headRefName
         headRefOid
-        headRepository {
-          url
-          owner { login }
-        }
-        ...HeaderPullRequestFragment
-        reviews(last: 1, author: $author) {
-          nodes {
-            ...PullRequestReviewFragment
-          }
-        }
-        pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
-          nodes {
-            ...PullRequestReviewFragment
-          }
+        viewerLatestReview {
+          ...PullRequestReviewFragment
         }
       }
     }
@@ -107,9 +82,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
           owner: action.payload.owner,
           repo: action.payload.repo,
           number: action.payload.number,
-          author: getUserInfo()?.login ?? '',
         },
-        fetchPolicy: 'no-cache',
       }).catch((error: ApolloError) => {
         if (error.graphQLErrors.some(e => (e as any).type === 'NOT_FOUND')) {
           // eslint-disable-next-line no-throw-literal
@@ -122,7 +95,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       const pullRequest = result.data?.repository?.pullRequest!;
       const authenticated = isAuthenticated();
       // FIXME: Pending review is always on the first of reviews connection
-      const latestReview = pullRequest.pendingReviews?.nodes?.[0] ?? pullRequest.reviews?.nodes?.[0] ?? null;
+      const latestReview = pullRequest.viewerLatestReview;
       const success$ = of<PullRequestAction>({
         type: FETCH_SUCCESS,
         payload: {
@@ -135,7 +108,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       const comments$ = of(fetchReviewThreads());
 
       const reviewStates$ = authenticated ?
-        observeReviewStates(pullRequest.databaseId!) // FIXME
+        observeReviewStates(pullRequest.databaseId?.toString() ?? pullRequest.id)
           .pipe(map(reviewStates =>
             ({ type: REVIEW_STATES_CHANGED, payload: reviewStates || {} }))) :
         EMPTY;

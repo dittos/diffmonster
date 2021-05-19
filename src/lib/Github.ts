@@ -1,12 +1,10 @@
-import { throwError as observableThrowError, Observable, of, from } from 'rxjs';
+import { Observable } from 'rxjs';
 import { getAccessToken } from './GithubAuth';
 import { ajax as ajaxObservable, AjaxRequest, AjaxResponse } from 'rxjs/ajax';
-import { exhaustMap, map } from 'rxjs/operators';
-import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
+import { map } from 'rxjs/operators';
+import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { setContext } from "@apollo/client/link/context";
 import { PullRequestQuery_repository_pullRequest } from '../stores/__generated__/PullRequestQuery';
-import { pullRequestReviewThreadFragment } from './GithubFragments';
-import { ReviewThreadQuery, ReviewThreadQueryVariables } from './__generated__/ReviewThreadQuery';
 import { PullRequestReviewThreadFragment } from './__generated__/PullRequestReviewThreadFragment';
 import { PullRequestReviewCommentRestLikeFragment } from './__generated__/PullRequestReviewCommentRestLikeFragment';
 import { PullRequestReviewFragment } from './__generated__/PullRequestReviewFragment';
@@ -66,26 +64,6 @@ function ajax(request: AjaxRequest): Observable<AjaxResponse> {
   return ajaxObservable(request);
 }
 
-export function graphql(query: string, variables: {[key: string]: any}): Observable<any> {
-  const request = {
-    url: `${BASE_URL}/graphql`,
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json',
-    } as any,
-    responseType: 'json',
-    body: JSON.stringify({ query, variables }),
-  };
-  
-  const token = getAccessToken() ?? PUBLIC_TOKEN;
-  request.headers['Authorization'] = `bearer ${token}`;
-  return ajaxObservable(request).pipe(
-    exhaustMap(resp => resp.response.errors ?
-      observableThrowError(resp.response.errors) :
-      of(resp.response.data))
-  );
-}
-
 function pullRequestUrl(owner: string, repo: string, number: number): string {
   return `${BASE_URL}/repos/${owner}/${repo}/pulls/${number}`;
 }
@@ -107,45 +85,4 @@ export function getAuthenticatedUser(): Observable<UserDTO> {
     url: `${BASE_URL}/user`,
     method: 'get',
   }).pipe(map(resp => resp.response));
-}
-
-const reviewThreadQuery = gql`
-  ${pullRequestReviewThreadFragment}
-  query ReviewThreadQuery($pullRequestId: ID!, $startCursor: String) {
-    node(id: $pullRequestId) {
-      ... on PullRequest {
-        reviewThreads(last: 100, before: $startCursor) {
-          nodes {
-            ...PullRequestReviewThreadFragment
-          }
-          pageInfo {
-            hasPreviousPage
-            startCursor
-          }
-        }
-      }
-    }
-  }
-`;
-
-export function getPullRequestReviewThreads(pullRequest: PullRequestDTO, startCursor: string | null = null): Observable<PullRequestReviewThreadDTO[]> {
-  return from(apollo.query<ReviewThreadQuery, ReviewThreadQueryVariables>({
-    query: reviewThreadQuery,
-    variables: {
-      pullRequestId: pullRequest.id,
-      startCursor,
-    },
-    fetchPolicy: 'no-cache',
-  }))
-    .pipe(exhaustMap(resp => {
-      if (resp.data.node?.__typename !== 'PullRequest') {
-        return of([]);
-      }
-      const reviewThreads = resp.data.node.reviewThreads;
-      if (reviewThreads.pageInfo.hasPreviousPage) {
-        return getPullRequestReviewThreads(pullRequest, reviewThreads.pageInfo.startCursor)
-          .pipe(map(result => result.concat(reviewThreads.nodes!.map(it => it!))));
-      }
-      return of(reviewThreads.nodes!.map(it => it!));
-    }));
 }

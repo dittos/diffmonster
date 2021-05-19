@@ -4,7 +4,7 @@ import DocumentTitle from 'react-document-title';
 import { Colors, Classes, Switch, NonIdealState } from '@blueprintjs/core';
 import FileTree from './FileTree';
 import Diff from './Diff';
-import Header from './Header';
+import Header, { headerPullRequestFragment } from './Header';
 import Loading from './Loading';
 import SplitPane from './SplitPane';
 import { startAuth, isAuthenticated } from '../lib/GithubAuth';
@@ -12,10 +12,25 @@ import { setReviewState } from '../lib/Database';
 import * as Settings from '../lib/Settings';
 import { deleteComment } from '../stores/CommentStore';
 import Styles from './PullRequest.module.css';
-import { PullRequestCommentDTO, PullRequestDTO, PullRequestReviewThreadDTO } from '../lib/Github';
+import { PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import { AppState } from '../stores/getInitialState';
 import { AppAction } from '../stores';
 import { DiffFile } from '../lib/DiffParser';
+import gql from 'graphql-tag';
+import { PullRequestFragment } from './__generated__/PullRequestFragment';
+
+export const pullRequestFragment = gql`
+  ${headerPullRequestFragment}
+  fragment PullRequestFragment on PullRequest {
+    title
+    number
+    bodyHTML
+    baseRepository {
+      nameWithOwner
+    }
+    ...HeaderPullRequestFragment
+  }
+`;
 
 function collectCommentCountByPath(reviewThreads: PullRequestReviewThreadDTO[]) {
   const commentCountByPath: {[key: string]: number} = {};
@@ -38,6 +53,7 @@ function collectCommentCountByPath(reviewThreads: PullRequestReviewThreadDTO[]) 
 }
 
 interface OwnProps {
+  pullRequestFragment: PullRequestFragment | null;
   activePath: string | undefined;
   onSelectFile(path: string): void;
 }
@@ -77,19 +93,22 @@ class PullRequest extends Component<Props> {
     
     if (this.props.status === 'notFound')
       return this._renderNotFound();
+    
+    if (!this.props.pullRequestFragment)
+      return <Loading />;
 
-    const pullRequest = this.props.pullRequest!;
+    const pullRequest = this.props.pullRequestFragment;
 
     return (
       <DocumentTitle title={`${pullRequest.title} - ${pullRequest.baseRepository?.nameWithOwner}#${pullRequest.number}`}>
         <div className={Styles.Container}>
           <div style={{ flex: 0 }} className={Classes.DARK}>
-            <Header />
+            <Header pullRequestFragment={pullRequest} />
           </div>
           <SplitPane
             sideWidth={this.state.fileTreeWidth}
             side={this._renderFileTree()}
-            main={this._renderContent()}
+            main={this._renderContent(pullRequest)}
             onResizeEnd={this._onResizeEnd}
           />
         </div>
@@ -140,9 +159,8 @@ class PullRequest extends Component<Props> {
     return [header, tree];
   }
 
-  _renderContent() {
+  _renderContent(pullRequest: PullRequestFragment) {
     const {
-      pullRequest,
       files,
       reviewThreads,
       activePath,
@@ -164,7 +182,7 @@ class PullRequest extends Component<Props> {
             label="Done"
             onChange={this._onReviewStateChange}
           />}
-          <a href={getBlobUrl(pullRequest!, activeFile)} target="_blank" rel="noopener noreferrer">View</a>
+          <a href={getBlobUrl(pullRequest, activeFile)} target="_blank" rel="noopener noreferrer">View</a>
         </div>
       </div>
     );
@@ -182,10 +200,10 @@ class PullRequest extends Component<Props> {
             <div className={Styles.NoPreview}>
               No change
             </div> :
-          (pullRequest?.bodyHTML && <div
+          <div
             className={`${Styles.Summary} bp3-running-text`}
             dangerouslySetInnerHTML={{__html: pullRequest.bodyHTML}}
-          />)
+          />
         }
       </div>
     );
@@ -228,7 +246,7 @@ class PullRequest extends Component<Props> {
     if (!activeFile || !activeFile.sha) {
       return;
     }
-    setReviewState(pullRequest!.databaseId!, activeFile.sha, event.currentTarget.checked);
+    setReviewState(pullRequest!.databaseId?.toString() ?? pullRequest!.id, activeFile.sha, event.currentTarget.checked);
   };
 
   _login = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -248,7 +266,7 @@ class PullRequest extends Component<Props> {
   };
 }
 
-function getBlobUrl(pullRequest: PullRequestDTO, file: DiffFile) {
+function getBlobUrl(pullRequest: PullRequestFragment, file: DiffFile) {
   return `${pullRequest.headRepository?.url}/blob/${pullRequest.headRefOid}/${file.filename}`;
 }
 
