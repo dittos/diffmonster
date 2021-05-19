@@ -1,59 +1,9 @@
 import { gql } from "@apollo/client";
-
-export const pullRequestReviewFragment = gql`
-  fragment PullRequestReviewFragment on PullRequestReview {
-    id
-    state
-    viewerDidAuthor
-    createdAt
-    databaseId
-  }
-`;
-
-export const pullRequestReviewCommentRestLikeFragment = gql`
-  fragment PullRequestReviewCommentRestLikeFragment on PullRequestReviewComment {
-    id: databaseId
-    node_id: id
-    user: author {
-      ... on User {
-        id: databaseId
-      }
-      html_url: url
-      login
-    }
-    body
-    path
-    position
-    state
-    pullRequestReview { ...PullRequestReviewFragment }
-  }
-  ${pullRequestReviewFragment}
-`;
-
-export const pullRequestReviewThreadFragment = gql`
-  fragment PullRequestReviewThreadFragment on PullRequestReviewThread {
-    id
-    isResolved
-    resolvedBy {
-      url
-      login
-    }
-    comments(first: 100) {
-      nodes {
-        ...PullRequestReviewCommentRestLikeFragment
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-      }
-    }
-    viewerCanReply
-  }
-  ${pullRequestReviewCommentRestLikeFragment}
-`;
+import { pullRequestReviewCommentRestLikeFragment, pullRequestReviewFragment, pullRequestReviewThreadFragment } from "./GithubFragments";
 
 export const addCommentMutation = gql`
+  ${pullRequestReviewThreadFragment}
+  ${pullRequestReviewFragment}
   mutation AddComment($input: AddPullRequestReviewThreadInput!, $submitNow: Boolean!, $submitInput: SubmitPullRequestReviewInput!) {
     addPullRequestReviewThread(input: $input) {
       thread {
@@ -66,11 +16,11 @@ export const addCommentMutation = gql`
       }
     }
   }
-  ${pullRequestReviewThreadFragment}
-  ${pullRequestReviewFragment}
 `;
 
 export const addReplyCommentMutation = gql`
+  ${pullRequestReviewCommentRestLikeFragment}
+  ${pullRequestReviewFragment}
   mutation AddReplyComment($input: AddPullRequestReviewCommentInput!, $submitNow: Boolean!, $submitInput: SubmitPullRequestReviewInput!) {
     addPullRequestReviewComment(input: $input) {
       comment {
@@ -83,11 +33,10 @@ export const addReplyCommentMutation = gql`
       }
     }
   }
-  ${pullRequestReviewCommentRestLikeFragment}
-  ${pullRequestReviewFragment}
 `;
 
 export const editCommentMutation = gql`
+  ${pullRequestReviewCommentRestLikeFragment}
   mutation EditComment($commentId: ID!, $body: String!) {
     updatePullRequestReviewComment(input: {pullRequestReviewCommentId: $commentId, body: $body}) {
       pullRequestReviewComment {
@@ -95,10 +44,10 @@ export const editCommentMutation = gql`
       }
     }
   }
-  ${pullRequestReviewCommentRestLikeFragment}
 `;
 
 export const deleteCommentMutation = gql`
+  ${pullRequestReviewFragment}
   mutation DeleteComment($commentId: ID!) {
     deletePullRequestReviewComment(input: {id: $commentId}) {
       pullRequestReview {
@@ -106,10 +55,10 @@ export const deleteCommentMutation = gql`
       }
     }
   }
-  ${pullRequestReviewFragment}
 `;
 
 export const approveMutation = gql`
+  ${pullRequestReviewFragment}
   mutation Approve($pullRequestId: ID!, $commitOID: GitObjectID) {
     addPullRequestReview(input: {pullRequestId: $pullRequestId, commitOID: $commitOID, event: APPROVE}) {
       pullRequestReview {
@@ -117,10 +66,10 @@ export const approveMutation = gql`
       }
     }
   }
-  ${pullRequestReviewFragment}
 `;
 
 export const submitReviewMutation = gql`
+  ${pullRequestReviewFragment}
   mutation SubmitReview($input: SubmitPullRequestReviewInput!) {
     submitPullRequestReview(input: $input) {
       pullRequestReview {
@@ -128,5 +77,4 @@ export const submitReviewMutation = gql`
       }
     }
   }
-  ${pullRequestReviewFragment}
 `;

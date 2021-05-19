@@ -1,21 +1,22 @@
-import { of, zip, Observable, concat, empty } from 'rxjs';
-import { switchMap, catchError, takeUntil, map, merge } from 'rxjs/operators';
+import { of, zip, concat, merge, EMPTY } from 'rxjs';
+import { switchMap, catchError, takeUntil, map } from 'rxjs/operators';
 import { ActionsObservable } from 'redux-observable';
-import marked from 'marked';
 import {
-  getPullRequest,
   getPullRequestAsDiff,
-  getPullRequestFromGraphQL,
-  pullRequestReviewFragment,
   PullRequestReviewDTO,
+  apollo,
   PullRequestDTO,
-  GraphQLError,
 } from '../lib/Github';
 import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
 import getInitialState, { AppState } from './getInitialState';
 import { fetchReviewThreads } from './CommentStore';
+import gql from 'graphql-tag';
+import { pullRequestReviewFragment } from '../lib/GithubFragments';
+import { PullRequestQuery, PullRequestQueryVariables } from './__generated__/PullRequestQuery';
+import { ApolloError } from '@apollo/client';
+import { headerPullRequestFragment } from '../ui/Header';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -39,7 +40,6 @@ export type PullRequestAction =
   { type: 'FETCH_ERROR'; payload: { status: 404 }; } |
   { type: 'FETCH_SUCCESS'; payload: {
     pullRequest: PullRequestDTO;
-    pullRequestBodyRendered: string;
     files: DiffFile[];
     latestReview: PullRequestReviewDTO | null;
     isLoadingReviewStates: boolean;
@@ -55,48 +55,78 @@ export function fetchCancel(): PullRequestAction {
   return { type: 'FETCH_CANCEL' };
 }
 
-export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =>
-  action$.ofType<FetchAction>(FETCH).pipe(switchMap(action =>
-    zip<Observable<PullRequestDTO>, Observable<string>, Observable<any>>(
-      getPullRequest(action.payload.owner, action.payload.repo, action.payload.number),
-      getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
-      getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
-        getUserInfo()?.login ?? '', `
+const pullRequestQuery = gql`
+  ${pullRequestReviewFragment}
+  ${headerPullRequestFragment}
+  query PullRequestQuery($owner: String!, $repo: String!, $number: Int!, $author: String!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        databaseId
+        id
+        number
+        url
+        title
         bodyHTML
+        state
+        merged
+        baseRefName
+        baseRefOid
+        baseRepository {
+          nameWithOwner
+          owner { login }
+        }
+        headRefName
+        headRefOid
+        headRepository {
+          url
+          owner { login }
+        }
+        ...HeaderPullRequestFragment
         reviews(last: 1, author: $author) {
           nodes {
-            ${pullRequestReviewFragment}
+            ...PullRequestReviewFragment
           }
         }
         pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
           nodes {
-            ${pullRequestReviewFragment}
+            ...PullRequestReviewFragment
           }
         }
-      `).pipe(catchError((error: GraphQLError[]) => {
-        if (error.some(e => e.type === 'NOT_FOUND')) {
+      }
+    }
+  }
+`;
+
+export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =>
+  action$.ofType<FetchAction>(FETCH).pipe(switchMap(action =>
+    zip(
+      getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
+      apollo.query<PullRequestQuery, PullRequestQueryVariables>({
+        query: pullRequestQuery,
+        variables: {
+          owner: action.payload.owner,
+          repo: action.payload.repo,
+          number: action.payload.number,
+          author: getUserInfo()?.login ?? '',
+        },
+        fetchPolicy: 'no-cache',
+      }).catch((error: ApolloError) => {
+        if (error.graphQLErrors.some(e => (e as any).type === 'NOT_FOUND')) {
           // eslint-disable-next-line no-throw-literal
           throw { status: 404 }; // XXX
         }
         throw error;
-      }))
+      })
     ).pipe(
-    switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
+    switchMap(([ diff, result ]) => {
+      const pullRequest = result.data?.repository?.pullRequest!;
       const authenticated = isAuthenticated();
-      let latestReview: PullRequestReviewDTO | null = null;
-      let pullRequestBodyRendered;
-      if (pullRequestFromGraphQL) {
-        // FIXME: Pending review is always on the first of reviews connection
-        latestReview = pullRequestFromGraphQL.pendingReviews.nodes[0] || pullRequestFromGraphQL.reviews.nodes[0];
-        pullRequestBodyRendered = pullRequestFromGraphQL.bodyHTML;
-      } else {
-        pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
-      }
-      const success$ = of({
+      // FIXME: Pending review is always on the first of reviews connection
+      const latestReview = pullRequest.pendingReviews?.nodes?.[0] ?? pullRequest.reviews?.nodes?.[0] ?? null;
+      const success$ = of<PullRequestAction>({
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
-          pullRequestBodyRendered,
           files: parseDiff(diff),
           latestReview,
           isLoadingReviewStates: authenticated,
@@ -105,12 +135,12 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
       const comments$ = of(fetchReviewThreads());
 
       const reviewStates$ = authenticated ?
-        observeReviewStates(pullRequest.id)
+        observeReviewStates(pullRequest.databaseId!) // FIXME
           .pipe(map(reviewStates =>
             ({ type: REVIEW_STATES_CHANGED, payload: reviewStates || {} }))) :
-        empty();
+        EMPTY;
       
-      return concat(success$, comments$.pipe(merge(reviewStates$)));
+      return concat(success$, merge(comments$, reviewStates$));
     }),
     catchError(error => {
       console.error(error);

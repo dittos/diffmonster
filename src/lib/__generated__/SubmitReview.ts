@@ -24,10 +24,6 @@ export interface SubmitReview_submitPullRequestReview_pullRequestReview {
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface SubmitReview_submitPullRequestReview {

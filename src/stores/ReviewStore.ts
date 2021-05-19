@@ -3,13 +3,12 @@ import { from, of } from 'rxjs';
 import { mergeMap, catchError, map } from 'rxjs/operators';
 import {
   PullRequestReviewDTO,
-  PullRequestCommentState,
   apollo,
 } from '../lib/Github';
 import { approveMutation, submitReviewMutation } from '../lib/GithubMutations';
 import { Approve, ApproveVariables } from '../lib/__generated__/Approve';
 import { SubmitReview, SubmitReviewVariables } from '../lib/__generated__/SubmitReview';
-import { PullRequestReviewEvent } from '../__generated__/globalTypes';
+import { PullRequestReviewCommentState, PullRequestReviewEvent } from '../__generated__/globalTypes';
 import { PullRequestLoadedState } from './getInitialState';
 
 export const ADD_REVIEW_SUCCESS = 'REVIEW_ADDED';
@@ -45,8 +44,8 @@ const approveEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObse
     return from(apollo.mutate<Approve, ApproveVariables>({
       mutation: approveMutation,
       variables: {
-        pullRequestId: state.pullRequest.node_id,
-        commitOID: state.pullRequest.head.sha,
+        pullRequestId: state.pullRequest.id,
+        commitOID: state.pullRequest.headRefOid,
       },
       fetchPolicy: 'no-cache',
     })).pipe(
@@ -67,7 +66,7 @@ const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: Stat
       mutation: submitReviewMutation,
       variables: {
         input: {
-          pullRequestId: state.pullRequest.node_id,
+          pullRequestId: state.pullRequest.id,
           event: action.payload.event,
         }
       },
@@ -130,7 +129,9 @@ export default function reviewReducer(state: PullRequestLoadedState, action: Rev
           ...thread,
           comments: thread.comments && {
             ...thread.comments,
-            nodes: thread.comments.nodes!.map(c => c!.state === 'PENDING' ? { ...c!, state: 'SUBMITTED' as PullRequestCommentState } : c)
+            nodes: thread.comments.nodes!.map(c => c!.state === PullRequestReviewCommentState.PENDING ?
+              { ...c!, state: PullRequestReviewCommentState.SUBMITTED } :
+              c)
           }
         })),
       };

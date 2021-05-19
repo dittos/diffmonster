@@ -9,7 +9,7 @@ import { AddPullRequestReviewCommentInput, SubmitPullRequestReviewInput, PullReq
 // GraphQL mutation operation: AddReplyComment
 // ====================================================
 
-export interface AddReplyComment_addPullRequestReviewComment_comment_user_Bot {
+export interface AddReplyComment_addPullRequestReviewComment_comment_author_Bot {
   __typename: "Bot" | "EnterpriseUserAccount" | "Mannequin" | "Organization";
   /**
    * The HTTP URL for this actor.
@@ -21,7 +21,7 @@ export interface AddReplyComment_addPullRequestReviewComment_comment_user_Bot {
   login: string;
 }
 
-export interface AddReplyComment_addPullRequestReviewComment_comment_user_User {
+export interface AddReplyComment_addPullRequestReviewComment_comment_author_User {
   __typename: "User";
   /**
    * Identifies the primary key from the database.
@@ -37,7 +37,7 @@ export interface AddReplyComment_addPullRequestReviewComment_comment_user_User {
   login: string;
 }
 
-export type AddReplyComment_addPullRequestReviewComment_comment_user = AddReplyComment_addPullRequestReviewComment_comment_user_Bot | AddReplyComment_addPullRequestReviewComment_comment_user_User;
+export type AddReplyComment_addPullRequestReviewComment_comment_author = AddReplyComment_addPullRequestReviewComment_comment_author_Bot | AddReplyComment_addPullRequestReviewComment_comment_author_User;
 
 export interface AddReplyComment_addPullRequestReviewComment_comment_pullRequestReview {
   __typename: "PullRequestReview";
@@ -54,27 +54,23 @@ export interface AddReplyComment_addPullRequestReviewComment_comment_pullRequest
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface AddReplyComment_addPullRequestReviewComment_comment {
   __typename: "PullRequestReviewComment";
-  /**
-   * Identifies the primary key from the database.
-   */
-  id: number | null;
-  node_id: string;
+  id: string;
   /**
    * The actor who authored the comment.
    */
-  user: AddReplyComment_addPullRequestReviewComment_comment_user | null;
+  author: AddReplyComment_addPullRequestReviewComment_comment_author | null;
   /**
    * The comment body of this review comment.
    */
   body: string;
+  /**
+   * The body rendered to HTML.
+   */
+  bodyHTML: any;
   /**
    * The path to which the comment applies.
    */
@@ -116,10 +112,6 @@ export interface AddReplyComment_submitPullRequestReview_pullRequestReview {
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface AddReplyComment_submitPullRequestReview {

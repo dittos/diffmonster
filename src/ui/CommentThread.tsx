@@ -1,7 +1,6 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Intent, Tag, Button, Classes, Icon } from '@blueprintjs/core';
-import marked from 'marked';
 import { Subject, Subscription } from 'rxjs';
 import { getUserInfo } from '../lib/GithubAuth';
 import { CommentPosition, editComment } from '../stores/CommentStore';
@@ -10,11 +9,6 @@ import { PullRequestCommentDTO, UserDTO, PullRequestReviewThreadDTO } from '../l
 import { AppAction } from '../stores';
 import CommentComposer from './CommentComposer';
 import { DiffFile } from '../lib/DiffParser';
-
-function renderMarkdown(body: string): string {
-  const rendered = marked(body, { gfm: true, sanitize: true });
-  return rendered.replace(/&lt;(\/?sub)&gt;/g, '<$1>'); // TODO: is it okay?
-}
 
 interface EditorProps extends DispatchProp<AppAction> {
   comment: PullRequestCommentDTO;
@@ -103,9 +97,9 @@ class Comment extends React.Component<CommentProps> {
       return (
         <div className={Styles.CommentItem}>
           <div className={Styles.CommentMeta}>
-            <a className={Styles.CommentUser} href={comment.user?.html_url ?? '#'} target="_blank" rel="noopener noreferrer">{comment.user?.login}</a>
+            <a className={Styles.CommentUser} href={comment.author?.html_url ?? '#'} target="_blank" rel="noopener noreferrer">{comment.author?.login}</a>
             {isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
-            {viewer && viewer.login === comment.user?.login && (
+            {viewer && viewer.login === comment.author?.login && (
               <div className={Styles.Actions}>
                 <Button
                   icon="edit"
@@ -121,7 +115,7 @@ class Comment extends React.Component<CommentProps> {
               </div>
             )}
           </div>
-          <div className={Styles.CommentBody} dangerouslySetInnerHTML={{__html: renderMarkdown(comment.body)}} />
+          <div className={Styles.CommentBody} dangerouslySetInnerHTML={{__html: comment.bodyHTML}} />
         </div>
       );
     }

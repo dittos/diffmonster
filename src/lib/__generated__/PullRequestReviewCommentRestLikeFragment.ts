@@ -9,7 +9,7 @@ import { PullRequestReviewCommentState, PullRequestReviewState } from "./../../_
 // GraphQL fragment: PullRequestReviewCommentRestLikeFragment
 // ====================================================
 
-export interface PullRequestReviewCommentRestLikeFragment_user_Bot {
+export interface PullRequestReviewCommentRestLikeFragment_author_Bot {
   __typename: "Bot" | "EnterpriseUserAccount" | "Mannequin" | "Organization";
   /**
    * The HTTP URL for this actor.
@@ -21,7 +21,7 @@ export interface PullRequestReviewCommentRestLikeFragment_user_Bot {
   login: string;
 }
 
-export interface PullRequestReviewCommentRestLikeFragment_user_User {
+export interface PullRequestReviewCommentRestLikeFragment_author_User {
   __typename: "User";
   /**
    * Identifies the primary key from the database.
@@ -37,7 +37,7 @@ export interface PullRequestReviewCommentRestLikeFragment_user_User {
   login: string;
 }
 
-export type PullRequestReviewCommentRestLikeFragment_user = PullRequestReviewCommentRestLikeFragment_user_Bot | PullRequestReviewCommentRestLikeFragment_user_User;
+export type PullRequestReviewCommentRestLikeFragment_author = PullRequestReviewCommentRestLikeFragment_author_Bot | PullRequestReviewCommentRestLikeFragment_author_User;
 
 export interface PullRequestReviewCommentRestLikeFragment_pullRequestReview {
   __typename: "PullRequestReview";
@@ -54,27 +54,23 @@ export interface PullRequestReviewCommentRestLikeFragment_pullRequestReview {
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface PullRequestReviewCommentRestLikeFragment {
   __typename: "PullRequestReviewComment";
-  /**
-   * Identifies the primary key from the database.
-   */
-  id: number | null;
-  node_id: string;
+  id: string;
   /**
    * The actor who authored the comment.
    */
-  user: PullRequestReviewCommentRestLikeFragment_user | null;
+  author: PullRequestReviewCommentRestLikeFragment_author | null;
   /**
    * The comment body of this review comment.
    */
   body: string;
+  /**
+   * The body rendered to HTML.
+   */
+  bodyHTML: any;
   /**
    * The path to which the comment applies.
    */

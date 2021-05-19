@@ -9,7 +9,7 @@ import { PullRequestReviewCommentState, PullRequestReviewState } from "./../../_
 // GraphQL mutation operation: EditComment
 // ====================================================
 
-export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment_user_Bot {
+export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment_author_Bot {
   __typename: "Bot" | "EnterpriseUserAccount" | "Mannequin" | "Organization";
   /**
    * The HTTP URL for this actor.
@@ -21,7 +21,7 @@ export interface EditComment_updatePullRequestReviewComment_pullRequestReviewCom
   login: string;
 }
 
-export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment_user_User {
+export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment_author_User {
   __typename: "User";
   /**
    * Identifies the primary key from the database.
@@ -37,7 +37,7 @@ export interface EditComment_updatePullRequestReviewComment_pullRequestReviewCom
   login: string;
 }
 
-export type EditComment_updatePullRequestReviewComment_pullRequestReviewComment_user = EditComment_updatePullRequestReviewComment_pullRequestReviewComment_user_Bot | EditComment_updatePullRequestReviewComment_pullRequestReviewComment_user_User;
+export type EditComment_updatePullRequestReviewComment_pullRequestReviewComment_author = EditComment_updatePullRequestReviewComment_pullRequestReviewComment_author_Bot | EditComment_updatePullRequestReviewComment_pullRequestReviewComment_author_User;
 
 export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment_pullRequestReview {
   __typename: "PullRequestReview";
@@ -54,27 +54,23 @@ export interface EditComment_updatePullRequestReviewComment_pullRequestReviewCom
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment {
   __typename: "PullRequestReviewComment";
-  /**
-   * Identifies the primary key from the database.
-   */
-  id: number | null;
-  node_id: string;
+  id: string;
   /**
    * The actor who authored the comment.
    */
-  user: EditComment_updatePullRequestReviewComment_pullRequestReviewComment_user | null;
+  author: EditComment_updatePullRequestReviewComment_pullRequestReviewComment_author | null;
   /**
    * The comment body of this review comment.
    */
   body: string;
+  /**
+   * The body rendered to HTML.
+   */
+  bodyHTML: any;
   /**
    * The path to which the comment applies.
    */

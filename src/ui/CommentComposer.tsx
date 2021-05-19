@@ -2,7 +2,7 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Button, Intent } from '@blueprintjs/core';
 import { Subject, Subscription } from 'rxjs';
-import { PullRequestReviewState, PullRequestReviewDTO, PullRequestDTO, PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
+import { PullRequestReviewDTO, PullRequestDTO, PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
 import {
   addSingleComment,
   addReviewComment,
@@ -15,6 +15,7 @@ import Styles from './CommentComposer.module.css';
 import { PullRequestLoadedState } from '../stores/getInitialState';
 import { AppAction } from '../stores';
 import { DiffFile } from '../lib/DiffParser';
+import { PullRequestReviewState } from '../__generated__/globalTypes';
 
 interface StateProps {
   latestReview: PullRequestReviewDTO | null;
@@ -84,7 +85,7 @@ class CommentComposer extends React.Component<Props> {
     if (!config.enableCommentSignature)
       return this.state.commentBody;
     
-    const url = this.props.pullRequest.html_url.replace(/https?:\/\/github.com\//, config.url + '#/') +
+    const url = this.props.pullRequest.url.replace(/https?:\/\/github.com\//, config.url + '#/') +
       '?path=' + encodeURIComponent(this.props.file.filename);
     return `${this.state.commentBody}\n\n<sub>_commented via [Diff Monster](${url})_</sub>`;
   }

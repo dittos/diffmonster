@@ -24,8 +24,4 @@ export interface PullRequestReviewFragment {
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }

@@ -7,9 +7,41 @@ import { submitReview, approve } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
 import { PullRequestLoadedState } from '../stores/getInitialState';
 import { AppAction } from '../stores';
-import { PullRequestReviewEvent } from '../__generated__/globalTypes';
+import { PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestState } from '../__generated__/globalTypes';
+import gql from 'graphql-tag';
+import { HeaderPullRequestFragment } from './__generated__/HeaderPullRequestFragment';
 
 const separator = <span className={Styles.Separator} />;
+
+export const headerPullRequestFragment = gql`
+  fragment HeaderPullRequestFragment on PullRequest {
+    id
+    number
+    url
+    title
+    author {
+      ... on User {
+        databaseId
+      }
+      url
+      login
+    }
+    state
+    merged
+    baseRefName
+    baseRefOid
+    baseRepository {
+      nameWithOwner
+      owner { login }
+    }
+    headRefName
+    headRefOid
+    headRepository {
+      url
+      owner { login }
+    }
+  }
+`;
 
 function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
   let count = 0;
@@ -17,7 +49,7 @@ function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
     if (!thread.comments?.nodes)
       continue;
     for (let comment of thread.comments.nodes) {
-      if (comment?.state === 'PENDING')
+      if (comment?.state === PullRequestReviewCommentState.PENDING)
         count++;
     }
   }
@@ -26,16 +58,19 @@ function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
 
 class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAction>> {
   render() {
-    const { pullRequest, latestReview, reviewThreads, currentUser } = this.props;
+    const { pullRequest: fullPullRequest, latestReview, reviewThreads, currentUser } = this.props;
+    const pullRequest: HeaderPullRequestFragment = fullPullRequest;
     const latestReviewState = latestReview && latestReview.state;
     const canApprove = currentUser &&
-      pullRequest.user.id !== currentUser.id &&
+      pullRequest.author?.__typename === 'User' && pullRequest.author.databaseId !== currentUser.id &&
       latestReviewState !== PullRequestReviewState.PENDING &&
       latestReviewState !== PullRequestReviewState.APPROVED;
     const pendingCommentCount = countPendingComments(reviewThreads);
 
-    const [baseRepo, baseRef] = pullRequest.base.label.split(':', 2);
-    const [headRepo, headRef] = pullRequest.head.label.split(':', 2);
+    const baseRepo = pullRequest.baseRepository?.owner.login;
+    const baseRef = pullRequest.baseRefName;
+    const headRepo = pullRequest.headRepository?.owner.login;
+    const headRef = pullRequest.headRefName;
 
     return <div className={Styles.Container}>
       <div className={Styles.Links}>
@@ -63,7 +98,7 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
         )}
         {' '}
         <AnchorButton
-          href={pullRequest.html_url}
+          href={pullRequest.url}
           target="_blank"
           rightIcon="share"
           className={Classes.MINIMAL}
@@ -73,7 +108,7 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
       </div>
       <div className={Styles.Title}>
         <Link
-          to={`/${pullRequest.base.repo.full_name}/pull/${pullRequest.number}`}
+          to={`/${pullRequest.baseRepository?.nameWithOwner}/pull/${pullRequest.number}`}
           className={`${Classes.BUTTON} ${Classes.MINIMAL}`}
         >
           <Icon icon="git-pull" />
@@ -81,18 +116,18 @@ class Header extends React.Component<PullRequestLoadedState & DispatchProp<AppAc
         </Link>
       </div>
       <div className={Styles.Meta}>
-        {pullRequest.base.repo.full_name}
+        {pullRequest.baseRepository?.nameWithOwner}
         #{pullRequest.number}
         {separator}
-        {pullRequest.state === 'open' ? 'Open' :
+        {pullRequest.state === PullRequestState.OPEN ? 'Open' :
           pullRequest.merged ? 'Merged' :
             'Closed'}
         {separator}
-        by <a href={pullRequest.user.html_url} target="_blank" rel="noopener noreferrer">{pullRequest.user.login}</a>
+        by <a href={pullRequest.author?.url} target="_blank" rel="noopener noreferrer">{pullRequest.author?.login}</a>
         {separator}
-        <span className={Styles.Branch}>{baseRepo === headRepo ? headRef : pullRequest.head.label}</span>
+        <span className={Styles.Branch}>{baseRepo === headRepo ? headRef : `${headRepo}:${headRef}`}</span>
         <span className={Styles.MergeInto}>&rarr;</span>
-        <span className={Styles.Branch}>{baseRepo === headRepo ? baseRef : pullRequest.base.label}</span>
+        <span className={Styles.Branch}>{baseRepo === headRepo ? baseRef : `${baseRepo}:${baseRef}`}</span>
       </div>
     </div>;
   }

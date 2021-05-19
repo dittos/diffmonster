@@ -21,7 +21,7 @@ export interface AddComment_addPullRequestReviewThread_thread_resolvedBy {
   login: string;
 }
 
-export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_user_Bot {
+export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_author_Bot {
   __typename: "Bot" | "EnterpriseUserAccount" | "Mannequin" | "Organization";
   /**
    * The HTTP URL for this actor.
@@ -33,7 +33,7 @@ export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_use
   login: string;
 }
 
-export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_user_User {
+export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_author_User {
   __typename: "User";
   /**
    * Identifies the primary key from the database.
@@ -49,7 +49,7 @@ export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_use
   login: string;
 }
 
-export type AddComment_addPullRequestReviewThread_thread_comments_nodes_user = AddComment_addPullRequestReviewThread_thread_comments_nodes_user_Bot | AddComment_addPullRequestReviewThread_thread_comments_nodes_user_User;
+export type AddComment_addPullRequestReviewThread_thread_comments_nodes_author = AddComment_addPullRequestReviewThread_thread_comments_nodes_author_Bot | AddComment_addPullRequestReviewThread_thread_comments_nodes_author_User;
 
 export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_pullRequestReview {
   __typename: "PullRequestReview";
@@ -66,27 +66,23 @@ export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_pul
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface AddComment_addPullRequestReviewThread_thread_comments_nodes {
   __typename: "PullRequestReviewComment";
-  /**
-   * Identifies the primary key from the database.
-   */
-  id: number | null;
-  node_id: string;
+  id: string;
   /**
    * The actor who authored the comment.
    */
-  user: AddComment_addPullRequestReviewThread_thread_comments_nodes_user | null;
+  author: AddComment_addPullRequestReviewThread_thread_comments_nodes_author | null;
   /**
    * The comment body of this review comment.
    */
   body: string;
+  /**
+   * The body rendered to HTML.
+   */
+  bodyHTML: any;
   /**
    * The path to which the comment applies.
    */
@@ -177,10 +173,6 @@ export interface AddComment_submitPullRequestReview_pullRequestReview {
    * Identifies the date and time when the object was created.
    */
   createdAt: any;
-  /**
-   * Identifies the primary key from the database.
-   */
-  databaseId: number | null;
 }
 
 export interface AddComment_submitPullRequestReview {

@@ -2,7 +2,6 @@ import { combineEpics, ActionsObservable, StateObservable } from 'redux-observab
 import { Subject, of, from, Observable } from 'rxjs';
 import { mergeMap, tap, catchError, map, filter } from 'rxjs/operators';
 import {
-  PullRequestReviewState,
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
   getPullRequestReviewThreads,
@@ -13,7 +12,7 @@ import { ADD_REVIEW_SUCCESS } from './ReviewStore';
 import { PullRequestLoadedState } from './getInitialState';
 import { addCommentMutation, addReplyCommentMutation, deleteCommentMutation, editCommentMutation } from '../lib/GithubMutations';
 import { AddComment, AddCommentVariables } from '../lib/__generated__/AddComment';
-import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent as GqlPullRequestReviewEvent } from '../__generated__/globalTypes';
+import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestReviewState } from '../__generated__/globalTypes';
 import { AddReplyComment, AddReplyCommentVariables } from '../lib/__generated__/AddReplyComment';
 import { EditComment, EditCommentVariables } from '../lib/__generated__/EditComment';
 import { DeleteComment, DeleteCommentVariables } from '../lib/__generated__/DeleteComment';
@@ -97,7 +96,7 @@ export type CommentAction =
   { type: 'ADD_REVIEW_COMMENT_REPLY_SUCCESS'; payload: { threadId: string; comment: PullRequestCommentDTO; }; } |
   { type: 'ADD_REVIEW_COMMENT_ERROR'; } |
   DeleteCommentAction |
-  { type: 'DELETE_COMMENT_SUCCESS'; payload: number; } |
+  { type: 'DELETE_COMMENT_SUCCESS'; payload: string; } |
   { type: 'DELETE_COMMENT_ERROR'; } |
   EditCommentAction |
   { type: 'EDIT_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
@@ -138,10 +137,10 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 
     if (replyContext) {
       return replyComment(
-        pullRequest.node_id,
-        pullRequest.head.sha,
+        pullRequest.id,
+        pullRequest.headRefOid,
         null,
-        replyContext.comment.node_id,
+        replyContext.comment.id,
         body,
         position,
         path,
@@ -163,7 +162,7 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
     }
 
     return createComment(
-      pullRequest.node_id,
+      pullRequest.id,
       null,
       body,
       position,
@@ -193,10 +192,10 @@ const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 
     if (replyContext) {
       return replyComment(
-        pullRequest.node_id,
-        pullRequest.head.sha,
+        pullRequest.id,
+        pullRequest.headRefOid,
         latestReviewId,
-        replyContext.comment.node_id,
+        replyContext.comment.id,
         body,
         position,
         path,
@@ -218,7 +217,7 @@ const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
     }
 
     return createComment(
-      pullRequest.node_id,
+      pullRequest.id,
       latestReviewId,
       body,
       position,
@@ -274,7 +273,7 @@ function createComment(
       submitNow,
       submitInput: {
         pullRequestId,
-        event: GqlPullRequestReviewEvent.COMMENT,
+        event: PullRequestReviewEvent.COMMENT,
       },
     },
     fetchPolicy: 'no-cache',
@@ -317,7 +316,7 @@ function replyComment(
       submitNow,
       submitInput: {
         pullRequestId,
-        event: GqlPullRequestReviewEvent.COMMENT,
+        event: PullRequestReviewEvent.COMMENT,
       },
     },
     fetchPolicy: 'no-cache',
@@ -335,7 +334,7 @@ const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, state$: St
     return from(apollo.mutate<DeleteComment, DeleteCommentVariables>({
       mutation: deleteCommentMutation,
       variables: {
-        commentId: comment.node_id,
+        commentId: comment.id,
       },
       fetchPolicy: 'no-cache',
     })).pipe(
@@ -356,7 +355,7 @@ const editCommentEpic = (action$: ActionsObservable<CommentAction>, state$: Stat
     return from(apollo.mutate<EditComment, EditCommentVariables>({
       mutation: editCommentMutation,
       variables: {
-        commentId: comment.node_id,
+        commentId: comment.id,
         body,
       },
       fetchPolicy: 'no-cache',
