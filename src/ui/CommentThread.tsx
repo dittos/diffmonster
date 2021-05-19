@@ -180,7 +180,7 @@ class CommentThread extends React.Component<CommentThreadProps> {
             viewer={viewer}
           />
         ))}
-        {!this.state.hidden && comments && thread.viewerCanReply && (
+        {!this.state.hidden && comments && viewer && thread.viewerCanReply && (
           this.state.composerOpened ? (
             <div className={Styles.CommentThreadFooter}>
               <CommentComposer

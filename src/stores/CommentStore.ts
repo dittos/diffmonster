@@ -6,13 +6,11 @@ import {
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
   getPullRequestReviewThreads,
-  getPullRequestComments,
   apollo,
   PullRequestReviewDTO,
 } from '../lib/Github';
 import { ADD_REVIEW_SUCCESS } from './ReviewStore';
-import { PullRequestLoadedState, generateClientId } from './getInitialState';
-import { isAuthenticated } from '../lib/GithubAuth';
+import { PullRequestLoadedState } from './getInitialState';
 import { addCommentMutation, addReplyCommentMutation, deleteCommentMutation, editCommentMutation } from '../lib/GithubMutations';
 import { AddComment, AddCommentVariables } from '../lib/__generated__/AddComment';
 import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent as GqlPullRequestReviewEvent } from '../__generated__/globalTypes';
@@ -128,30 +126,9 @@ export function editComment(comment: PullRequestCommentDTO, body: string, subjec
 
 const fetchReviewThreadsEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<FetchReviewThreadsAction>('FETCH_REVIEW_THREADS').pipe(mergeMap(() => {
-    const authenticated = isAuthenticated();
     const { pullRequest } = state$.value;
-    
-    if (authenticated) {
-      return getPullRequestReviewThreads(pullRequest)
-        .pipe(map(reviewThreads => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: reviewThreads })));
-    } else {
-      // API v4 (GraphQL) does not support anonymous queries.
-      // API v3 (REST) does not support Review Threads.
-      // Make it viewable by wrapping each comment as individual review thread
-      return getPullRequestComments(pullRequest)
-        .pipe(map(comments => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: comments.map(comment => ({
-          id: generateClientId(),
-          isResolved: false,
-          resolvedBy: null,
-          comments: {
-            nodes: [comment],
-            pageInfo: {
-              hasPreviousPage: false,
-              startCursor: '',
-            }
-          },
-        }))})));
-    }
+    return getPullRequestReviewThreads(pullRequest)
+      .pipe(map(reviewThreads => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: reviewThreads })));
   }));
 
 const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>

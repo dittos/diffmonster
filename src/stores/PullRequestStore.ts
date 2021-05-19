@@ -60,28 +60,26 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
     zip<Observable<PullRequestDTO>, Observable<string>, Observable<any>>(
       getPullRequest(action.payload.owner, action.payload.repo, action.payload.number),
       getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
-      getUserInfo() ?
-        getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
-          getUserInfo()!.login, `
-          bodyHTML
-          reviews(last: 1, author: $author) {
-            nodes {
-              ${pullRequestReviewFragment}
-            }
+      getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
+        getUserInfo()?.login ?? '', `
+        bodyHTML
+        reviews(last: 1, author: $author) {
+          nodes {
+            ${pullRequestReviewFragment}
           }
-          pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
-            nodes {
-              ${pullRequestReviewFragment}
-            }
+        }
+        pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
+          nodes {
+            ${pullRequestReviewFragment}
           }
-        `).pipe(catchError((error: GraphQLError[]) => {
-          if (error.some(e => e.type === 'NOT_FOUND')) {
-            // eslint-disable-next-line no-throw-literal
-            throw { status: 404 }; // XXX
-          }
-          throw error;
-        })) :
-        of(null)
+        }
+      `).pipe(catchError((error: GraphQLError[]) => {
+        if (error.some(e => e.type === 'NOT_FOUND')) {
+          // eslint-disable-next-line no-throw-literal
+          throw { status: 404 }; // XXX
+        }
+        throw error;
+      }))
     ).pipe(
     switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
       const authenticated = isAuthenticated();
