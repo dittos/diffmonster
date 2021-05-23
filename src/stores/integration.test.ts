@@ -94,29 +94,32 @@ describe('integeration test', () => {
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('none');
       expect(state.hasPendingReview).toBeFalsy();
+      expect(state.pendingCommentCount).toStrictEqual(0);
     });
     
     it('no opinion and pending review', async () => {
       const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-      const pullRequest = newPullRequest({ pendingReview });
+      const pullRequest = newPullRequest({ pendingReview, pendingCommentCount: 100 });
       const state = await prepareStore(pullRequest);
       
       expect(state.status).toStrictEqual('success');
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('none');
       expect(state.hasPendingReview).toBeTruthy();
+      expect(state.pendingCommentCount).toStrictEqual(100);
     });
     
     it('approved and pending review', async () => {
       const opinionatedReview = newReview({ state: PullRequestReviewState.APPROVED });
       const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-      const pullRequest = newPullRequest({ opinionatedReview, pendingReview });
+      const pullRequest = newPullRequest({ opinionatedReview, pendingReview, pendingCommentCount: 100 });
       const state = await prepareStore(pullRequest);
       
       expect(state.status).toStrictEqual('success');
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('approved');
       expect(state.hasPendingReview).toBeTruthy();
+      expect(state.pendingCommentCount).toStrictEqual(100);
     });
     
     it('approved', async () => {
@@ -128,6 +131,7 @@ describe('integeration test', () => {
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('approved');
       expect(state.hasPendingReview).toBeFalsy();
+      expect(state.pendingCommentCount).toStrictEqual(0);
     });
     
     it('changes requested', async () => {
@@ -139,6 +143,7 @@ describe('integeration test', () => {
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('changesRequested');
       expect(state.hasPendingReview).toBeFalsy();
+      expect(state.pendingCommentCount).toStrictEqual(0);
     });
     
     it('dismissed', async () => {
@@ -150,6 +155,7 @@ describe('integeration test', () => {
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('none');
       expect(state.hasPendingReview).toBeFalsy();
+      expect(state.pendingCommentCount).toStrictEqual(0);
     });
   });
   
@@ -201,6 +207,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeFalsy();
+    expect(state.pendingCommentCount).toStrictEqual(0);
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -308,6 +315,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeFalsy();
+    expect(state.pendingCommentCount).toStrictEqual(0);
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -356,6 +364,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeTruthy();
+    expect(state.pendingCommentCount).toStrictEqual(1);
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -412,14 +421,15 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeTruthy();
+    expect(state.pendingCommentCount).toStrictEqual(1);
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('add comment to existing draft review', async () => {
     const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-    const pullRequest = newPullRequest({ pendingReview });
     const existingComment = newComment({ review: pendingReview });
     const existingThread = newThread({ comments: [existingComment] });
+    const pullRequest = newPullRequest({ pendingReview, pendingCommentCount: 1 });
     await prepareStore(pullRequest, [existingThread]);
 
     const action = addReviewComment({
@@ -458,14 +468,15 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([existingThread, thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeTruthy();
+    expect(state.pendingCommentCount).toStrictEqual(2);
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('add reply comment to existing draft review', async () => {
     const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-    const pullRequest = newPullRequest({ pendingReview });
     const parentComment = newComment({ review: pendingReview });
     const thread = newThread({ comments: [parentComment] });
+    const pullRequest = newPullRequest({ pendingReview, pendingCommentCount: 1 });
     await prepareStore(pullRequest, [thread]);
 
     const action = addReviewComment({
@@ -509,6 +520,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeTruthy();
+    expect(state.pendingCommentCount).toStrictEqual(2);
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -535,6 +547,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]); // TODO: should remove empty threads
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeFalsy();
+    expect(state.pendingCommentCount).toStrictEqual(0);
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -562,14 +575,15 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeFalsy();
+    expect(state.pendingCommentCount).toStrictEqual(0);
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('delete last pending comment', async () => {
     const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-    const pullRequest = newPullRequest({ pendingReview });
     const comment = newComment({ review: pendingReview });
     const thread = newThread({ comments: [comment] });
+    const pullRequest = newPullRequest({ pendingReview, pendingCommentCount: 1 });
     await prepareStore(pullRequest, [thread]);
 
     const action = deleteComment(comment);
@@ -588,15 +602,16 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeFalsy();
+    expect(state.pendingCommentCount).toStrictEqual(0);
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('delete a pending comment', async () => {
     const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-    const pullRequest = newPullRequest({ pendingReview });
     const comment = newComment({ review: pendingReview });
     const otherComment = newComment({ review: pendingReview });
     const thread = newThread({ comments: [comment, otherComment] });
+    const pullRequest = newPullRequest({ pendingReview, pendingCommentCount: 2 });
     await prepareStore(pullRequest, [thread]);
 
     const action = deleteComment(comment);
@@ -615,6 +630,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeTruthy();
+    expect(state.pendingCommentCount).toStrictEqual(1);
     expect(state.isAddingReview).toBeFalsy();
   });
 
@@ -647,10 +663,10 @@ describe('integeration test', () => {
   
   it('submit review', async () => {
     const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-    const pullRequest = newPullRequest({ pendingReview });
     const comment = newComment({ review: pendingReview });
     const otherComment = newComment({ review: pendingReview });
     const thread = newThread({ comments: [comment, otherComment] });
+    const pullRequest = newPullRequest({ pendingReview, pendingCommentCount: 2 });
     await prepareStore(pullRequest, [thread]);
 
     const action = submitReview();
@@ -673,6 +689,7 @@ describe('integeration test', () => {
     expect(state.reviewThreads).toStrictEqual([thread]);
     expect(state.reviewOpinion).toStrictEqual('none');
     expect(state.hasPendingReview).toBeFalsy();
+    expect(state.pendingCommentCount).toStrictEqual(0);
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -715,9 +732,11 @@ function generateId() {
 function newPullRequest({
   opinionatedReview = null,
   pendingReview = null,
+  pendingCommentCount = 0,
 }: {
   opinionatedReview?: PullRequestReviewDTO | null,
   pendingReview?: PullRequestReviewDTO | null,
+  pendingCommentCount?: number,
 } = {}): PullRequestDTO {
   return {
     "databaseId": 645111258,
@@ -726,7 +745,7 @@ function newPullRequest({
     "baseRefOid": "73e96226e7ee764a4774a2a014e7e043fbfdc1ae",
     "headRefOid": "5ec10414a75dda98afd438ba01c31eabfb75c269",
     "opinionatedReviews": {"nodes": opinionatedReview ? [opinionatedReview] : [], "__typename": "PullRequestReviewConnection"},
-    "pendingReviews": {"nodes": pendingReview ? [pendingReview] : [], "__typename": "PullRequestReviewConnection"},
+    "pendingReviews": {"nodes": pendingReview ? [{ ...pendingReview, comments: { totalCount: pendingCommentCount, __typename: 'PullRequestReviewCommentConnection' } }] : [], "__typename": "PullRequestReviewConnection"},
     "__typename": "PullRequest"
   };
 }

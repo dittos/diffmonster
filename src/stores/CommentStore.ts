@@ -98,7 +98,7 @@ export type CommentAction =
   { type: 'ADD_REVIEW_COMMENT_REPLY_SUCCESS'; payload: { threadId: string; comment: PullRequestCommentDTO; }; } |
   { type: 'ADD_REVIEW_COMMENT_ERROR'; } |
   DeleteCommentAction |
-  { type: 'DELETE_COMMENT_SUCCESS'; payload: string; } |
+  { type: 'DELETE_COMMENT_SUCCESS'; payload: { commentId: string; wasPending: boolean; } } |
   { type: 'DELETE_COMMENT_ERROR'; } |
   EditCommentAction |
   { type: 'EDIT_COMMENT_SUCCESS'; payload: PullRequestCommentDTO; } |
@@ -316,9 +316,12 @@ const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, state$: St
         commentId: comment.id,
       },
     })).pipe(
-      map(() => ({
+      map(() => (<CommentAction>{
         type: DELETE_COMMENT_SUCCESS,
-        payload: comment.id,
+        payload: {
+          commentId: comment.id,
+          wasPending: comment.state === PullRequestReviewCommentState.PENDING,
+        },
       })),
       catchError(error => of({
         type: DELETE_COMMENT_ERROR,
@@ -401,6 +404,7 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
       return {
         ...state,
         reviewThreads: state.reviewThreads.concat(action.payload.thread),
+        pendingCommentCount: state.pendingCommentCount + 1,
         isAddingReview: false,
       };
     
@@ -408,6 +412,7 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
       return {
         ...state,
         reviewThreads: addCommentToReviewThread(state.reviewThreads, action.payload.threadId, action.payload.comment),
+        pendingCommentCount: state.pendingCommentCount + 1,
         isAddingReview: false,
       };
     
@@ -422,16 +427,16 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
         ...thread,
         comments: thread.comments && {
           ...thread.comments,
-          nodes: thread.comments.nodes!.filter(c => c!.id !== action.payload)
+          nodes: thread.comments.nodes!.filter(c => c!.id !== action.payload.commentId)
         }
       }));
-      const hasPendingComments = reviewThreads.some(thread =>
-        !!thread.comments && thread.comments.nodes.some(c => c!.state === 'PENDING'));
+      const pendingCommentCount = state.pendingCommentCount - (action.payload.wasPending ? 1 : 0);
       return {
         ...state,
         reviewThreads,
         // FIXME: should go into ReviewStore?
-        hasPendingReview: hasPendingComments,
+        hasPendingReview: pendingCommentCount > 0,
+        pendingCommentCount,
       };
     }
     

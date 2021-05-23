@@ -8,6 +8,7 @@ export default function getInitialState(): AppState {
     pullRequest: null,
     files: null,
     reviewThreads: [],
+    pendingCommentCount: 0,
     isLoadingReviewStates: false,
     reviewStates: null,
     reviewOpinion: 'none',

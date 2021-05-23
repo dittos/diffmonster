@@ -27,6 +27,7 @@ export interface AppState {
   reviewStates: {[fileId: string]: boolean} | null;
   reviewOpinion: ReviewOpinion;
   hasPendingReview: boolean;
+  pendingCommentCount: number;
   isAddingReview: boolean;
 }
 

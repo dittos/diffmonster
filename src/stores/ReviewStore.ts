@@ -122,6 +122,7 @@ export default function reviewReducer(state: PullRequestLoadedState, action: Rev
       return {
         ...state,
         hasPendingReview: false,
+        pendingCommentCount: 0,
         isAddingReview: false,
         reviewThreads: state.reviewThreads.map(thread => ({
           ...thread,

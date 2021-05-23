@@ -26,6 +26,14 @@ export interface PullRequestQuery_repository_pullRequest_opinionatedReviews {
   nodes: (PullRequestQuery_repository_pullRequest_opinionatedReviews_nodes | null)[] | null;
 }
 
+export interface PullRequestQuery_repository_pullRequest_pendingReviews_nodes_comments {
+  __typename: "PullRequestReviewCommentConnection";
+  /**
+   * Identifies the total count of items in the connection.
+   */
+  totalCount: number;
+}
+
 export interface PullRequestQuery_repository_pullRequest_pendingReviews_nodes {
   __typename: "PullRequestReview";
   id: string;
@@ -33,6 +41,10 @@ export interface PullRequestQuery_repository_pullRequest_pendingReviews_nodes {
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
+  /**
+   * A list of review comments for the current pull request review.
+   */
+  comments: PullRequestQuery_repository_pullRequest_pendingReviews_nodes_comments;
 }
 
 export interface PullRequestQuery_repository_pullRequest_pendingReviews {

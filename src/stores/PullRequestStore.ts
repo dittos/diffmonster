@@ -4,13 +4,9 @@ import { ActionsObservable } from 'redux-observable';
 import { apollo, getPullRequestAsDiff } from '../lib/Github';
 import { getUserInfo, isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
-import { parseDiff, DiffFile } from '../lib/DiffParser';
+import { parseDiff } from '../lib/DiffParser';
 import getInitialState from './getInitialState';
-import {
-  AppState,
-  PullRequestDTO,
-  ReviewOpinion,
-} from './types';
+import { AppState } from './types';
 import { fetchReviewThreads } from './CommentStore';
 import gql from 'graphql-tag';
 import { pullRequestReviewFragment } from './GithubFragments';
@@ -38,13 +34,7 @@ export type PullRequestAction =
   FetchAction |
   { type: 'FETCH_CANCEL'; } |
   { type: 'FETCH_ERROR'; payload: { status: 404 }; } |
-  { type: 'FETCH_SUCCESS'; payload: {
-    pullRequest: PullRequestDTO;
-    files: DiffFile[];
-    reviewOpinion: ReviewOpinion;
-    hasPendingReview: boolean;
-    isLoadingReviewStates: boolean;
-  }; } |
+  { type: 'FETCH_SUCCESS'; payload: Pick<AppState, 'pullRequest' | 'files' | 'pendingCommentCount' | 'reviewOpinion' | 'hasPendingReview' | 'isLoadingReviewStates'>; } |
   { type: 'REVIEW_STATES_CHANGED'; payload: {[fileId: string]: boolean}; }
   ;
 
@@ -74,6 +64,9 @@ export const pullRequestQuery = gql`
         pendingReviews: reviews(last: 1, states: [PENDING]) {
           nodes {
             ...PullRequestReviewFragment
+            comments {
+              totalCount
+            }
           }
         }
       }
@@ -118,6 +111,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
               'changesRequested'
               : 'none',
           hasPendingReview: Boolean(pendingReview),
+          pendingCommentCount: pendingReview?.comments?.totalCount ?? 0,
           isLoadingReviewStates: authenticated,
         },
       });

@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { AnchorButton, Button, Classes, Tag, Intent, Icon } from '@blueprintjs/core';
 import { submitReview, approve } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
-import { AppAction, PullRequestLoadedState, PullRequestReviewThreadDTO } from '../stores';
-import { PullRequestReviewCommentState, PullRequestState } from '../__generated__/globalTypes';
+import { AppAction, PullRequestLoadedState } from '../stores';
+import { PullRequestState } from '../__generated__/globalTypes';
 import gql from 'graphql-tag';
 import { HeaderPullRequestFragment } from './__generated__/HeaderPullRequestFragment';
 
@@ -41,31 +41,17 @@ export const headerPullRequestFragment = gql`
   }
 `;
 
-function countPendingComments(reviewThreads: PullRequestReviewThreadDTO[]) {
-  let count = 0;
-  for (let thread of reviewThreads) {
-    if (!thread.comments?.nodes)
-      continue;
-    for (let comment of thread.comments.nodes) {
-      if (comment?.state === PullRequestReviewCommentState.PENDING)
-        count++;
-    }
-  }
-  return count;
-}
-
 type OwnProps = {
   pullRequestFragment: HeaderPullRequestFragment;
 };
 
 class Header extends React.Component<PullRequestLoadedState & OwnProps & DispatchProp<AppAction>> {
   render() {
-    const { pullRequestFragment: pullRequest, reviewOpinion, hasPendingReview, reviewThreads, currentUser } = this.props;
+    const { pullRequestFragment: pullRequest, reviewOpinion, hasPendingReview, pendingCommentCount, currentUser } = this.props;
     const canApprove = currentUser &&
       pullRequest.author?.__typename === 'User' && pullRequest.author.databaseId !== currentUser.id &&
       !hasPendingReview &&
       reviewOpinion !== 'approved';
-    const pendingCommentCount = countPendingComments(reviewThreads);
 
     const baseRepo = pullRequest.baseRepository?.owner.login;
     const baseRef = pullRequest.baseRefName;
