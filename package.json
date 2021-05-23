@@ -21,7 +21,7 @@
     "diff2html": "^2.3.3",
     "firebase": "^7.15.1",
     "fuzzaldrin-plus": "^0.6.0",
-    "highlight.js": "^9.12.0",
+    "highlight.js": "^10.4.1",
     "http-link-header": "^0.8.0",
     "react": "^17.0.2",
     "react-addons-css-transition-group": "^15.6.2",
