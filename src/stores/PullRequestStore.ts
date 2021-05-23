@@ -2,7 +2,7 @@ import { of, zip, concat, merge, EMPTY } from 'rxjs';
 import { switchMap, catchError, takeUntil, map } from 'rxjs/operators';
 import { ActionsObservable } from 'redux-observable';
 import { apollo, getPullRequestAsDiff } from '../lib/Github';
-import { isAuthenticated } from '../lib/GithubAuth';
+import { getUserInfo, isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
 import { parseDiff, DiffFile } from '../lib/DiffParser';
 import getInitialState from './getInitialState';
@@ -58,7 +58,7 @@ export function fetchCancel(): PullRequestAction {
 
 export const pullRequestQuery = gql`
   ${pullRequestReviewFragment}
-  query PullRequestQuery($owner: String!, $repo: String!, $number: Int!) {
+  query PullRequestQuery($owner: String!, $repo: String!, $number: Int!, $author: String!) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
         databaseId
@@ -66,7 +66,7 @@ export const pullRequestQuery = gql`
         url
         baseRefOid
         headRefOid
-        opinionatedReviews: reviews(last: 1, states: [APPROVED, CHANGES_REQUESTED]) {
+        opinionatedReviews: reviews(last: 1, states: [APPROVED, CHANGES_REQUESTED, DISMISSED], author: $author) {
           nodes {
             ...PullRequestReviewFragment
           }
@@ -91,6 +91,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
           owner: action.payload.owner,
           repo: action.payload.repo,
           number: action.payload.number,
+          author: getUserInfo()?.login ?? '',
         },
       }).catch((error: ApolloError) => {
         if (error.graphQLErrors.some(e => (e as any).type === 'NOT_FOUND')) {

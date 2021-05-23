@@ -9,6 +9,7 @@ import { AppState, PullRequestCommentDTO, PullRequestDTO, PullRequestReviewDTO, 
 import { addCommentMutation, addReplyCommentMutation, approveMutation, deleteCommentMutation, editCommentMutation, submitReviewMutation } from "./GithubMutations";
 import { PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestReviewState } from "../__generated__/globalTypes";
 import { approve, submitReview } from "./ReviewStore";
+import { getUserInfo } from "../lib/GithubAuth";
 
 jest.mock('../lib/Github', () => {
   const actualModule = jest.requireActual('../lib/Github');
@@ -17,6 +18,7 @@ jest.mock('../lib/Github', () => {
     getPullRequestAsDiff: jest.fn(),
   };
 });
+jest.mock('../lib/GithubAuth');
 
 describe('integeration test', () => {
   let store: Store<AppState>;
@@ -27,6 +29,7 @@ describe('integeration test', () => {
     mockLink = new MockLink([]);
     apollo.setLink(mockLink);
     (getPullRequestAsDiff as jest.MockedFunction<any>).mockReturnValue(of(""));
+    (getUserInfo as jest.MockedFunction<any>).mockReturnValue({ login: 'dittos' });
   });
 
   afterEach(() => {
@@ -42,6 +45,7 @@ describe('integeration test', () => {
           owner: 'dittos',
           repo: 'diffmonster',
           number: 67,
+          author: 'dittos',
         },
       },
       result: {
@@ -134,6 +138,17 @@ describe('integeration test', () => {
       expect(state.status).toStrictEqual('success');
       expect(state.pullRequest).toStrictEqual(pullRequest);
       expect(state.reviewOpinion).toStrictEqual('changesRequested');
+      expect(state.hasPendingReview).toBeFalsy();
+    });
+    
+    it('dismissed', async () => {
+      const opinionatedReview = newReview({ state: PullRequestReviewState.DISMISSED });
+      const pullRequest = newPullRequest({ opinionatedReview });
+      const state = await prepareStore(pullRequest);
+      
+      expect(state.status).toStrictEqual('success');
+      expect(state.pullRequest).toStrictEqual(pullRequest);
+      expect(state.reviewOpinion).toStrictEqual('none');
       expect(state.hasPendingReview).toBeFalsy();
     });
   });

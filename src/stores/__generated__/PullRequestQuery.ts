@@ -91,4 +91,5 @@ export interface PullRequestQueryVariables {
   owner: string;
   repo: string;
   number: number;
+  author: string;
 }
