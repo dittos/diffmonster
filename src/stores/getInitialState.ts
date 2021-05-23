@@ -10,7 +10,8 @@ export default function getInitialState(): AppState {
     reviewThreads: [],
     isLoadingReviewStates: false,
     reviewStates: null,
-    latestReview: null,
+    reviewOpinion: 'none',
+    hasPendingReview: false,
     isAddingReview: false,
   };
 }

@@ -12,7 +12,6 @@ import {
 import config from '../config';
 import Styles from './CommentComposer.module.css';
 import {
-  PullRequestReviewDTO,
   PullRequestDTO,
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
@@ -20,10 +19,9 @@ import {
   AppAction,
 } from '../stores';
 import { DiffFile } from '../lib/DiffParser';
-import { PullRequestReviewState } from '../__generated__/globalTypes';
 
 interface StateProps {
-  latestReview: PullRequestReviewDTO | null;
+  hasPendingReview: boolean;
   pullRequest: PullRequestDTO;
 }
 
@@ -48,8 +46,7 @@ class CommentComposer extends React.Component<Props> {
   subscription = new Subscription();
 
   render() {
-    const { latestReview } = this.props;
-    const hasPendingReview = latestReview && latestReview.state === PullRequestReviewState.PENDING;
+    const { hasPendingReview } = this.props;
     return (
       <div className={Styles.Container}>
         <textarea
@@ -130,5 +127,5 @@ class CommentComposer extends React.Component<Props> {
 
 export default connect<StateProps, {}, OwnProps, PullRequestLoadedState>(state => ({
   pullRequest: state.pullRequest,
-  latestReview: state.latestReview,
+  hasPendingReview: state.hasPendingReview,
 }))(CommentComposer);

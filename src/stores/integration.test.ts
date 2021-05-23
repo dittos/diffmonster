@@ -88,38 +88,53 @@ describe('integeration test', () => {
       
       expect(state.status).toStrictEqual('success');
       expect(state.pullRequest).toStrictEqual(pullRequest);
-      expect(state.latestReview).toStrictEqual(null);
+      expect(state.reviewOpinion).toStrictEqual('none');
+      expect(state.hasPendingReview).toBeFalsy();
     });
     
-    it('with non-draft review only', async () => {
-      const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
-      const pullRequest = newPullRequest({ latestReview });
-      const state = await prepareStore(pullRequest);
-      
-      expect(state.status).toStrictEqual('success');
-      expect(state.pullRequest).toStrictEqual(pullRequest);
-      expect(state.latestReview).toStrictEqual(latestReview);
-    });
-    
-    it('with draft review only', async () => {
+    it('no opinion and pending review', async () => {
       const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
       const pullRequest = newPullRequest({ pendingReview });
       const state = await prepareStore(pullRequest);
       
       expect(state.status).toStrictEqual('success');
       expect(state.pullRequest).toStrictEqual(pullRequest);
-      expect(state.latestReview).toStrictEqual(pendingReview);
+      expect(state.reviewOpinion).toStrictEqual('none');
+      expect(state.hasPendingReview).toBeTruthy();
     });
     
-    it('with both non-draft and draft review', async () => {
-      const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
+    it('approved and pending review', async () => {
+      const opinionatedReview = newReview({ state: PullRequestReviewState.APPROVED });
       const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
-      const pullRequest = newPullRequest({ latestReview, pendingReview });
+      const pullRequest = newPullRequest({ opinionatedReview, pendingReview });
       const state = await prepareStore(pullRequest);
       
       expect(state.status).toStrictEqual('success');
       expect(state.pullRequest).toStrictEqual(pullRequest);
-      expect(state.latestReview).toStrictEqual(pendingReview);
+      expect(state.reviewOpinion).toStrictEqual('approved');
+      expect(state.hasPendingReview).toBeTruthy();
+    });
+    
+    it('approved', async () => {
+      const opinionatedReview = newReview({ state: PullRequestReviewState.APPROVED });
+      const pullRequest = newPullRequest({ opinionatedReview });
+      const state = await prepareStore(pullRequest);
+      
+      expect(state.status).toStrictEqual('success');
+      expect(state.pullRequest).toStrictEqual(pullRequest);
+      expect(state.reviewOpinion).toStrictEqual('approved');
+      expect(state.hasPendingReview).toBeFalsy();
+    });
+    
+    it('changes requested', async () => {
+      const opinionatedReview = newReview({ state: PullRequestReviewState.CHANGES_REQUESTED });
+      const pullRequest = newPullRequest({ opinionatedReview });
+      const state = await prepareStore(pullRequest);
+      
+      expect(state.status).toStrictEqual('success');
+      expect(state.pullRequest).toStrictEqual(pullRequest);
+      expect(state.reviewOpinion).toStrictEqual('changesRequested');
+      expect(state.hasPendingReview).toBeFalsy();
     });
   });
   
@@ -150,7 +165,6 @@ describe('integeration test', () => {
             side: action.payload.position.side,
             path: action.payload.path,
             pullRequestId: pullRequest.id,
-            pullRequestReviewId: null,
           },
           submitNow: true,
           submitInput: {
@@ -170,13 +184,62 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments.nodes![0]!.state = PullRequestReviewCommentState.SUBMITTED;
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(submittedReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
+  });
+  
+  it('adding single comment does not change opinion', async () => {
+    const opinionatedReview = newReview({ state: PullRequestReviewState.APPROVED });
+    const pullRequest = newPullRequest({ opinionatedReview });
+    await prepareStore(pullRequest);
+
+    const pendingReview = newReview({ state: PullRequestReviewState.PENDING });
+    const comment = newComment({ review: pendingReview });
+    const thread = newThread({ comments: [comment] });
+    const submittedReview = { ...pendingReview, state: PullRequestReviewState.COMMENTED };
+    const action = addSingleComment({
+      body: 'hello',
+      position: {
+        position: 1,
+        line: 23,
+        side: 'RIGHT'
+      },
+      path: 'package.json',
+    }, new Subject());
+    mockLink.addMockedResponse({
+      request: {
+        query: addCommentMutation,
+        variables: {
+          input: {
+            body: action.payload.body,
+            line: action.payload.position.line,
+            side: action.payload.position.side,
+            path: action.payload.path,
+            pullRequestId: pullRequest.id,
+          },
+          submitNow: true,
+          submitInput: {
+            pullRequestId: pullRequest.id,
+            event: PullRequestReviewEvent.COMMENT,
+          },
+        }
+      },
+      result: {
+        data: {
+          "addPullRequestReviewThread":{"thread":thread,"__typename":"AddPullRequestReviewThreadPayload"},
+          "submitPullRequestReview":{"pullRequestReview":submittedReview,"__typename":"SubmitPullRequestReviewPayload"}
+        }
+      }
+    });
+    store.dispatch(action);
+    const state = await waitForNewState(store);
+    expect(state.reviewOpinion).toStrictEqual('approved');
   });
   
   it('add single comment reply', async () => {
     const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
-    const pullRequest = newPullRequest({ latestReview });
+    const pullRequest = newPullRequest();
     const parentComment = newComment({ review: latestReview });
     const thread = newThread({ comments: [parentComment] });
     await prepareStore(pullRequest, [thread]);
@@ -208,7 +271,6 @@ describe('integeration test', () => {
             path: action.payload.path,
             position: action.payload.position.position,
             inReplyTo: parentComment.id,
-            pullRequestReviewId: null,
           },
           submitNow: true,
           submitInput: {
@@ -229,7 +291,8 @@ describe('integeration test', () => {
     comment.state = PullRequestReviewCommentState.SUBMITTED;
     thread.comments!.nodes!.push(comment);
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(submittedReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -259,7 +322,6 @@ describe('integeration test', () => {
             side: action.payload.position.side,
             path: action.payload.path,
             pullRequestId: pullRequest.id,
-            pullRequestReviewId: null,
           },
           submitNow: false,
           submitInput: {
@@ -277,13 +339,14 @@ describe('integeration test', () => {
     store.dispatch(action);
     const state = await waitForNewState(store);
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(pendingReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeTruthy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('start new draft review with reply', async () => {
     const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
-    const pullRequest = newPullRequest({ latestReview });
+    const pullRequest = newPullRequest();
     const parentComment = newComment({ review: latestReview });
     const thread = newThread({ comments: [parentComment] });
     await prepareStore(pullRequest, [thread]);
@@ -314,7 +377,6 @@ describe('integeration test', () => {
             path: action.payload.path,
             position: action.payload.position.position,
             inReplyTo: parentComment.id,
-            pullRequestReviewId: null,
           },
           submitNow: false,
           submitInput: {
@@ -333,7 +395,8 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes!.push(comment);
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(pendingReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeTruthy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -365,7 +428,6 @@ describe('integeration test', () => {
             side: action.payload.position.side,
             path: action.payload.path,
             pullRequestId: pullRequest.id,
-            pullRequestReviewId: pendingReview.id,
           },
           submitNow: false,
           submitInput: {
@@ -379,7 +441,8 @@ describe('integeration test', () => {
     store.dispatch(action);
     const state = await waitForNewState(store);
     expect(state.reviewThreads).toStrictEqual([existingThread, thread]);
-    expect(state.latestReview).toStrictEqual(pendingReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeTruthy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -415,7 +478,6 @@ describe('integeration test', () => {
             path: action.payload.path,
             position: action.payload.position.position,
             inReplyTo: parentComment.id,
-            pullRequestReviewId: pendingReview.id,
           },
           submitNow: false,
           submitInput: {
@@ -430,13 +492,14 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes!.push(comment);
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(pendingReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeTruthy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('delete comment', async () => {
     const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
-    const pullRequest = newPullRequest({ latestReview });
+    const pullRequest = newPullRequest();
     const comment = newComment({ review: latestReview });
     const thread = newThread({ comments: [comment] });
     await prepareStore(pullRequest, [thread]);
@@ -455,13 +518,14 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes = [];
     expect(state.reviewThreads).toStrictEqual([thread]); // TODO: should remove empty threads
-    expect(state.latestReview).toStrictEqual(null); // TODO: should re-fetch latest review
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('delete comment but keep thread', async () => {
     const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
-    const pullRequest = newPullRequest({ latestReview });
+    const pullRequest = newPullRequest();
     const comment = newComment({ review: latestReview });
     const otherComment = newComment({ review: latestReview });
     const thread = newThread({ comments: [comment, otherComment] });
@@ -481,7 +545,8 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes = [otherComment];
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(null); // TODO: should re-fetch latest review
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -506,7 +571,8 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes = [];
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(null); // TODO: should re-fetch latest review
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -532,13 +598,14 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes = [otherComment];
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(pendingReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeTruthy();
     expect(state.isAddingReview).toBeFalsy();
   });
 
   it('edit comment', async () => {
     const latestReview = newReview({ state: PullRequestReviewState.COMMENTED });
-    const pullRequest = newPullRequest({ latestReview });
+    const pullRequest = newPullRequest();
     const comment = newComment({ review: latestReview });
     const thread = newThread({ comments: [comment] });
     await prepareStore(pullRequest, [thread]);
@@ -558,7 +625,8 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments!.nodes![0]!.body = action.payload.body;
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(latestReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
@@ -570,7 +638,7 @@ describe('integeration test', () => {
     const thread = newThread({ comments: [comment, otherComment] });
     await prepareStore(pullRequest, [thread]);
 
-    const action = submitReview({ event: PullRequestReviewEvent.COMMENT });
+    const action = submitReview();
     const submittedReview = { ...pendingReview, state: PullRequestReviewState.COMMENTED };
     mockLink.addMockedResponse({
       request: {
@@ -578,7 +646,7 @@ describe('integeration test', () => {
         variables: {
           input: {
             pullRequestId: pullRequest.id,
-            event: action.payload.event,
+            event: PullRequestReviewEvent.COMMENT,
           }
         }
       },
@@ -588,13 +656,15 @@ describe('integeration test', () => {
     const state = await waitForNewState(store);
     thread.comments.nodes!.forEach(comment => comment!.state = PullRequestReviewCommentState.SUBMITTED);
     expect(state.reviewThreads).toStrictEqual([thread]);
-    expect(state.latestReview).toStrictEqual(submittedReview);
+    expect(state.reviewOpinion).toStrictEqual('none');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
   
   it('approve', async () => {
     const pullRequest = newPullRequest();
-    await prepareStore(pullRequest, []);
+    let state = await prepareStore(pullRequest, []);
+    expect(state.reviewOpinion).toStrictEqual('none');
 
     const action = approve();
     const review = newReview({ state: PullRequestReviewState.APPROVED });
@@ -609,9 +679,10 @@ describe('integeration test', () => {
       result: {"data":{"addPullRequestReview":{"pullRequestReview":review,"__typename":"AddPullRequestReviewPayload"}}}
     })
     store.dispatch(action);
-    const state = await waitForNewState(store);
+    state = await waitForNewState(store);
     expect(state.reviewThreads).toStrictEqual([]);
-    expect(state.latestReview).toStrictEqual(review);
+    expect(state.reviewOpinion).toStrictEqual('approved');
+    expect(state.hasPendingReview).toBeFalsy();
     expect(state.isAddingReview).toBeFalsy();
   });
 });
@@ -627,10 +698,10 @@ function generateId() {
 }
 
 function newPullRequest({
-  latestReview = null,
+  opinionatedReview = null,
   pendingReview = null,
 }: {
-  latestReview?: PullRequestReviewDTO | null,
+  opinionatedReview?: PullRequestReviewDTO | null,
   pendingReview?: PullRequestReviewDTO | null,
 } = {}): PullRequestDTO {
   return {
@@ -639,7 +710,7 @@ function newPullRequest({
     "url": "https://github.com/dittos/diffmonster/pull/67",
     "baseRefOid": "73e96226e7ee764a4774a2a014e7e043fbfdc1ae",
     "headRefOid": "5ec10414a75dda98afd438ba01c31eabfb75c269",
-    "viewerLatestReview": latestReview,
+    "opinionatedReviews": {"nodes": opinionatedReview ? [opinionatedReview] : [], "__typename": "PullRequestReviewConnection"},
     "pendingReviews": {"nodes": pendingReview ? [pendingReview] : [], "__typename": "PullRequestReviewConnection"},
     "__typename": "PullRequest"
   };
@@ -653,8 +724,6 @@ function newReview({
   return {
     "id": generateId(),
     "state": state,
-    "viewerDidAuthor": true,
-    "createdAt": "2021-05-15T12:03:37Z",
     "__typename": "PullRequestReview"
   };
 }

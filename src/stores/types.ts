@@ -15,6 +15,8 @@ export type PullRequestReviewDTO = PullRequestReviewFragment;
 
 export type PullRequestReviewThreadDTO = PullRequestReviewThreadFragment;
 
+export type ReviewOpinion = 'approved' | 'changesRequested' | 'none';
+
 export interface AppState {
   currentUser: UserDTO | undefined;
   status: AppStatus;
@@ -23,7 +25,8 @@ export interface AppState {
   reviewThreads: PullRequestReviewThreadDTO[];
   isLoadingReviewStates: boolean;
   reviewStates: {[fileId: string]: boolean} | null;
-  latestReview: PullRequestReviewDTO | null;
+  reviewOpinion: ReviewOpinion;
+  hasPendingReview: boolean;
   isAddingReview: boolean;
 }
 

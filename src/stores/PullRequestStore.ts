@@ -8,14 +8,15 @@ import { parseDiff, DiffFile } from '../lib/DiffParser';
 import getInitialState from './getInitialState';
 import {
   AppState,
-  PullRequestReviewDTO,
   PullRequestDTO,
+  ReviewOpinion,
 } from './types';
 import { fetchReviewThreads } from './CommentStore';
 import gql from 'graphql-tag';
 import { pullRequestReviewFragment } from './GithubFragments';
 import { PullRequestQuery, PullRequestQueryVariables } from './__generated__/PullRequestQuery';
 import { ApolloError } from '@apollo/client';
+import { PullRequestReviewState } from '../__generated__/globalTypes';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -40,7 +41,8 @@ export type PullRequestAction =
   { type: 'FETCH_SUCCESS'; payload: {
     pullRequest: PullRequestDTO;
     files: DiffFile[];
-    latestReview: PullRequestReviewDTO | null;
+    reviewOpinion: ReviewOpinion;
+    hasPendingReview: boolean;
     isLoadingReviewStates: boolean;
   }; } |
   { type: 'REVIEW_STATES_CHANGED'; payload: {[fileId: string]: boolean}; }
@@ -64,8 +66,10 @@ export const pullRequestQuery = gql`
         url
         baseRefOid
         headRefOid
-        viewerLatestReview {
-          ...PullRequestReviewFragment
+        opinionatedReviews: reviews(last: 1, states: [APPROVED, CHANGES_REQUESTED]) {
+          nodes {
+            ...PullRequestReviewFragment
+          }
         }
         pendingReviews: reviews(last: 1, states: [PENDING]) {
           nodes {
@@ -99,13 +103,19 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
     switchMap(([ diff, result ]) => {
       const pullRequest = result.data?.repository?.pullRequest!;
       const authenticated = isAuthenticated();
-      const latestReview = pullRequest.pendingReviews?.nodes?.[0] ?? pullRequest.viewerLatestReview;
+      const opinionatedReview = pullRequest.opinionatedReviews?.nodes?.[0] ?? null;
+      const pendingReview = pullRequest.pendingReviews?.nodes?.[0] ?? null;
       const success$ = of<PullRequestAction>({
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
           files: parseDiff(diff),
-          latestReview,
+          reviewOpinion: opinionatedReview?.state === PullRequestReviewState.APPROVED ?
+            'approved'
+            : opinionatedReview?.state === PullRequestReviewState.CHANGES_REQUESTED ?
+              'changesRequested'
+              : 'none',
+          hasPendingReview: Boolean(pendingReview),
           isLoadingReviewStates: authenticated,
         },
       });

@@ -2,17 +2,16 @@ import { combineEpics, ActionsObservable, StateObservable } from 'redux-observab
 import { Subject, of, from, Observable } from 'rxjs';
 import { mergeMap, tap, catchError, map, filter, exhaustMap } from 'rxjs/operators';
 import { apollo } from '../lib/Github';
-import { ADD_REVIEW_SUCCESS } from './ReviewStore';
+import { ADD_PENDING_REVIEW_SUCCESS } from './ReviewStore';
 import {
   PullRequestCommentDTO,
   PullRequestReviewThreadDTO,
-  PullRequestReviewDTO,
   PullRequestDTO,
   PullRequestLoadedState
 } from './types';
 import { addCommentMutation, addReplyCommentMutation, deleteCommentMutation, editCommentMutation } from './GithubMutations';
 import { AddComment, AddCommentVariables } from './__generated__/AddComment';
-import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestReviewState } from '../__generated__/globalTypes';
+import { DiffSide, PullRequestReviewCommentState, PullRequestReviewEvent } from '../__generated__/globalTypes';
 import { AddReplyComment, AddReplyCommentVariables } from './__generated__/AddReplyComment';
 import { EditComment, EditCommentVariables } from './__generated__/EditComment';
 import { DeleteComment, DeleteCommentVariables } from './__generated__/DeleteComment';
@@ -142,7 +141,6 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
       return replyComment(
         pullRequest.id,
         pullRequest.headRefOid,
-        null,
         replyContext.comment.id,
         body,
         position,
@@ -150,10 +148,7 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
         true
       ).pipe(
         tap(action.meta.subject),
-        mergeMap(({ comment, review }) => of({
-          type: ADD_REVIEW_SUCCESS,
-          payload: review,
-        }, <CommentAction>{
+        mergeMap(({ comment }) => of(<CommentAction>{
           type: ADD_SINGLE_COMMENT_REPLY_SUCCESS,
           payload: { threadId: replyContext.thread.id, comment },
         })),
@@ -166,17 +161,13 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 
     return createComment(
       pullRequest.id,
-      null,
       body,
       position,
       path,
       true
     ).pipe(
       tap(action.meta.subject),
-      mergeMap(({ thread, review }) => of({
-        type: ADD_REVIEW_SUCCESS,
-        payload: review,
-      }, <CommentAction>{
+      mergeMap(({ thread }) => of(<CommentAction>{
         type: ADD_SINGLE_COMMENT_SUCCESS,
         payload: { thread },
       })),
@@ -189,15 +180,13 @@ const addSingleCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 
 const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<AddReviewCommentAction>('ADD_REVIEW_COMMENT').pipe(mergeMap(action => {
-    const { latestReview, pullRequest } = state$.value;
+    const { hasPendingReview, pullRequest } = state$.value;
     const { body, position, path, replyContext } = action.payload;
-    const latestReviewId = latestReview && latestReview.state === PullRequestReviewState.PENDING ? latestReview.id : null;
 
     if (replyContext) {
       return replyComment(
         pullRequest.id,
         pullRequest.headRefOid,
-        latestReviewId,
         replyContext.comment.id,
         body,
         position,
@@ -205,9 +194,8 @@ const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
         false
       ).pipe(
         tap(action.meta.subject),
-        mergeMap(({ comment, review }) => of(!latestReviewId ? {
-          type: ADD_REVIEW_SUCCESS,
-          payload: review,
+        mergeMap(({ comment }) => of(!hasPendingReview ? {
+          type: ADD_PENDING_REVIEW_SUCCESS
         } : null, <CommentAction>{
           type: ADD_REVIEW_COMMENT_REPLY_SUCCESS,
           payload: { threadId: replyContext.thread.id, comment },
@@ -221,16 +209,14 @@ const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 
     return createComment(
       pullRequest.id,
-      latestReviewId,
       body,
       position,
       path,
       false
     ).pipe(
       tap(action.meta.subject),
-      mergeMap(({ thread, review }) => of(!latestReviewId ? {
-        type: ADD_REVIEW_SUCCESS,
-        payload: review,
+      mergeMap(({ thread }) => of(!hasPendingReview ? {
+        type: ADD_PENDING_REVIEW_SUCCESS,
       } : null, <CommentAction>{
         type: ADD_REVIEW_COMMENT_SUCCESS,
         payload: { thread },
@@ -251,7 +237,6 @@ const addReviewCommentEpic = (action$: ActionsObservable<CommentAction>, state$:
 
 function createComment(
   pullRequestId: string,
-  pendingReviewId: string | null,
 
   body: string,
   position: CommentPosition,
@@ -260,7 +245,6 @@ function createComment(
   submitNow: boolean,
 ): Observable<{
   thread: PullRequestReviewThreadDTO;
-  review: PullRequestReviewDTO;
 }> {
   return from(apollo.mutate<AddComment, AddCommentVariables>({
     mutation: addCommentMutation,
@@ -271,7 +255,6 @@ function createComment(
         side: position.side === 'LEFT' ? DiffSide.LEFT : DiffSide.RIGHT,
         path,
         pullRequestId,
-        pullRequestReviewId: pendingReviewId,
       },
       submitNow,
       submitInput: {
@@ -284,15 +267,13 @@ function createComment(
     const thread = result.data?.addPullRequestReviewThread?.thread!;
     const comment = thread?.comments?.nodes?.[0];
     if (comment && submitNow) comment.state = PullRequestReviewCommentState.SUBMITTED;
-    const review = result.data?.submitPullRequestReview?.pullRequestReview ?? comment?.pullRequestReview!;
-    return {thread, review};
+    return {thread};
   }));
 }
 
 function replyComment(
   pullRequestId: string,
   commitId: string,
-  pendingReviewId: string | null,
   inReplyToCommentId: string,
 
   body: string,
@@ -302,7 +283,6 @@ function replyComment(
   submitNow: boolean,
 ): Observable<{
   comment: PullRequestCommentDTO;
-  review: PullRequestReviewDTO;
 }> {
   return from(apollo.mutate<AddReplyComment, AddReplyCommentVariables>({
     mutation: addReplyCommentMutation,
@@ -314,7 +294,6 @@ function replyComment(
         path,
         position: position.position,
         inReplyTo: inReplyToCommentId,
-        pullRequestReviewId: pendingReviewId,
       },
       submitNow,
       submitInput: {
@@ -326,8 +305,7 @@ function replyComment(
   })).pipe(map(result => {
     const comment = result.data?.addPullRequestReviewComment?.comment!
     if (submitNow) comment.state = PullRequestReviewCommentState.SUBMITTED;
-    const review = result.data?.submitPullRequestReview?.pullRequestReview ?? comment.pullRequestReview!;
-    return {comment, review};
+    return {comment};
   }));
 }  
 
@@ -457,7 +435,7 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
         ...state,
         reviewThreads,
         // FIXME: should go into ReviewStore?
-        latestReview: hasPendingComments ? state.latestReview : null,
+        hasPendingReview: hasPendingComments,
       };
     }
     

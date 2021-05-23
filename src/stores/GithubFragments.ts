@@ -4,8 +4,6 @@ export const pullRequestReviewFragment = gql`
   fragment PullRequestReviewFragment on PullRequestReview {
     id
     state
-    viewerDidAuthor
-    createdAt
   }
 `;
 

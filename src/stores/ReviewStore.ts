@@ -6,29 +6,31 @@ import { approveMutation, submitReviewMutation } from './GithubMutations';
 import { Approve, ApproveVariables } from './__generated__/Approve';
 import { SubmitReview, SubmitReviewVariables } from './__generated__/SubmitReview';
 import { PullRequestReviewCommentState, PullRequestReviewEvent } from '../__generated__/globalTypes';
-import { PullRequestReviewDTO, PullRequestLoadedState } from './types';
+import { PullRequestLoadedState } from './types';
 
-export const ADD_REVIEW_SUCCESS = 'REVIEW_ADDED';
+export const ADD_PENDING_REVIEW_SUCCESS = 'ADD_PENDING_REVIEW_SUCCESS';
 const APPROVE = 'APPROVE';
+const APPROVE_SUCCESS = 'APPROVE_SUCCESS';
 const APPROVE_ERROR = 'APPROVE_ERROR';
 const SUBMIT_REVIEW = 'SUBMIT_REVIEW';
 const SUBMIT_REVIEW_ERROR = 'SUBMIT_REVIEW_ERROR';
 const SUBMIT_REVIEW_SUCCESS = 'SUBMIT_REVIEW_SUCCESS';
 
 type ApproveAction = { type: 'APPROVE'; };
-type SubmitReviewAction = { type: 'SUBMIT_REVIEW'; payload: { event: PullRequestReviewEvent } };
+type SubmitReviewAction = { type: 'SUBMIT_REVIEW' };
 
 export type ReviewAction =
   ApproveAction |
+  { type: 'APPROVE_SUCCESS'; } |
   { type: 'APPROVE_ERROR'; } |
-  { type: 'REVIEW_ADDED'; payload: PullRequestReviewDTO } |
+  { type: 'ADD_PENDING_REVIEW_SUCCESS'; } |
   SubmitReviewAction |
   { type: 'SUBMIT_REVIEW_ERROR'; } |
-  { type: 'SUBMIT_REVIEW_SUCCESS'; payload: PullRequestReviewDTO }
+  { type: 'SUBMIT_REVIEW_SUCCESS'; }
   ;
 
-export function submitReview({ event }: SubmitReviewAction['payload']): SubmitReviewAction {
-  return { type: SUBMIT_REVIEW, payload: { event } };
+export function submitReview(): SubmitReviewAction {
+  return { type: SUBMIT_REVIEW };
 }
 
 export function approve(): ApproveAction {
@@ -36,7 +38,7 @@ export function approve(): ApproveAction {
 }
 
 const approveEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObservable<PullRequestLoadedState>) =>
-  action$.ofType<ApproveAction>(APPROVE).pipe(mergeMap(action => {
+  action$.ofType<ApproveAction>(APPROVE).pipe(mergeMap(() => {
     const state = state$.value;
     return from(apollo.mutate<Approve, ApproveVariables>({
       mutation: approveMutation,
@@ -46,10 +48,7 @@ const approveEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObse
       },
       fetchPolicy: 'no-cache',
     })).pipe(
-      map(review => ({
-        type: ADD_REVIEW_SUCCESS,
-        payload: review.data?.addPullRequestReview?.pullRequestReview!,
-      })),
+      map(() => ({ type: APPROVE_SUCCESS })),
       catchError(error => of({
         type: APPROVE_ERROR,
         payload: error,
@@ -64,15 +63,12 @@ const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: Stat
       variables: {
         input: {
           pullRequestId: state.pullRequest.id,
-          event: action.payload.event,
+          event: PullRequestReviewEvent.COMMENT,
         }
       },
       fetchPolicy: 'no-cache',
     })).pipe(
-      map(result => ({
-        type: SUBMIT_REVIEW_SUCCESS,
-        payload: result.data?.submitPullRequestReview?.pullRequestReview,
-      })),
+      map(() => ({ type: SUBMIT_REVIEW_SUCCESS })),
       catchError(error => of({
         type: SUBMIT_REVIEW_ERROR,
         payload: error,
@@ -92,16 +88,23 @@ export default function reviewReducer(state: PullRequestLoadedState, action: Rev
         isAddingReview: true,
       };
     
+    case APPROVE_SUCCESS:
+      return {
+        ...state,
+        reviewOpinion: 'approved',
+        isAddingReview: false,
+      };
+    
     case APPROVE_ERROR:
       return {
         ...state,
         isAddingReview: false,
       };
     
-    case ADD_REVIEW_SUCCESS:
+    case ADD_PENDING_REVIEW_SUCCESS:
       return {
         ...state,
-        latestReview: action.payload,
+        hasPendingReview: true,
         isAddingReview: false,
       };
     
@@ -120,7 +123,7 @@ export default function reviewReducer(state: PullRequestLoadedState, action: Rev
     case SUBMIT_REVIEW_SUCCESS:
       return {
         ...state,
-        latestReview: action.payload,
+        hasPendingReview: false,
         isAddingReview: false,
         reviewThreads: state.reviewThreads.map(thread => ({
           ...thread,

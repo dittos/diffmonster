@@ -5,7 +5,7 @@ import { AnchorButton, Button, Classes, Tag, Intent, Icon } from '@blueprintjs/c
 import { submitReview, approve } from '../stores/ReviewStore';
 import Styles from './Header.module.css';
 import { AppAction, PullRequestLoadedState, PullRequestReviewThreadDTO } from '../stores';
-import { PullRequestReviewCommentState, PullRequestReviewEvent, PullRequestReviewState, PullRequestState } from '../__generated__/globalTypes';
+import { PullRequestReviewCommentState, PullRequestState } from '../__generated__/globalTypes';
 import gql from 'graphql-tag';
 import { HeaderPullRequestFragment } from './__generated__/HeaderPullRequestFragment';
 
@@ -60,12 +60,11 @@ type OwnProps = {
 
 class Header extends React.Component<PullRequestLoadedState & OwnProps & DispatchProp<AppAction>> {
   render() {
-    const { pullRequestFragment: pullRequest, latestReview, reviewThreads, currentUser } = this.props;
-    const latestReviewState = latestReview && latestReview.state;
+    const { pullRequestFragment: pullRequest, reviewOpinion, hasPendingReview, reviewThreads, currentUser } = this.props;
     const canApprove = currentUser &&
       pullRequest.author?.__typename === 'User' && pullRequest.author.databaseId !== currentUser.id &&
-      latestReviewState !== PullRequestReviewState.PENDING &&
-      latestReviewState !== PullRequestReviewState.APPROVED;
+      !hasPendingReview &&
+      reviewOpinion !== 'approved';
     const pendingCommentCount = countPendingComments(reviewThreads);
 
     const baseRepo = pullRequest.baseRepository?.owner.login;
@@ -75,7 +74,7 @@ class Header extends React.Component<PullRequestLoadedState & OwnProps & Dispatc
 
     return <div className={Styles.Container}>
       <div className={Styles.Links}>
-        {latestReviewState === PullRequestReviewState.PENDING && (
+        {hasPendingReview ? (
           <Button
             intent={Intent.PRIMARY}
             icon="upload"
@@ -84,9 +83,10 @@ class Header extends React.Component<PullRequestLoadedState & OwnProps & Dispatc
           >
             Publish comments {pendingCommentCount > 0 && <Tag className={Classes.ROUND}>{pendingCommentCount}</Tag>}
           </Button>
+        ) : (
+          reviewOpinion === 'approved' &&
+            <Button intent={Intent.SUCCESS} active={true} icon="tick">Approved</Button>
         )}
-        {latestReviewState === PullRequestReviewState.APPROVED &&
-          <Button intent={Intent.SUCCESS} active={true} icon="tick">Approved</Button>}
         {canApprove && (
           <Button
             intent={Intent.SUCCESS}
@@ -134,7 +134,7 @@ class Header extends React.Component<PullRequestLoadedState & OwnProps & Dispatc
   }
 
   _publishPendingComments = () => {
-    this.props.dispatch(submitReview({ event: PullRequestReviewEvent.COMMENT }));
+    this.props.dispatch(submitReview());
   };
 
   _approve = () => {

@@ -16,12 +16,4 @@ export interface PullRequestReviewFragment {
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }

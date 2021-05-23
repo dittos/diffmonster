@@ -46,14 +46,6 @@ export interface EditComment_updatePullRequestReviewComment_pullRequestReviewCom
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }
 
 export interface EditComment_updatePullRequestReviewComment_pullRequestReviewComment {

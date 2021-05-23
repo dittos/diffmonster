@@ -58,14 +58,6 @@ export interface AddComment_addPullRequestReviewThread_thread_comments_nodes_pul
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }
 
 export interface AddComment_addPullRequestReviewThread_thread_comments_nodes {
@@ -165,14 +157,6 @@ export interface AddComment_submitPullRequestReview_pullRequestReview {
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }
 
 export interface AddComment_submitPullRequestReview {

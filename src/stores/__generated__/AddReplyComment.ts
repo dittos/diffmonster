@@ -46,14 +46,6 @@ export interface AddReplyComment_addPullRequestReviewComment_comment_pullRequest
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }
 
 export interface AddReplyComment_addPullRequestReviewComment_comment {
@@ -104,14 +96,6 @@ export interface AddReplyComment_submitPullRequestReview_pullRequestReview {
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }
 
 export interface AddReplyComment_submitPullRequestReview {

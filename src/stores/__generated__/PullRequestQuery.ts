@@ -9,21 +9,21 @@ import { PullRequestReviewState } from "./../../__generated__/globalTypes";
 // GraphQL query operation: PullRequestQuery
 // ====================================================
 
-export interface PullRequestQuery_repository_pullRequest_viewerLatestReview {
+export interface PullRequestQuery_repository_pullRequest_opinionatedReviews_nodes {
   __typename: "PullRequestReview";
   id: string;
   /**
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
+}
+
+export interface PullRequestQuery_repository_pullRequest_opinionatedReviews {
+  __typename: "PullRequestReviewConnection";
   /**
-   * Did the viewer author this comment.
+   * A list of nodes.
    */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
+  nodes: (PullRequestQuery_repository_pullRequest_opinionatedReviews_nodes | null)[] | null;
 }
 
 export interface PullRequestQuery_repository_pullRequest_pendingReviews_nodes {
@@ -33,14 +33,6 @@ export interface PullRequestQuery_repository_pullRequest_pendingReviews_nodes {
    * Identifies the current state of the pull request review.
    */
   state: PullRequestReviewState;
-  /**
-   * Did the viewer author this comment.
-   */
-  viewerDidAuthor: boolean;
-  /**
-   * Identifies the date and time when the object was created.
-   */
-  createdAt: any;
 }
 
 export interface PullRequestQuery_repository_pullRequest_pendingReviews {
@@ -71,9 +63,9 @@ export interface PullRequestQuery_repository_pullRequest {
    */
   headRefOid: any;
   /**
-   * The latest review given from the viewer.
+   * A list of reviews associated with the pull request.
    */
-  viewerLatestReview: PullRequestQuery_repository_pullRequest_viewerLatestReview | null;
+  opinionatedReviews: PullRequestQuery_repository_pullRequest_opinionatedReviews | null;
   /**
    * A list of reviews associated with the pull request.
    */
