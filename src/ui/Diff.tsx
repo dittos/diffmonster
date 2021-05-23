@@ -13,6 +13,7 @@ import { CommentPosition } from '../stores/CommentStore';
 const CUSTOM_LANGUAGE_ALIASES: {[key: string]: string} = {
   // https://github.com/isagalaev/highlight.js/pull/1651
   kt: 'kotlin',
+  tsx: 'ts',
 };
 
 const LineTypeComponents = {
