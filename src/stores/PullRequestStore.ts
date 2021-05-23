@@ -54,7 +54,7 @@ export function fetchCancel(): PullRequestAction {
   return { type: 'FETCH_CANCEL' };
 }
 
-const pullRequestQuery = gql`
+export const pullRequestQuery = gql`
   ${pullRequestReviewFragment}
   query PullRequestQuery($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {

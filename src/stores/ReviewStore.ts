@@ -69,9 +69,9 @@ const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: Stat
       },
       fetchPolicy: 'no-cache',
     })).pipe(
-      map(review => ({
+      map(result => ({
         type: SUBMIT_REVIEW_SUCCESS,
-        payload: review,
+        payload: result.data?.submitPullRequestReview?.pullRequestReview,
       })),
       catchError(error => of({
         type: SUBMIT_REVIEW_ERROR,

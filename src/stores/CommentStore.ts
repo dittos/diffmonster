@@ -478,7 +478,7 @@ export default function commentsReducer(state: PullRequestLoadedState, action: C
   }
 }
 
-const reviewThreadQuery = gql`
+export const reviewThreadQuery = gql`
   ${pullRequestReviewThreadFragment}
   query ReviewThreadQuery($pullRequestId: ID!, $startCursor: String) {
     node(id: $pullRequestId) {
