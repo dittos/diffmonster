@@ -32,6 +32,11 @@ export const apollo = new ApolloClient({
   link: authLink.concat(new HttpLink({
     uri: `${BASE_URL}/graphql`,
   })),
+  defaultOptions: {
+    mutate: {
+      fetchPolicy: 'no-cache',
+    },
+  }
 });
 
 function ajax(request: AjaxRequest): Observable<AjaxResponse> {

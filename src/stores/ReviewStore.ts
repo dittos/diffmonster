@@ -46,7 +46,6 @@ const approveEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObse
         pullRequestId: state.pullRequest.id,
         commitOID: state.pullRequest.headRefOid,
       },
-      fetchPolicy: 'no-cache',
     })).pipe(
       map(() => ({ type: APPROVE_SUCCESS })),
       catchError(error => of({
@@ -66,7 +65,6 @@ const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: Stat
           event: PullRequestReviewEvent.COMMENT,
         }
       },
-      fetchPolicy: 'no-cache',
     })).pipe(
       map(() => ({ type: SUBMIT_REVIEW_SUCCESS })),
       catchError(error => of({

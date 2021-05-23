@@ -93,6 +93,7 @@ export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =
           number: action.payload.number,
           author: getUserInfo()?.login ?? '',
         },
+        fetchPolicy: 'no-cache',
       }).catch((error: ApolloError) => {
         if (error.graphQLErrors.some(e => (e as any).type === 'NOT_FOUND')) {
           // eslint-disable-next-line no-throw-literal

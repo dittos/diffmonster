@@ -262,7 +262,6 @@ function createComment(
         event: PullRequestReviewEvent.COMMENT,
       },
     },
-    fetchPolicy: 'no-cache',
   })).pipe(map(result => {
     const thread = result.data?.addPullRequestReviewThread?.thread!;
     const comment = thread?.comments?.nodes?.[0];
@@ -301,7 +300,6 @@ function replyComment(
         event: PullRequestReviewEvent.COMMENT,
       },
     },
-    fetchPolicy: 'no-cache',
   })).pipe(map(result => {
     const comment = result.data?.addPullRequestReviewComment?.comment!
     if (submitNow) comment.state = PullRequestReviewCommentState.SUBMITTED;
@@ -317,7 +315,6 @@ const deleteCommentEpic = (action$: ActionsObservable<CommentAction>, state$: St
       variables: {
         commentId: comment.id,
       },
-      fetchPolicy: 'no-cache',
     })).pipe(
       map(() => ({
         type: DELETE_COMMENT_SUCCESS,
@@ -339,7 +336,6 @@ const editCommentEpic = (action$: ActionsObservable<CommentAction>, state$: Stat
         commentId: comment.id,
         body,
       },
-      fetchPolicy: 'no-cache',
     })).pipe(
       tap(action.meta.subject),
       map(result => ({
