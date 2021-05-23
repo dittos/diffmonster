@@ -1,23 +1,18 @@
-import { of, zip, Observable, concat, empty } from 'rxjs';
-import { switchMap, catchError, takeUntil, map, merge } from 'rxjs/operators';
+import { of, zip, concat, merge, EMPTY } from 'rxjs';
+import { switchMap, catchError, takeUntil, map } from 'rxjs/operators';
 import { ActionsObservable } from 'redux-observable';
-import marked from 'marked';
-import {
-  getPullRequest,
-  getPullRequestAsDiff,
-  getPullRequestComments,
-  getPullRequestFromGraphQL,
-  pullRequestReviewFragment,
-  PullRequestReviewDTO,
-  PullRequestDTO,
-  GraphQLError,
-  getPullRequestReviewThreads,
-} from '../lib/Github';
-import { isAuthenticated, getUserInfo } from '../lib/GithubAuth';
+import { apollo, getPullRequestAsDiff } from '../lib/Github';
+import { getUserInfo, isAuthenticated } from '../lib/GithubAuth';
 import { observeReviewStates } from '../lib/Database';
-import { parseDiff, DiffFile } from '../lib/DiffParser';
-import getInitialState, { AppState, generateClientId } from './getInitialState';
-import { REVIEW_THREADS_FETCHED, ReviewThreadsFetchedAction } from './CommentStore';
+import { parseDiff } from '../lib/DiffParser';
+import getInitialState from './getInitialState';
+import { AppState } from './types';
+import { fetchReviewThreads } from './CommentStore';
+import gql from 'graphql-tag';
+import { pullRequestReviewFragment } from './GithubFragments';
+import { PullRequestQuery, PullRequestQueryVariables } from './__generated__/PullRequestQuery';
+import { ApolloError } from '@apollo/client';
+import { PullRequestReviewState } from '../__generated__/globalTypes';
 
 const FETCH = 'FETCH';
 const FETCH_CANCEL = 'FETCH_CANCEL';
@@ -39,13 +34,7 @@ export type PullRequestAction =
   FetchAction |
   { type: 'FETCH_CANCEL'; } |
   { type: 'FETCH_ERROR'; payload: { status: 404 }; } |
-  { type: 'FETCH_SUCCESS'; payload: {
-    pullRequest: PullRequestDTO;
-    pullRequestBodyRendered: string;
-    files: DiffFile[];
-    latestReview: PullRequestReviewDTO | null;
-    isLoadingReviewStates: boolean;
-  }; } |
+  { type: 'FETCH_SUCCESS'; payload: Pick<AppState, 'pullRequest' | 'files' | 'pendingCommentCount' | 'reviewOpinion' | 'hasPendingReview' | 'isLoadingReviewStates'>; } |
   { type: 'REVIEW_STATES_CHANGED'; payload: {[fileId: string]: boolean}; }
   ;
 
@@ -57,86 +46,84 @@ export function fetchCancel(): PullRequestAction {
   return { type: 'FETCH_CANCEL' };
 }
 
+export const pullRequestQuery = gql`
+  ${pullRequestReviewFragment}
+  query PullRequestQuery($owner: String!, $repo: String!, $number: Int!, $author: String!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        databaseId
+        id
+        url
+        baseRefOid
+        headRefOid
+        opinionatedReviews: reviews(last: 1, states: [APPROVED, CHANGES_REQUESTED, DISMISSED], author: $author) {
+          nodes {
+            ...PullRequestReviewFragment
+          }
+        }
+        pendingReviews: reviews(last: 1, states: [PENDING]) {
+          nodes {
+            ...PullRequestReviewFragment
+            comments {
+              totalCount
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const pullRequestEpic = (action$: ActionsObservable<PullRequestAction>) =>
   action$.ofType<FetchAction>(FETCH).pipe(switchMap(action =>
-    zip<Observable<PullRequestDTO>, Observable<string>, Observable<any>>(
-      getPullRequest(action.payload.owner, action.payload.repo, action.payload.number),
+    zip(
       getPullRequestAsDiff(action.payload.owner, action.payload.repo, action.payload.number),
-      getUserInfo() ?
-        getPullRequestFromGraphQL(action.payload.owner, action.payload.repo, action.payload.number,
-          getUserInfo()!.login, `
-          bodyHTML
-          reviews(last: 1, author: $author) {
-            nodes {
-              ${pullRequestReviewFragment}
-            }
-          }
-          pendingReviews: reviews(last: 1, author: $author, states: [PENDING]) {
-            nodes {
-              ${pullRequestReviewFragment}
-            }
-          }
-        `).pipe(catchError((error: GraphQLError[]) => {
-          if (error.some(e => e.type === 'NOT_FOUND')) {
-            // eslint-disable-next-line no-throw-literal
-            throw { status: 404 }; // XXX
-          }
-          throw error;
-        })) :
-        of(null)
+      apollo.query<PullRequestQuery, PullRequestQueryVariables>({
+        query: pullRequestQuery,
+        variables: {
+          owner: action.payload.owner,
+          repo: action.payload.repo,
+          number: action.payload.number,
+          author: getUserInfo()?.login ?? '',
+        },
+        fetchPolicy: 'no-cache',
+      }).catch((error: ApolloError) => {
+        if (error.graphQLErrors.some(e => (e as any).type === 'NOT_FOUND')) {
+          // eslint-disable-next-line no-throw-literal
+          throw { status: 404 }; // XXX
+        }
+        throw error;
+      })
     ).pipe(
-    switchMap(([ pullRequest, diff, pullRequestFromGraphQL ]) => {
+    switchMap(([ diff, result ]) => {
+      const pullRequest = result.data?.repository?.pullRequest!;
       const authenticated = isAuthenticated();
-      let latestReview: PullRequestReviewDTO | null = null;
-      let pullRequestBodyRendered;
-      if (pullRequestFromGraphQL) {
-        // FIXME: Pending review is always on the first of reviews connection
-        latestReview = pullRequestFromGraphQL.pendingReviews.nodes[0] || pullRequestFromGraphQL.reviews.nodes[0];
-        pullRequestBodyRendered = pullRequestFromGraphQL.bodyHTML;
-      } else {
-        pullRequestBodyRendered = marked(pullRequest.body, { gfm: true, sanitize: true });
-      }
-      const success$ = of(({
+      const opinionatedReview = pullRequest.opinionatedReviews?.nodes?.[0] ?? null;
+      const pendingReview = pullRequest.pendingReviews?.nodes?.[0] ?? null;
+      const success$ = of<PullRequestAction>({
         type: FETCH_SUCCESS,
         payload: {
           pullRequest,
-          pullRequestBodyRendered,
           files: parseDiff(diff),
-          latestReview,
+          reviewOpinion: opinionatedReview?.state === PullRequestReviewState.APPROVED ?
+            'approved'
+            : opinionatedReview?.state === PullRequestReviewState.CHANGES_REQUESTED ?
+              'changesRequested'
+              : 'none',
+          hasPendingReview: Boolean(pendingReview),
+          pendingCommentCount: pendingReview?.comments?.totalCount ?? 0,
           isLoadingReviewStates: authenticated,
         },
-      }));
-
-      let comments$: Observable<ReviewThreadsFetchedAction>;
-      if (authenticated) {
-        comments$ = getPullRequestReviewThreads(pullRequest)
-          .pipe(map(reviewThreads => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: reviewThreads })));
-      } else {
-        // API v4 (GraphQL) does not support anonymous queries.
-        // API v3 (REST) does not support Review Threads.
-        // Make it viewable by wrapping each comment as individual review thread
-        comments$ = getPullRequestComments(pullRequest)
-          .pipe(map(comments => (<ReviewThreadsFetchedAction>{ type: REVIEW_THREADS_FETCHED, payload: comments.map(comment => ({
-            id: generateClientId(),
-            isResolved: false,
-            resolvedBy: null,
-            comments: {
-              nodes: [comment],
-              pageInfo: {
-                hasPreviousPage: false,
-                startCursor: '',
-              }
-            },
-          }))})));
-      }
+      });
+      const comments$ = of(fetchReviewThreads());
 
       const reviewStates$ = authenticated ?
-        observeReviewStates(pullRequest.id)
+        observeReviewStates(pullRequest.databaseId?.toString() ?? pullRequest.id)
           .pipe(map(reviewStates =>
             ({ type: REVIEW_STATES_CHANGED, payload: reviewStates || {} }))) :
-        empty();
+        EMPTY;
       
-      return concat(success$, comments$.pipe(merge(reviewStates$)));
+      return concat(success$, merge(comments$, reviewStates$));
     }),
     catchError(error => {
       console.error(error);

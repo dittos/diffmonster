@@ -1,9 +1,12 @@
 import { createStore, applyMiddleware, compose, Store } from 'redux';
 import { combineEpics, createEpicMiddleware } from 'redux-observable';
-import getInitialState, { AppState, PullRequestLoadedState } from './getInitialState';
+import getInitialState from './getInitialState';
 import pullRequestReducer, { pullRequestEpic, PullRequestAction } from './PullRequestStore';
 import commentReducer, { commentEpic, CommentAction } from './CommentStore';
 import reviewReducer, { reviewEpic, ReviewAction } from './ReviewStore';
+import { AppState, PullRequestLoadedState } from './types';
+
+export * from './types';
 
 export type AppAction = PullRequestAction | ReviewAction | CommentAction;
 

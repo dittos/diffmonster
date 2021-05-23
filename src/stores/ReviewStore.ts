@@ -1,52 +1,55 @@
 import { combineEpics, ActionsObservable, StateObservable } from 'redux-observable';
-import { of } from 'rxjs';
+import { from, of } from 'rxjs';
 import { mergeMap, catchError, map } from 'rxjs/operators';
-import {
-  addPullRequestReview,
-  submitPullRequestReview,
-  PullRequestReviewEventInput,
-  PullRequestReviewDTO,
-  PullRequestCommentState,
-} from '../lib/Github';
-import { PullRequestLoadedState } from './getInitialState';
+import { apollo } from '../lib/Github';
+import { approveMutation, submitReviewMutation } from './GithubMutations';
+import { Approve, ApproveVariables } from './__generated__/Approve';
+import { SubmitReview, SubmitReviewVariables } from './__generated__/SubmitReview';
+import { PullRequestReviewCommentState, PullRequestReviewEvent } from '../__generated__/globalTypes';
+import { PullRequestLoadedState } from './types';
 
-export const ADD_REVIEW_SUCCESS = 'REVIEW_ADDED';
-const ADD_REVIEW = 'ADD_REVIEW';
-const ADD_REVIEW_ERROR = 'ADD_REVIEW_ERROR';
+export const ADD_PENDING_REVIEW_SUCCESS = 'ADD_PENDING_REVIEW_SUCCESS';
+const APPROVE = 'APPROVE';
+const APPROVE_SUCCESS = 'APPROVE_SUCCESS';
+const APPROVE_ERROR = 'APPROVE_ERROR';
 const SUBMIT_REVIEW = 'SUBMIT_REVIEW';
 const SUBMIT_REVIEW_ERROR = 'SUBMIT_REVIEW_ERROR';
 const SUBMIT_REVIEW_SUCCESS = 'SUBMIT_REVIEW_SUCCESS';
 
-type AddReviewAction = { type: 'ADD_REVIEW'; payload: { event: PullRequestReviewEventInput } };
-type SubmitReviewAction = { type: 'SUBMIT_REVIEW'; payload: { event: PullRequestReviewEventInput } };
+type ApproveAction = { type: 'APPROVE'; };
+type SubmitReviewAction = { type: 'SUBMIT_REVIEW' };
 
 export type ReviewAction =
-  AddReviewAction |
-  { type: 'ADD_REVIEW_ERROR'; } |
-  { type: 'REVIEW_ADDED'; payload: PullRequestReviewDTO } |
+  ApproveAction |
+  { type: 'APPROVE_SUCCESS'; } |
+  { type: 'APPROVE_ERROR'; } |
+  { type: 'ADD_PENDING_REVIEW_SUCCESS'; } |
   SubmitReviewAction |
   { type: 'SUBMIT_REVIEW_ERROR'; } |
-  { type: 'SUBMIT_REVIEW_SUCCESS'; payload: PullRequestReviewDTO }
+  { type: 'SUBMIT_REVIEW_SUCCESS'; }
   ;
 
-export function submitReview({ event }: SubmitReviewAction['payload']): SubmitReviewAction {
-  return { type: SUBMIT_REVIEW, payload: { event } };
+export function submitReview(): SubmitReviewAction {
+  return { type: SUBMIT_REVIEW };
 }
 
-export function addReview({ event }: AddReviewAction['payload']): AddReviewAction {
-  return { type: ADD_REVIEW, payload: { event } };
+export function approve(): ApproveAction {
+  return { type: APPROVE };
 }
 
-const addReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObservable<PullRequestLoadedState>) =>
-  action$.ofType<AddReviewAction>('ADD_REVIEW').pipe(mergeMap(action => {
+const approveEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObservable<PullRequestLoadedState>) =>
+  action$.ofType<ApproveAction>(APPROVE).pipe(mergeMap(() => {
     const state = state$.value;
-    return addPullRequestReview(state.pullRequest.node_id, state.pullRequest.head.sha, action.payload.event).pipe(
-      map(review => ({
-        type: ADD_REVIEW_SUCCESS,
-        payload: review,
-      })),
+    return from(apollo.mutate<Approve, ApproveVariables>({
+      mutation: approveMutation,
+      variables: {
+        pullRequestId: state.pullRequest.id,
+        commitOID: state.pullRequest.headRefOid,
+      },
+    })).pipe(
+      map(() => ({ type: APPROVE_SUCCESS })),
       catchError(error => of({
-        type: ADD_REVIEW_ERROR,
+        type: APPROVE_ERROR,
         payload: error,
       })));
   }));
@@ -54,11 +57,16 @@ const addReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: StateOb
 const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: StateObservable<PullRequestLoadedState>) =>
   action$.ofType<SubmitReviewAction>('SUBMIT_REVIEW').pipe(mergeMap(action => {
     const state = state$.value;
-    return submitPullRequestReview(state.latestReview!.id, action.payload.event).pipe(
-      map(review => ({
-        type: SUBMIT_REVIEW_SUCCESS,
-        payload: review,
-      })),
+    return from(apollo.mutate<SubmitReview, SubmitReviewVariables>({
+      mutation: submitReviewMutation,
+      variables: {
+        input: {
+          pullRequestId: state.pullRequest.id,
+          event: PullRequestReviewEvent.COMMENT,
+        }
+      },
+    })).pipe(
+      map(() => ({ type: SUBMIT_REVIEW_SUCCESS })),
       catchError(error => of({
         type: SUBMIT_REVIEW_ERROR,
         payload: error,
@@ -66,28 +74,35 @@ const submitReviewEpic = (action$: ActionsObservable<ReviewAction>, state$: Stat
   }));
 
 export const reviewEpic = combineEpics(
-  addReviewEpic,
+  approveEpic,
   submitReviewEpic,
 );
 
 export default function reviewReducer(state: PullRequestLoadedState, action: ReviewAction): PullRequestLoadedState {
   switch (action.type) {
-    case ADD_REVIEW:
+    case APPROVE:
       return {
         ...state,
         isAddingReview: true,
       };
     
-    case ADD_REVIEW_ERROR:
+    case APPROVE_SUCCESS:
+      return {
+        ...state,
+        reviewOpinion: 'approved',
+        isAddingReview: false,
+      };
+    
+    case APPROVE_ERROR:
       return {
         ...state,
         isAddingReview: false,
       };
     
-    case ADD_REVIEW_SUCCESS:
+    case ADD_PENDING_REVIEW_SUCCESS:
       return {
         ...state,
-        latestReview: action.payload,
+        hasPendingReview: true,
         isAddingReview: false,
       };
     
@@ -106,13 +121,16 @@ export default function reviewReducer(state: PullRequestLoadedState, action: Rev
     case SUBMIT_REVIEW_SUCCESS:
       return {
         ...state,
-        latestReview: action.payload,
+        hasPendingReview: false,
+        pendingCommentCount: 0,
         isAddingReview: false,
         reviewThreads: state.reviewThreads.map(thread => ({
           ...thread,
           comments: thread.comments && {
             ...thread.comments,
-            nodes: thread.comments.nodes.map(c => c.state === 'PENDING' ? { ...c, state: 'SUBMITTED' as PullRequestCommentState } : c)
+            nodes: thread.comments.nodes!.map(c => c!.state === PullRequestReviewCommentState.PENDING ?
+              { ...c!, state: PullRequestReviewCommentState.SUBMITTED } :
+              c)
           }
         })),
       };

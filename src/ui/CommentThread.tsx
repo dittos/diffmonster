@@ -1,18 +1,14 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Intent, Tag, Button, Classes, Icon } from '@blueprintjs/core';
-import marked from 'marked';
 import { Subject, Subscription } from 'rxjs';
 import { getUserInfo } from '../lib/GithubAuth';
-import { editComment } from '../stores/CommentStore';
+import { CommentPosition, editComment } from '../stores/CommentStore';
 import Styles from './CommentThread.module.css';
-import { PullRequestCommentDTO, UserDTO, PullRequestReviewThreadDTO } from '../lib/Github';
-import { AppAction } from '../stores';
-
-function renderMarkdown(body: string): string {
-  const rendered = marked(body, { gfm: true, sanitize: true });
-  return rendered.replace(/&lt;(\/?sub)&gt;/g, '<$1>'); // TODO: is it okay?
-}
+import { UserDTO } from '../lib/Github';
+import { AppAction, PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../stores';
+import CommentComposer from './CommentComposer';
+import { DiffFile } from '../lib/DiffParser';
 
 interface EditorProps extends DispatchProp<AppAction> {
   comment: PullRequestCommentDTO;
@@ -101,9 +97,9 @@ class Comment extends React.Component<CommentProps> {
       return (
         <div className={Styles.CommentItem}>
           <div className={Styles.CommentMeta}>
-            <a className={Styles.CommentUser} href={comment.user?.html_url ?? '#'} target="_blank" rel="noopener noreferrer">{comment.user?.login}</a>
+            <a className={Styles.CommentUser} href={comment.author?.html_url ?? '#'} target="_blank" rel="noopener noreferrer">{comment.author?.login}</a>
             {isPending && <Tag intent={Intent.WARNING}>Pending</Tag>}
-            {viewer && viewer.login === comment.user?.login && (
+            {viewer && viewer.login === comment.author?.login && (
               <div className={Styles.Actions}>
                 <Button
                   icon="edit"
@@ -119,7 +115,7 @@ class Comment extends React.Component<CommentProps> {
               </div>
             )}
           </div>
-          <div className={Styles.CommentBody} dangerouslySetInnerHTML={{__html: renderMarkdown(comment.body)}} />
+          <div className={Styles.CommentBody} dangerouslySetInnerHTML={{__html: comment.bodyHTML}} />
         </div>
       );
     }
@@ -135,6 +131,8 @@ class Comment extends React.Component<CommentProps> {
 }
 
 interface CommentThreadProps {
+  file: DiffFile;
+  position: CommentPosition;
   thread: PullRequestReviewThreadDTO;
   deleteComment(comment: PullRequestCommentDTO): void;
 }
@@ -142,6 +140,7 @@ interface CommentThreadProps {
 class CommentThread extends React.Component<CommentThreadProps> {
   state = {
     hidden: this.props.thread.isResolved,
+    composerOpened: false,
   };
 
   componentWillReceiveProps(nextProps: CommentThreadProps) {
@@ -168,19 +167,49 @@ class CommentThread extends React.Component<CommentThreadProps> {
           </div>}
         {!this.state.hidden && comments && comments.map(comment => (
           <Comment
-            key={comment.id}
-            comment={comment}
+            key={comment!.id}
+            comment={comment!}
             deleteComment={deleteComment}
-            isPending={comment.state === 'PENDING'}
+            isPending={comment!.state === 'PENDING'}
             viewer={viewer}
           />
         ))}
+        {!this.state.hidden && comments && viewer && thread.viewerCanReply && (
+          this.state.composerOpened ? (
+            <div className={Styles.CommentThreadFooter}>
+              <CommentComposer
+                file={this.props.file}
+                position={this.props.position}
+                replyContext={{
+                  thread,
+                  comment: comments[comments.length - 1]!
+                }}
+                onCloseComposer={this._closeComposer}
+              />
+            </div>
+          ) : (
+            <div className={Styles.CommentThreadFooterClosed} onClick={this._openComposer}>
+              <Icon icon="comment" className={Styles.ReplyIcon} />
+              <div className={Styles.ReplyText}>
+                Reply...
+              </div>
+            </div>
+          )
+        )}
       </div>
     );
   }
 
   private _toggle = () => {
     this.setState({ hidden: !this.state.hidden });
+  };
+
+  private _openComposer = () => {
+    this.setState({ composerOpened: true });
+  };
+
+  private _closeComposer = () => {
+    this.setState({ composerOpened: false });
   };
 }
 

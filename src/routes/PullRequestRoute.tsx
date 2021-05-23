@@ -1,10 +1,12 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import PullRequest from '../ui/PullRequest';
+import PullRequest, { pullRequestFragment } from '../ui/PullRequest';
 import withQueryParams from '../lib/withQueryParams';
 import { fetch, fetchCancel } from '../stores/PullRequestStore';
 import { RouteComponentProps } from 'react-router';
 import { AppAction } from '../stores';
+import { gql, useQuery } from '@apollo/client';
+import { PullRequestRouteQuery, PullRequestRouteQueryVariables } from './__generated__/PullRequestRouteQuery';
 
 interface Params {
   owner: string;
@@ -17,6 +19,35 @@ interface QueryParams {
 }
 
 type Props = RouteComponentProps<Params> & { queryParams: QueryParams } & DispatchProp<AppAction>;
+
+export const query = gql`
+  ${pullRequestFragment}
+  query PullRequestRouteQuery($owner: String!, $repo: String!, $number: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        ...PullRequestFragment
+      }
+    }
+  }
+`;
+
+function PullRequestLoader(props: Props & { onSelectFile(path: string): void; }) {
+  const { owner, repo, number } = props.match.params;
+  const result = useQuery<PullRequestRouteQuery, PullRequestRouteQueryVariables>(query, {
+    variables: {
+      owner,
+      repo,
+      number: Number(number),
+    }
+  })
+  return (
+    <PullRequest
+      pullRequestFragment={result.data?.repository?.pullRequest ?? null}
+      activePath={props.queryParams.path}
+      onSelectFile={props.onSelectFile}
+    />
+  )
+}
 
 class PullRequestRoute extends React.Component<Props> {
   componentDidMount() {
@@ -37,8 +68,8 @@ class PullRequestRoute extends React.Component<Props> {
 
   render() {
     return (
-      <PullRequest
-        activePath={this.props.queryParams.path}
+      <PullRequestLoader
+        {...this.props}
         onSelectFile={this._onSelectFile}
       />
     );

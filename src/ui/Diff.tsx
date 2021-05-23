@@ -6,12 +6,14 @@ import { highlightDiff } from '../lib/DiffHighlight';
 import CommentThread from './CommentThread';
 import CommentComposer from './CommentComposer';
 import Styles from './Diff.module.css';
-import { PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../lib/Github';
+import { PullRequestCommentDTO, PullRequestReviewThreadDTO } from '../stores';
 import { Icon } from '@blueprintjs/core';
+import { CommentPosition } from '../stores/CommentStore';
 
 const CUSTOM_LANGUAGE_ALIASES: {[key: string]: string} = {
   // https://github.com/isagalaev/highlight.js/pull/1651
   kt: 'kotlin',
+  tsx: 'ts',
 };
 
 const LineTypeComponents = {
@@ -120,6 +122,11 @@ class Hunk extends React.Component<HunkProps> {
       const threads = reviewThreadsByPosition[line.position];
       const showComposer = line.position === commentComposerPosition;
       if (threads || showComposer) {
+        const commentPosition: CommentPosition = {
+          position: line.position,
+          line: line.newNumber || line.oldNumber!,
+          side: line.newNumber ? 'RIGHT' : 'LEFT',
+        };
         lines.push(
           <tr key={'C' + line.position}>
             <td colSpan={canCreateComment ? 4 : 3} style={{padding: 0}}>
@@ -127,13 +134,15 @@ class Hunk extends React.Component<HunkProps> {
                 {threads && threads.map(thread => (
                   <CommentThread
                     key={thread.id}
+                    file={file}
+                    position={commentPosition}
                     thread={thread}
                     deleteComment={deleteComment}
                   />
                 ))}
                 {showComposer && <CommentComposer
                   file={file}
-                  position={line.position}
+                  position={commentPosition}
                   onCloseComposer={onCloseCommentComposer}
                 />}
               </div>

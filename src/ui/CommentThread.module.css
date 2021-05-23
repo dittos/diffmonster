@@ -65,3 +65,27 @@
 .EditingActions button {
   margin-right: 8px;
 }
+
+.CommentThreadFooter {
+  border-top: 1px solid #BFCCD6; /* TODO: Colors.GRAY5 */
+  background-color: #EBF1F5;
+  color: #5C7080; /* TODO: Colors.GRAY1 */
+  overflow: hidden;
+}
+
+.CommentThreadFooterClosed {
+  composes: CommentThreadFooter;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.CommentThreadFooterClosed:hover {
+  background-color: #F5F8FA;
+  color: #0E5A8A; /* TODO: Colors.BLUE1 */
+}
+
+.ReplyText {
+  margin-left: 4px;
+}

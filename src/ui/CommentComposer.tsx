@@ -2,27 +2,36 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Button, Intent } from '@blueprintjs/core';
 import { Subject, Subscription } from 'rxjs';
-import { PullRequestReviewState, PullRequestReviewDTO, PullRequestDTO } from '../lib/Github';
 import {
   addSingleComment,
   addReviewComment,
   AddCommentActionPayload,
   AddCommentAction,
+  CommentPosition,
 } from '../stores/CommentStore';
 import config from '../config';
 import Styles from './CommentComposer.module.css';
-import { PullRequestLoadedState } from '../stores/getInitialState';
-import { AppAction } from '../stores';
+import {
+  PullRequestDTO,
+  PullRequestCommentDTO,
+  PullRequestReviewThreadDTO,
+  PullRequestLoadedState,
+  AppAction,
+} from '../stores';
 import { DiffFile } from '../lib/DiffParser';
 
 interface StateProps {
-  latestReview: PullRequestReviewDTO | null;
+  hasPendingReview: boolean;
   pullRequest: PullRequestDTO;
 }
 
 interface OwnProps {
   file: DiffFile;
-  position: number;
+  position: CommentPosition;
+  replyContext?: {
+    thread: PullRequestReviewThreadDTO;
+    comment: PullRequestCommentDTO;
+  };
   onCloseComposer(): void;
 }
 
@@ -37,8 +46,7 @@ class CommentComposer extends React.Component<Props> {
   subscription = new Subscription();
 
   render() {
-    const { latestReview } = this.props;
-    const hasPendingReview = latestReview && latestReview.state === PullRequestReviewState.PENDING;
+    const { hasPendingReview } = this.props;
     return (
       <div className={Styles.Container}>
         <textarea
@@ -79,7 +87,7 @@ class CommentComposer extends React.Component<Props> {
     if (!config.enableCommentSignature)
       return this.state.commentBody;
     
-    const url = this.props.pullRequest.html_url.replace(/https?:\/\/github.com\//, config.url + '#/') +
+    const url = this.props.pullRequest.url.replace(/https?:\/\/github.com\//, config.url + '#/') +
       '?path=' + encodeURIComponent(this.props.file.filename);
     return `${this.state.commentBody}\n\n<sub>_commented via [Diff Monster](${url})_</sub>`;
   }
@@ -99,6 +107,7 @@ class CommentComposer extends React.Component<Props> {
       body: this._getBodyWithSig(),
       position: this.props.position,
       path: this.props.file.filename,
+      replyContext: this.props.replyContext,
     }, subject));
   }
 
@@ -118,5 +127,5 @@ class CommentComposer extends React.Component<Props> {
 
 export default connect<StateProps, {}, OwnProps, PullRequestLoadedState>(state => ({
   pullRequest: state.pullRequest,
-  latestReview: state.latestReview,
+  hasPendingReview: state.hasPendingReview,
 }))(CommentComposer);
